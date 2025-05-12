@@ -2,10 +2,8 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 import { Card, CardContent, Typography, Chip, Box, Button, Divider } from '@mui/material';
 import { LocationOn, Business, AttachMoney, AccessTime } from '@mui/icons-material';
-import theme from '../../theme/Theme';
 
 export default function JobCard({ job }) {
-    // Format the deadline date
     const formatDeadline = (dateString) => {
         const date = new Date(dateString);
         return date.toLocaleDateString('en-US', {

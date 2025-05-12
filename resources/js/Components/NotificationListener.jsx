@@ -30,14 +30,32 @@ export default function NotificationListener({ userId }) {
 
             // Show toast notification
             if (window.showToast) {
+                let type = 'info';
                 let message = 'New notification received';
+
+                // Extract message from notification data
                 if (notification.data?.message) {
                     message = notification.data.message;
                 }
 
+                // Try to determine notification type from notification data or type
+                if (notification.data?.icon === 'success' || notification.type?.includes('Success')) {
+                    type = 'success';
+                } else if (notification.data?.icon === 'error' || notification.type?.includes('Error')) {
+                    type = 'error';
+                } else if (notification.data?.icon === 'warning' || notification.type?.includes('Warning')) {
+                    type = 'warning';
+                }
+
+                // Use the title if available to make it more informative
+                if (notification.data?.title) {
+                    message = `${notification.data.title}: ${message}`;
+                }
+
                 window.showToast({
                     message: message,
-                    type: 'info'
+                    type: type,
+                    duration: 7000 // Slightly longer duration for better visibility
                 });
             }
         });

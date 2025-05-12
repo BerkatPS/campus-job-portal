@@ -25,11 +25,6 @@ window.Echo = new Echo({
     key: import.meta.env.VITE_PUSHER_APP_KEY,
     cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
     forceTLS: true,
-    auth: {
-        headers: {
-            Authorization: `Bearer ${token.content}`,
-        },
-    },
 });
 
 // Enable debugging in development

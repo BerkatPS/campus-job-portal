@@ -147,6 +147,7 @@ class JobController extends Controller
         // Membuat pekerjaan baru
         $job = Job::create($validatedData);
 
+
         // Menyimpan tahapan perekrutan
         if ($request->has('hiring_stages')) {
             foreach ($request->hiring_stages as $index => $stageId) {
@@ -169,6 +170,15 @@ class JobController extends Controller
             }
         }
 
+        $companyManagers = $company->managers;
+        foreach ($companyManagers as $manager) {
+            if ($manager->id !== Auth::id()) { // Don't notify the creator
+                $manager->notify(new \App\Notifications\JobCreated($job, [
+                    'created_by' => Auth::id(),
+                    'created_by_name' => Auth::user()->name,
+                ]));
+            }
+        }
         return redirect()->route('manager.jobs.index')->with('success', 'Lowongan pekerjaan berhasil dibuat.');
     }
 
@@ -390,14 +400,28 @@ class JobController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Toggle is_active flag and update status accordingly
+        $oldStatus = $job->is_active ? 'active' : 'inactive';
         $newIsActive = !$job->is_active;
 
-        // Update both is_active and status to keep them synchronized
         $job->update([
             'is_active' => $newIsActive,
             'status' => $newIsActive ? 'active' : ($job->status === 'active' ? 'closed' : $job->status),
         ]);
+
+        $newStatus = $job->is_active ? 'active' : 'inactive';
+
+        // Notify company managers about job status change
+        $companyManagers = $job->company->managers;
+        foreach ($companyManagers as $manager) {
+            if ($manager->id !== Auth::id()) { // Don't notify the toggler
+                $manager->notify(new \App\Notifications\JobStatusChanged($job, [
+                    'old_status' => $oldStatus,
+                    'new_status' => $newStatus,
+                    'updated_by' => Auth::id(),
+                    'updated_by_name' => Auth::user()->name,
+                ]));
+            }
+        }
 
         return back()->with('success', $job->is_active ? 'Job activated successfully.' : 'Job deactivated successfully.');
     }

@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
 
             // Level 3: Form builder
             FormSectionSeeder::class,
-            FormFieldSeeder::class,
+//            FormFieldSeeder::class,
 
             // Level 4: Job dan aplikasi lanjutan
             JobSeeder::class,

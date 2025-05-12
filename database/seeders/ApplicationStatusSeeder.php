@@ -14,66 +14,66 @@ class ApplicationStatusSeeder extends Seeder
     {
         $statuses = [
             [
-                'name' => 'New',
+                'name' => 'Baru',
                 'slug' => 'new',
                 'color' => '#818cf8', // Indigo
-                'description' => 'New application',
+                'description' => 'Aplikasi baru',
                 'order' => 1,
             ],
             [
-                'name' => 'In Review',
+                'name' => 'Sedang Ditinjau',
                 'slug' => 'in-review',
                 'color' => '#f59e0b', // Amber
-                'description' => 'Application is being reviewed',
+                'description' => 'Aplikasi sedang dalam proses peninjauan',
                 'order' => 2,
             ],
             [
-                'name' => 'Shortlisted',
+                'name' => 'Kandidat Terpilih',
                 'slug' => 'shortlisted',
                 'color' => '#3b82f6', // Blue
-                'description' => 'Candidate has been shortlisted',
+                'description' => 'Kandidat telah masuk daftar kandidat terpilih',
                 'order' => 3,
             ],
             [
-                'name' => 'Interview',
+                'name' => 'Wawancara',
                 'slug' => 'interview',
                 'color' => '#0ea5e9', // Sky
-                'description' => 'Candidate is being interviewed',
+                'description' => 'Kandidat sedang dalam proses wawancara',
                 'order' => 4,
             ],
             [
-                'name' => 'Offer',
+                'name' => 'Penawaran',
                 'slug' => 'offer',
                 'color' => '#10b981', // Green
-                'description' => 'Job offer has been made',
+                'description' => 'Penawaran kerja telah diberikan',
                 'order' => 5,
             ],
             [
-                'name' => 'Hired',
+                'name' => 'Diterima',
                 'slug' => 'hired',
                 'color' => '#8b5cf6', // Purple
-                'description' => 'Candidate has been hired',
+                'description' => 'Kandidat telah diterima bekerja',
                 'order' => 6,
             ],
             [
-                'name' => 'Rejected',
+                'name' => 'Ditolak',
                 'slug' => 'rejected',
                 'color' => '#ef4444', // Red
-                'description' => 'Application has been rejected',
+                'description' => 'Aplikasi telah ditolak',
                 'order' => 7,
             ],
             [
-                'name' => 'Disqualified',
+                'name' => 'Didiskualifikasi',
                 'slug' => 'disqualified',
                 'color' => '#6b7280', // Gray
-                'description' => 'Candidate has been disqualified',
+                'description' => 'Kandidat telah didiskualifikasi',
                 'order' => 8,
             ],
             [
-                'name' => 'Withdrawn',
+                'name' => 'Mengundurkan Diri',
                 'slug' => 'withdrawn',
                 'color' => '#94a3b8', // Slate
-                'description' => 'Candidate has withdrawn their application',
+                'description' => 'Kandidat telah menarik lamaran mereka',
                 'order' => 9,
             ],
         ];

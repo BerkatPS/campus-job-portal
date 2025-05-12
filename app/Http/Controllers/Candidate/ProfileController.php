@@ -107,6 +107,10 @@ class ProfileController extends Controller
 
         try {
             $user = Auth::user();
+            $oldProfile = null;
+            if ($user->candidateProfile) {
+                $oldProfile = clone $user->candidateProfile;
+            }
 
             // Update user data
             $userData = [
@@ -149,6 +153,53 @@ class ProfileController extends Controller
                 'twitter' => $request->input('twitter') ?: '',
                 'github' => $request->input('github') ?: '',
             ];
+
+            if ($oldProfile) {
+                $changedFields = [];
+
+                // Check for changes in important fields
+                if ($oldProfile->resume != $user->candidateProfile->resume) {
+                    $changedFields[] = 'resume';
+                }
+                if ($oldProfile->education != $user->candidateProfile->education) {
+                    $changedFields[] = 'education';
+                }
+                if ($oldProfile->experience != $user->candidateProfile->experience) {
+                    $changedFields[] = 'experience';
+                }
+                if ($oldProfile->skills != $user->candidateProfile->skills) {
+                    $changedFields[] = 'skills';
+                }
+
+                // Notify user about profile updates
+                if (!empty($changedFields)) {
+                    $user->notify(new \App\Notifications\Candidate\ProfileUpdated([
+                        'updated_fields' => $changedFields
+                    ]));
+
+                    // If user has active applications, notify recruiters about updated profile
+                    $activeApplications = \App\Models\JobApplication::where('user_id', $user->id)
+                        ->whereHas('status', function($query) {
+                            $query->whereNotIn('slug', ['rejected', 'withdrawn', 'hired']);
+                        })
+                        ->with('job.company.managers')
+                        ->get();
+
+                    foreach ($activeApplications as $application) {
+                        if ($application->job &&
+                            $application->job->company &&
+                            method_exists($application->job->company, 'managers') &&
+                            $application->job->company->managers) {
+                            foreach ($application->job->company->managers as $manager) {
+                                $manager->notify(new \App\Notifications\CandidateProfileUpdated($user, [
+                                    'application_id' => $application->id,
+                                    'updated_fields' => $changedFields
+                                ]));
+                            }
+                        }
+                    }
+                }
+            }
 
             // Log profile data for debugging
             \Log::info('Updating profile with data:', $profileData);
@@ -193,23 +244,26 @@ class ProfileController extends Controller
         }
 
         try {
-            $user = \Auth::user();
+            $user = Auth::user();
+            $activeApplications = \App\Models\JobApplication::where('user_id', $user->id)
+                ->whereHas('status', function($query) {
+                    $query->whereNotIn('slug', ['rejected', 'withdrawn', 'hired']);
+                })
+                ->with('job.company.managers')
+                ->get();
 
-            // Delete old resume if it exists
-            if ($user->candidateProfile && $user->candidateProfile->resume) {
-                \Storage::disk('public')->delete($user->candidateProfile->resume);
+            foreach ($activeApplications as $application) {
+                if ($application->job &&
+                    $application->job->company &&
+                    method_exists($application->job->company, 'managers') &&
+                    $application->job->company->managers) {
+                    foreach ($application->job->company->managers as $manager) {
+                        $manager->notify(new \App\Notifications\CandidateResumeUpdated($user, [
+                            'application_id' => $application->id
+                        ]));
+                    }
+                }
             }
-
-            // Upload new resume
-            $resumePath = $request->file('resume')->store('resumes', 'public');
-
-            // Update profile with new resume
-            $user->candidateProfile()->updateOrCreate(
-                ['user_id' => $user->id],
-                ['resume' => $resumePath]
-            );
-
-            \Log::info('Resume uploaded successfully at: ' . $resumePath);
 
             return response()->json([
                 'success' => true,

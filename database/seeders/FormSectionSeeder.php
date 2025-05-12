@@ -14,32 +14,32 @@ class FormSectionSeeder extends Seeder
     {
         $sections = [
             [
-                'name' => 'Basic Information',
-                'description' => 'Basic personal information of the candidate',
+                'name' => 'Informasi Dasar',
+                'description' => 'Informasi pribadi dasar kandidat',
                 'is_enabled' => true,
                 'order_index' => 1,
             ],
             [
-                'name' => 'Contact Details',
-                'description' => 'Contact information of the candidate',
+                'name' => 'Detail Kontak',
+                'description' => 'Informasi kontak kandidat',
                 'is_enabled' => true,
                 'order_index' => 2,
             ],
             [
-                'name' => 'Education & Experience',
-                'description' => 'Educational background and work experience',
+                'name' => 'Pendidikan & Pengalaman',
+                'description' => 'Latar belakang pendidikan dan pengalaman kerja',
                 'is_enabled' => true,
                 'order_index' => 3,
             ],
             [
-                'name' => 'Skills & Qualifications',
-                'description' => 'Skills, certifications, and qualifications',
+                'name' => 'Keterampilan & Kualifikasi',
+                'description' => 'Keterampilan, sertifikasi, dan kualifikasi',
                 'is_enabled' => true,
                 'order_index' => 4,
             ],
             [
-                'name' => 'Questions',
-                'description' => 'Additional questions for the candidate',
+                'name' => 'Pertanyaan',
+                'description' => 'Pertanyaan tambahan untuk kandidat',
                 'is_enabled' => true,
                 'order_index' => 5,
             ],

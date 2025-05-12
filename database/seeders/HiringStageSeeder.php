@@ -14,65 +14,65 @@ class HiringStageSeeder extends Seeder
     {
         $stages = [
             [
-                'name' => 'Application Review',
+                'name' => 'Tinjauan Aplikasi',
                 'slug' => 'application-review',
-                'description' => 'Initial review of application',
+                'description' => 'Tinjauan awal aplikasi',
                 'color' => '#818cf8', // Indigo
                 'order_index' => 1,
                 'is_default' => true,
             ],
             [
-                'name' => 'Phone Screening',
+                'name' => 'Screening Telepon',
                 'slug' => 'phone-screening',
-                'description' => 'Brief phone interview to assess basic qualifications',
+                'description' => 'Wawancara telepon singkat untuk menilai kualifikasi dasar',
                 'color' => '#f59e0b', // Amber
                 'order_index' => 2,
                 'is_default' => true,
             ],
             [
-                'name' => 'First Interview',
+                'name' => 'Wawancara Pertama',
                 'slug' => 'first-interview',
-                'description' => 'Initial face-to-face or video interview',
+                'description' => 'Wawancara tatap muka atau video awal',
                 'color' => '#0ea5e9', // Sky
                 'order_index' => 3,
                 'is_default' => true,
             ],
             [
-                'name' => 'Technical Assessment',
+                'name' => 'Penilaian Teknis',
                 'slug' => 'technical-assessment',
-                'description' => 'Technical skills assessment or test',
+                'description' => 'Penilaian atau tes keterampilan teknis',
                 'color' => '#6366f1', // Indigo
                 'order_index' => 4,
                 'is_default' => true,
             ],
             [
-                'name' => 'Second Interview',
+                'name' => 'Wawancara Kedua',
                 'slug' => 'second-interview',
-                'description' => 'Follow-up interview with team or management',
+                'description' => 'Wawancara lanjutan dengan tim atau manajemen',
                 'color' => '#0284c7', // Sky
                 'order_index' => 5,
                 'is_default' => true,
             ],
             [
-                'name' => 'Reference Check',
+                'name' => 'Pemeriksaan Referensi',
                 'slug' => 'reference-check',
-                'description' => 'Verification of references',
+                'description' => 'Verifikasi referensi',
                 'color' => '#7c3aed', // Violet
                 'order_index' => 6,
                 'is_default' => true,
             ],
             [
-                'name' => 'Job Offer',
+                'name' => 'Penawaran Kerja',
                 'slug' => 'job-offer',
-                'description' => 'Extending a formal job offer',
+                'description' => 'Memberikan penawaran kerja formal',
                 'color' => '#10b981', // Green
                 'order_index' => 7,
                 'is_default' => true,
             ],
             [
-                'name' => 'Onboarding',
+                'name' => 'Orientasi',
                 'slug' => 'onboarding',
-                'description' => 'Onboarding process for new hires',
+                'description' => 'Proses orientasi untuk karyawan baru',
                 'color' => '#8b5cf6', // Purple
                 'order_index' => 8,
                 'is_default' => true,

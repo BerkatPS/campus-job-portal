@@ -4,29 +4,22 @@ import { usePage } from '@inertiajs/react';
 import {
     Box,
     CssBaseline,
-    Toolbar,
     useTheme,
     useMediaQuery,
-    Container,
     Backdrop,
     CircularProgress,
     alpha,
-    Fade,
-    Zoom,
-    Typography
 } from '@mui/material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Header from './Header';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
-import Alert from '../Shared/Alert';
-import MuiThemeProvider from "@/theme/MuiThemeProvider.jsx";
+import MuiThemeProvider from "@/Theme/MuiThemeProvider.jsx";
 import NotificationListener from "@/Components/NotificationListener.jsx";
 import ToastNotification from "@/Components/ToastNotification.jsx";
 
 // Custom backdrop component with loading animation
 const LoadingBackdrop = ({ open }) => {
-    const theme = useTheme();
 
     return (
         <Backdrop
@@ -73,12 +66,11 @@ const Layout = ({ children }) => {
     const { auth } = usePage().props;
     const [loading, setLoading] = useState(false);
 
-    // Create Material UI theme
+    // Create Material UI Theme
     const [mode, setMode] = useState('light');
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('lg'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('md'));
     const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
     const [sidebarCollapsed, setSidebarCollapsed] = useState(isMobile);
     const [echoInitialized, setEchoInitialized] = useState(false);
@@ -122,17 +114,8 @@ const Layout = ({ children }) => {
         setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
     };
 
-    // Animation variants for alerts
-    const alertVariants = {
-        hidden: { opacity: 0, y: -20 },
-        visible: { opacity: 1, y: 0 },
-        exit: { opacity: 0, y: -20 },
-    };
-
-    // Calculate sidebar width based on state
     const sidebarWidth = sidebarCollapsed ? 72 : 280;
 
-    // Calculate main content width
     const mainContentWidth = isMobile ? '100%' : `calc(100% - ${sidebarWidth}px)`;
     const mainContentMargin = isMobile ? 0 : `${sidebarWidth}px`;
 

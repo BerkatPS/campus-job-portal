@@ -14,11 +14,12 @@ class ApplicationStageUpdated extends Notification implements ShouldQueue
     protected $application;
     protected $data;
 
-    public function __construct($application, $data = [])
+    public function __construct($application, array $data = [])
     {
         $this->application = $application;
         $this->data = $data;
     }
+
 
     public function via($notifiable)
     {

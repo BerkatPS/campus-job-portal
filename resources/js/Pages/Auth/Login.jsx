@@ -4,33 +4,23 @@ import {
     Container,
     Box,
     Typography,
-    Paper,
-    Divider,
-    useTheme,
-    useMediaQuery,
     InputAdornment,
-    Fade,
     TextField,
-    IconButton,
-    Stack
+    IconButton, useMediaQuery,
 } from '@mui/material';
 import {
     Login as LoginIcon,
     Email as EmailIcon,
     Lock as LockIcon,
-    Facebook as FacebookIcon,
-    Google as GoogleIcon,
-    Twitter as TwitterIcon,
     Visibility,
     VisibilityOff
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Button from '@/Components/Shared/Button';
 import Card from '@/Components/Shared/Card';
-import Alert from '@/Components/Shared/Alert';
-import Checkbox from '@/Components/Shared/Checkbox';
 import MuiThemeProvider from '@/Theme/MuiThemeProvider';
 import SweetAlert from "@/Components/Shared/SweetAlert.jsx";
+import {useTheme} from "@mui/material/styles";
 
 export default function Login({ status, canResetPassword }) {
     const theme = useTheme();
@@ -48,7 +38,6 @@ export default function Login({ status, canResetPassword }) {
         text: null,
         icon: null
     });
-
 
     const submit = (e) => {
         e.preventDefault();
@@ -73,6 +62,7 @@ export default function Login({ status, canResetPassword }) {
     useEffect(() => {
         document.title = 'Login - CampusJob';
 
+        // Show sweet alert for status message
         if (status) {
             setAlertProps({
                 title: 'Sukses',
@@ -81,10 +71,19 @@ export default function Login({ status, canResetPassword }) {
             });
         }
 
+        // Show error alerts if present
+        if (errors.email) {
+            setAlertProps({
+                title: 'Login Gagal',
+                text: errors.email,
+                icon: 'error'
+            });
+        }
+
         return () => {
             reset('password');
         };
-    }, [status]);
+    }, [status, errors]);
 
     return (
         <MuiThemeProvider>
@@ -145,10 +144,10 @@ export default function Login({ status, canResetPassword }) {
                                     className="backdrop-blur-md border border-white/50"
                                     sx={{
                                         p: { xs: 3, md: 5 },
-                                        borderRadius: '1.5rem', // theme.borderRadius['3xl']
+                                        borderRadius: '1.5rem', // Theme.borderRadius['3xl']
                                         background: 'rgba(255, 255, 255, 0.85)',
                                         backdropFilter: 'blur(12px)',
-                                        boxShadow: theme.shadows[4], // Using the custom shadows from theme
+                                        boxShadow: theme.shadows[4], // Using the custom shadows from Theme
                                         transition: 'all 0.3s ease',
                                         '&:hover': {
                                             boxShadow: theme.shadows[5],
@@ -178,30 +177,6 @@ export default function Login({ status, canResetPassword }) {
                                         Selamat datang kembali! Silakan masuk untuk mengakses akun Anda.
                                     </Typography>
 
-                                    {status && (
-                                        <Fade in={true}>
-                                            <Alert
-                                                severity="success"
-                                                sx={{ mb: 3 }}
-                                                className="bg-success/10 text-success border border-success/20 rounded-xl"
-                                            >
-                                                {status}
-                                            </Alert>
-                                        </Fade>
-                                    )}
-
-                                    {errors.email && (
-                                        <Fade in={true}>
-                                            <Alert
-                                                severity="error"
-                                                sx={{ mb: 3 }}
-                                                className="bg-error/10 text-error border border-error/20 rounded-xl"
-                                            >
-                                                {errors.email}
-                                            </Alert>
-                                        </Fade>
-                                    )}
-
                                     {/* Login form */}
                                     <Box component="form" onSubmit={submit} className="space-y-4">
                                         <Box sx={{ mb: 3 }}>
@@ -217,7 +192,6 @@ export default function Login({ status, canResetPassword }) {
                                                 autoFocus
                                                 required
                                                 error={!!errors.email}
-                                                helperText={errors.email}
                                                 InputProps={{
                                                     startAdornment: (
                                                         <InputAdornment position="start">
@@ -227,7 +201,7 @@ export default function Login({ status, canResetPassword }) {
                                                 }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
-                                                        borderRadius: '0.75rem', // theme.borderRadius.xl
+                                                        borderRadius: '0.75rem', // Theme.borderRadius.xl
                                                         transition: 'all 0.3s ease',
                                                         '&:hover': {
                                                             boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
@@ -254,7 +228,6 @@ export default function Login({ status, canResetPassword }) {
                                                 onChange={(e) => setData('password', e.target.value)}
                                                 required
                                                 error={!!errors.password}
-                                                helperText={errors.password}
                                                 InputProps={{
                                                     startAdornment: (
                                                         <InputAdornment position="start">
@@ -274,7 +247,7 @@ export default function Login({ status, canResetPassword }) {
                                                 }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
-                                                        borderRadius: '0.75rem', // theme.borderRadius.xl
+                                                        borderRadius: '0.75rem', // Theme.borderRadius.xl
                                                         transition: 'all 0.3s ease',
                                                         '&:hover': {
                                                             boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
@@ -327,10 +300,10 @@ export default function Login({ status, canResetPassword }) {
                                         <Box sx={{ textAlign: 'center', mb: 5 }}>
                                             <Typography variant="body2" className="text-gray-600">
                                                 <Link
-                                                    href={route('register')}
+                                                    href={route('public.home')}
                                                     className="text-gray-600 font-medium"
                                                 >
-                                                    > Kembali ke Beranda
+                                                    Kembali ke Beranda
                                                 </Link>
                                             </Typography>
                                         </Box>

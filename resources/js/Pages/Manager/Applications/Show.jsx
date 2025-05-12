@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
 import { Head, Link, usePage } from '@inertiajs/react';
-// Material UI Components
 import {
     Box,
     Typography,
     IconButton,
-    Tooltip,
-    CardContent,
     Chip,
     Divider,
     List,
@@ -54,25 +51,18 @@ import {
     FilePresentOutlined,
     Download,
     Check,
-    Close,
     VideoCall,
     WorkOutline,
     Timer,
     AccessTime,
-    ArrowForward as ArrowForwardIcon,
     CheckCircle as CheckCircleIcon,
     Cancel as CancelIcon,
-    Schedule as ScheduleIcon,
-    ArrowBack as ArrowBackIcon,
-    Assignment as AssignmentIcon
 } from '@mui/icons-material';
 
 // Custom Components
-import Card from '@/Components/Shared/Card';
 import Button from '@/Components/Shared/Button';
 import Dropdown from '@/Components/Shared/Dropdown';
 import Alert from '@/Components/Shared/Alert';
-import Badge from '@/Components/Shared/Badge';
 import TextArea from '@/Components/Shared/TextArea';
 import Select from '@/Components/Shared/Select';
 import Modal from '@/Components/Shared/Modal';
@@ -317,6 +307,7 @@ const Show = () => {
                         }}
                     >
                         <Box sx={{ p: { xs: 2, md: 3 } }}>
+
                             {flash.success && (
                                 <Alert
                                     severity="success"

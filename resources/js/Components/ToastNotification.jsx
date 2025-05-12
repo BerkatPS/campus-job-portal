@@ -1,25 +1,22 @@
 // resources/js/Components/ToastNotification.jsx
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {alpha, IconButton, Tooltip, useThemeProps} from "@mui/material";
-import {useTheme} from "@mui/material/styles";
 
 export default function ToastNotification() {
     const [toasts, setToasts] = useState([]);
-    const { theme } = useTheme();
 
     useEffect(() => {
         // Define showToast function on window object
-        window.showToast = ({ message, type = 'info' }) => {
+        window.showToast = ({ message, type = 'info', duration = 5000 }) => {
             console.log('🔔 Showing toast:', message);
             const id = Date.now();
 
             setToasts(prev => [...prev, { id, message, type }]);
 
-            // Auto-hide after 5 seconds
+            // Auto-hide after duration (default 5 seconds)
             setTimeout(() => {
                 setToasts(prev => prev.filter(toast => toast.id !== id));
-            }, 5000);
+            }, duration);
         };
 
         return () => {
@@ -29,10 +26,10 @@ export default function ToastNotification() {
 
     const getColor = (type) => {
         switch (type) {
-            case 'error': return '#f44336';
-            case 'success': return '#4caf50';
-            case 'warning': return '#ff9800';
-            default: return '#2196f3';
+            case 'error': return { bg: '#f44336', text: '#ffffff' };
+            case 'success': return { bg: '#4caf50', text: '#ffffff' };
+            case 'warning': return { bg: '#ff9800', text: '#ffffff' };
+            default: return { bg: '#2196f3', text: '#ffffff' };
         }
     };
 
@@ -49,60 +46,85 @@ export default function ToastNotification() {
         <div
             style={{
                 position: 'fixed',
-                top: '20px', // Position from top
-                right: '20px', // Position from right
-                zIndex: 999999, // Ensure it's on top of all UI elements
+                top: '80px', // Increased from 20px to 80px to position below the header
+                right: '20px',
+                zIndex: 10000, // Extremely high z-index to ensure visibility
                 pointerEvents: 'none',
-                width: '100%', // Allow full width responsiveness
-                maxWidth: '400px', // Limit max width to 400px
-                marginTop: '10px', // Space between consecutive notifications
-                marginRight: '20px', // Right margin for spacing
-                overflow: 'visible', // Ensure content is fully visible
+                width: '100%',
+                maxWidth: '400px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: '10px',
             }}
         >
             <AnimatePresence>
-                {toasts.map((toast) => (
-                    <motion.div
-                        key={toast.id}
-                        initial={{opacity: 0, y: -20, scale: 0.8}}
-                        animate={{opacity: 1, y: 0, scale: 1}}
-                        exit={{opacity: 0, y: -20, scale: 0.8}}
-                        transition={{duration: 0.3}}
-                        style={{
-                            backgroundColor: getColor(toast.type), // Set color based on type (info, error, success)
-                            color: 'white',
-                            padding: '16px 24px',
-                            borderRadius: '8px',
-                            boxShadow: '0 4px 12px rgba(0,0,0,0.3)', // Ensure shadow to make it pop
-                            minWidth: '300px', // Minimum width of the toast
-                            maxWidth: '450px', // Maximum width to prevent overflow
-                            marginBottom: '10px', // Space between multiple toasts
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '12px',
-                            pointerEvents: 'auto',
-                            position: 'relative',
-                            overflow: 'visible', // Prevent overflow clipping
-                        }}
-                    >
-                        <span style={{fontSize: '20px'}}>{getIcon(toast.type)}</span>
-                        <div style={{flex: 1}}>{toast.message}</div>
-                        <button
-                            onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                {toasts.map((toast) => {
+                    const colors = getColor(toast.type);
+
+                    return (
+                        <motion.div
+                            key={toast.id}
+                            initial={{ opacity: 0, y: -50, x: 50 }}
+                            animate={{ opacity: 1, y: 0, x: 0 }}
+                            exit={{ opacity: 0, y: -20, x: 50 }}
+                            transition={{ duration: 0.3 }}
                             style={{
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'white',
-                                cursor: 'pointer',
-                                fontSize: '20px',
-                                padding: '4px 8px',
-                                marginLeft: 'auto'
+                                backgroundColor: colors.bg,
+                                color: colors.text,
+                                padding: '16px 20px',
+                                borderRadius: '12px',
+                                boxShadow: '0 5px 15px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05)',
+                                width: 'calc(100% - 20px)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '12px',
+                                pointerEvents: 'auto',
+                                position: 'relative',
+                                fontSize: '16px',
+                                fontWeight: 500,
+                                overflow: 'hidden',
+                                border: '1px solid rgba(255,255,255,0.1)',
                             }}
                         >
-                            ×
-                        </button>
-                    </motion.div>
-                ))}
+                            {/* Notification header line */}
+                            <div
+                                style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    right: 0,
+                                    height: '4px',
+                                    background: 'rgba(255,255,255 ,0.4)'
+                                }}
+                            />
+
+                            <span style={{ fontSize: '22px' }}>{getIcon(toast.type)}</span>
+                            <div style={{ flex: 1, wordBreak: 'break-word' }}>{toast.message}</div>
+                            <button
+                                onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+                                style={{
+                                    background: 'rgba(255,255,255,0.2)',
+                                    border: 'none',
+                                    color: colors.text,
+                                    cursor: 'pointer',
+                                    fontSize: '18px',
+                                    fontWeight: 'bold',
+                                    width: '28px',
+                                    height: '28px',
+                                    borderRadius: '50%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    marginLeft: '8px'
+                                }}
+                            >
+                                ×
+                            </button>
+                        </motion.div>
+                    );
+                })}
             </AnimatePresence>
         </div>
     );

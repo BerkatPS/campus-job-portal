@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import {
     Container,
@@ -10,7 +10,6 @@ import {
     Divider,
     IconButton,
     InputAdornment,
-    Stack,
     Paper,
     Alert as MuiAlert,
     Snackbar,
@@ -83,18 +82,6 @@ function CustomTextField({ label, value, onChange, error, helperText, type = "te
             required={required}
             disabled={disabled}
             variant="outlined"
-            InputProps={{
-                startAdornment: startAdornment ? (
-                    <InputAdornment position="start">
-                        {startAdornment}
-                    </InputAdornment>
-                ) : null,
-                endAdornment: endAdornment ? (
-                    <InputAdornment position="end">
-                        {endAdornment}
-                    </InputAdornment>
-                ) : null,
-            }}
             sx={{
                 mb: 2,
                 '& .MuiInputBase-root': {
@@ -173,7 +160,7 @@ export default function Edit({ user, profile }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     // Initialize form with Inertia's useForm
-    const { data, setData, errors, setError, clearErrors, reset, post, processing } = useForm({
+    const { data, setData, errors, setError, clearErrors, post, processing } = useForm({
         name: user.name || '',
         email: user.email || '',
         nim: user.nim || '',
@@ -330,7 +317,11 @@ export default function Edit({ user, profile }) {
         e.preventDefault();
 
         if (!resumeFile) {
-            showNotification('Pilih file resume terlebih dahulu.', 'warning');
+            window.showToast({
+                message: 'Pilih file resume terlebih dahulu',
+                type: 'warning',
+                duration: 3000
+            })
             return;
         }
 
@@ -349,7 +340,10 @@ export default function Edit({ user, profile }) {
             .then(response => {
                 console.log('Upload successful:', response.data);
                 setResumeFile(null);
-                showNotification('Resume berhasil diupload!', 'success');
+                window.showToast({
+                    message: 'Gagal menandai notifikasi sebagai dibaca',
+                    type: 'error'
+                })
 
                 // Reload page after a delay
                 setTimeout(() => {
@@ -359,12 +353,10 @@ export default function Edit({ user, profile }) {
             .catch(error => {
                 console.error('Upload error:', error.response?.data);
 
-                let errorMessage = 'Terjadi kesalahan saat mengupload resume.';
-                if (error.response?.data?.errors?.resume) {
-                    errorMessage = error.response.data.errors.resume;
-                }
-
-                showNotification(errorMessage, 'error');
+                window.showToast({
+                    message: 'Gagal menandai notifikasi sebagai dibaca',
+                    type: 'error'
+                })
             });
 
         setSweetAlert({
@@ -425,14 +417,22 @@ export default function Edit({ user, profile }) {
         if (file) {
             // Validate file size (max 2MB)
             if (file.size > 2 * 1024 * 1024) {
-                showNotification('Ukuran foto terlalu besar! Maksimal 2MB.', 'error');
+                window.showToast({
+                    message: 'Ukuran foto terlalu besar! Maksimal 2MB',
+                    type: 'error',
+                    duration: 3000
+                })
                 return;
             }
 
             // Validate file type
             const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
             if (!allowedTypes.includes(file.type)) {
-                showNotification('Format file tidak didukung! Gunakan JPG, PNG, atau GIF.', 'error');
+                window.showToast({
+                    message: 'Format file tidak didukung! Gunakan JPG, PNG, atau GIF',
+                    type: 'error',
+                    duration: 3000
+                })
                 return;
             }
 
@@ -444,20 +444,16 @@ export default function Edit({ user, profile }) {
             reader.readAsDataURL(file);
 
             setData('avatar', file);
-            showNotification('Foto profil dipilih. Klik Simpan Perubahan untuk menyimpan.', 'info');
+            window.showToast({
+                message: 'Foto profil dipilih. Klik Simpan Perubahan untuk menyimpan.',
+                type: 'info',
+                duration: 3000
+            })
         }
     };
 
     const handleCloseNotification = () => {
         setNotification({ ...notification, open: false });
-    };
-
-    const showNotification = (message, severity = 'success') => {
-        setNotification({
-            open: true,
-            message,
-            severity
-        });
     };
 
     return (

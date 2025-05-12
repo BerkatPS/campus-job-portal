@@ -7,21 +7,16 @@ import {
     Box,
     Container,
     IconButton,
-    Menu,
-    MenuItem,
     Divider,
     Drawer,
     useScrollTrigger,
     Slide,
-    Fade,
     Avatar,
-    Badge as MuiBadge,
     List,
     ListItem,
     ListItemIcon,
     ListItemText,
     Stack,
-    Chip,
     Tooltip,
     alpha,
     useTheme,
@@ -37,16 +32,14 @@ import {
     Logout as LogoutIcon,
     Home as HomeIcon,
     Business as BusinessIcon,
-    Assignment as AssignmentIcon,
     Info as InfoIcon,
     ContactPhone as ContactPhoneIcon,
-    Search as SearchIcon,
     Close as CloseIcon,
     Forum as ForumIcon,
     Notifications as NotificationsIcon
 } from '@mui/icons-material';
 import Footer from './Footer';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import Button from '../Shared/Button';
 import Card from '../Shared/Card';
 import CustomBadge from '../Shared/Badge';
@@ -68,10 +61,9 @@ function HideOnScroll(props) {
     );
 }
 
-const PublicLayout = ({ children, title }) => {
+const PublicLayout = ({ children }) => {
     const { auth } = usePage().props;
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const isSmall = useMediaQuery(theme.breakpoints.down('sm'));
     const { post } = useForm();
 
@@ -119,10 +111,6 @@ const PublicLayout = ({ children, title }) => {
 
     const handleProfileMenuOpen = (event) => {
         setProfileMenuAnchor(event.currentTarget);
-    };
-
-    const handleProfileMenuClose = () => {
-        setProfileMenuAnchor(null);
     };
 
     const toggleMobileMenu = () => {
@@ -257,9 +245,9 @@ const PublicLayout = ({ children, title }) => {
                                     {/*    <IconButton*/}
                                     {/*        onClick={() => setSearchOpen(true)}*/}
                                     {/*        sx={{*/}
-                                    {/*            color: theme.palette.text.primary,*/}
+                                    {/*            color: Theme.palette.text.primary,*/}
                                     {/*            '&:hover': {*/}
-                                    {/*                bgcolor: alpha(theme.palette.primary.main, 0.1)*/}
+                                    {/*                bgcolor: alpha(Theme.palette.primary.main, 0.1)*/}
                                     {/*            }*/}
                                     {/*        }}*/}
                                     {/*        className="rounded-xl"*/}
@@ -442,15 +430,7 @@ const PublicLayout = ({ children, title }) => {
                     anchor="right"
                     open={mobileMenuOpen}
                     onClose={toggleMobileMenu}
-                    PaperProps={{
-                        sx: {
-                            width: '85%',
-                            maxWidth: 320,
-                            borderTopLeftRadius: 16,
-                            borderBottomLeftRadius: 16,
-                            p: 0
-                        }
-                    }}
+
                 >
                     <motion.div
                         initial={{ x: 100, opacity: 0 }}
@@ -581,12 +561,6 @@ const PublicLayout = ({ children, title }) => {
                                                     )}
                                                 </Box>
                                             }
-                                            primaryTypographyProps={{
-                                                fontWeight: route().current(item.route) ? 600 : 400,
-                                                color: route().current(item.route) ?
-                                                    theme.palette.primary.main :
-                                                    theme.palette.text.primary
-                                            }}
                                         />
                                     </ListItem>
                                 </Link>

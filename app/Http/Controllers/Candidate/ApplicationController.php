@@ -658,13 +658,14 @@ class ApplicationController extends Controller
                 'status' => 'confirmed',
             ]);
 
-            // Add notification to manager (optional)
+            // Add notification to manager
             if ($event->job && $event->job->company) {
                 if (method_exists($event->job->company, 'managers') && $event->job->company->managers) {
                     foreach ($event->job->company->managers as $manager) {
-                        if (class_exists('\\App\\Notifications\\EventConfirmed')) {
-                            $manager->notify(new \App\Notifications\EventConfirmed($event, $user));
-                        }
+                        $manager->notify(new \App\Notifications\EventConfirmed($event, [
+                            'candidate_id' => $user->id,
+                            'candidate_name' => $user->name,
+                        ]));
                     }
                 }
             }
@@ -675,6 +676,7 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'Failed to confirm attendance. Please try again.');
         }
     }
+
 
     /**
      * Cancel attendance to an event.
@@ -698,13 +700,15 @@ class ApplicationController extends Controller
                     : 'Canceled by candidate'
             ]);
 
-            // Add notification to manager (optional)
+            // Add notification to manager
             if ($event->job && $event->job->company) {
                 if (method_exists($event->job->company, 'managers') && $event->job->company->managers) {
                     foreach ($event->job->company->managers as $manager) {
-                        if (class_exists('\\App\\Notifications\\EventCanceled')) {
-                            $manager->notify(new \App\Notifications\EventCanceled($event, $user, $reason));
-                        }
+                        $manager->notify(new \App\Notifications\EventCancelled($event, [
+                            'candidate_id' => $user->id,
+                            'candidate_name' => $user->name,
+                            'reason' => $reason,
+                        ]));
                     }
                 }
             }
@@ -715,6 +719,7 @@ class ApplicationController extends Controller
             return redirect()->back()->with('error', 'Failed to cancel event. Please try again.');
         }
     }
+
 
     /**
      * Add a note to an event.
@@ -790,6 +795,27 @@ class ApplicationController extends Controller
                     'notes' => 'Candidate withdrew application',
                 ]);
             }
+
+            if ($application->currentStage) {
+                $application->stageHistory()->create([
+                    'hiring_stage_id' => $application->current_stage_id,
+                    'user_id' => Auth::id(),
+                    'notes' => 'Candidate withdrew application',
+                ]);
+            }
+
+            // Notify company managers about withdrawal
+            if ($application->job && $application->job->company &&
+                method_exists($application->job->company, 'managers') &&
+                $application->job->company->managers) {
+                foreach ($application->job->company->managers as $manager) {
+                    $manager->notify(new \App\Notifications\ApplicationWithdrawn($application, [
+                        'candidate_id' => Auth::id(),
+                        'candidate_name' => Auth::user()->name,
+                    ]));
+                }
+            }
+
 
             return redirect()->route('candidate.applications.index')
                 ->with('success', 'Your application has been successfully withdrawn.');

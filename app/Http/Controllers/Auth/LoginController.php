@@ -40,7 +40,7 @@ class LoginController extends Controller
 
         $credentials = $request->only('email', 'password');
 
-        if (Auth::attempt($credentials)) {
+        if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
             return redirect()->intended(route('dashboard'));
         }
@@ -49,7 +49,6 @@ class LoginController extends Controller
             'email' => 'Email atau password salah.',
         ]);
     }
-
 
     /**
      * Handle a registration request.
@@ -73,28 +72,32 @@ class LoginController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        // Get the candidate role
-        $role = Role::where('slug', 'candidate')->first();
-        if (!$role) {
-            return back()->withErrors(['message' => 'Terjadi kesalahan sistem.']);
+        try {
+            // Get the candidate role
+            $role = Role::where('slug', 'candidate')->first();
+            if (!$role) {
+                return back()->withErrors(['message' => 'Terjadi kesalahan sistem.']);
+            }
+
+            // Create user
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'nim' => $request->nim,
+                'password' => Hash::make($request->password),
+                'role_id' => $role->id,
+            ]);
+
+            // Create empty candidate profile
+            $user->candidateProfile()->create([]);
+
+            // Log the user in
+            Auth::login($user);
+
+            return redirect()->route('dashboard')->with('success', 'Pendaftaran berhasil!');
+        } catch (\Exception $e) {
+            return back()->withErrors(['message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
-
-        // Create user
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'nim' => $request->nim,
-            'password' => Hash::make($request->password),
-            'role_id' => $role->id,
-        ]);
-
-        // Create empty candidate profile
-        $user->candidateProfile()->create([]);
-
-        // Log the user in
-        Auth::login($user);
-
-        return redirect()->route('dashboard')->with('success', 'Pendaftaran berhasil!');
     }
 
     /**
@@ -107,6 +110,6 @@ class LoginController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login');
+        return redirect()->route('login')->with('status', 'Anda telah berhasil keluar.');
     }
 }

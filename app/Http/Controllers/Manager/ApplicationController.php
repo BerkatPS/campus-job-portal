@@ -356,6 +356,11 @@ class ApplicationController extends Controller
             'is_favorite' => !$application->is_favorite,
         ]);
 
+        $application->user->notify(new \App\Notifications\ApplicationFavorited($application, [
+            'updated_by' => Auth::id(),
+            'updated_by_name' => Auth::user()->name,
+        ]));
+
         return back()->with('success', 'Status favorit berhasil diperbarui.');
     }
 
@@ -371,6 +376,11 @@ class ApplicationController extends Controller
         $application->update([
             'notes' => $request->notes,
         ]);
+
+        $application->user->notify(new \App\Notifications\ApplicationNoteAdded($application, [
+            'added_by' => Auth::id(),
+            'added_by_name' => Auth::user()->name,
+        ]));
 
         return back()->with('success', 'Catatan berhasil diperbarui.');
     }

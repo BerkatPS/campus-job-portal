@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Box, Container, Typography, TextField, InputAdornment, IconButton, Fade } from '@mui/material';
+import { Box, Container, Typography, TextField, InputAdornment, IconButton } from '@mui/material';
 import { Lock as LockIcon, Email as EmailIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Button from '@/Components/Shared/Button';
 import Card from '@/Components/Shared/Card';
-import Alert from '@/Components/Shared/Alert';
 import { useTheme } from '@mui/material/styles';
-import MuiThemeProvider from "@/theme/MuiThemeProvider.jsx";
+import MuiThemeProvider from "@/Theme/MuiThemeProvider.jsx";
 import SweetAlert from '@/Components/Shared/SweetAlert'; // Import SweetAlert component
 
 export default function Register() {
@@ -214,13 +213,6 @@ export default function Register() {
                                                 required
                                                 error={!!errors.name}
                                                 helperText={errors.name}
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <LockIcon color="action" />
-                                                        </InputAdornment>
-                                                    )
-                                                }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         borderRadius: '0.75rem',
@@ -247,13 +239,7 @@ export default function Register() {
                                                 required
                                                 error={!!errors.email}
                                                 helperText={errors.email}
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <EmailIcon color="action" />
-                                                        </InputAdornment>
-                                                    )
-                                                }}
+
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         borderRadius: '0.75rem',
@@ -305,23 +291,6 @@ export default function Register() {
                                                 required
                                                 error={!!errors.password}
                                                 helperText={errors.password || "Minimal 8 karakter"}
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <LockIcon color="action" />
-                                                        </InputAdornment>
-                                                    ),
-                                                    endAdornment: (
-                                                        <InputAdornment position="end">
-                                                            <IconButton
-                                                                onClick={() => setShowPassword(!showPassword)}
-                                                                edge="end"
-                                                            >
-                                                                {showPassword ? <VisibilityOff /> : <Visibility />}
-                                                            </IconButton>
-                                                        </InputAdornment>
-                                                    )
-                                                }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         borderRadius: '0.75rem',
@@ -348,13 +317,6 @@ export default function Register() {
                                                 required
                                                 error={!!errors.password_confirmation}
                                                 helperText={errors.password_confirmation}
-                                                InputProps={{
-                                                    startAdornment: (
-                                                        <InputAdornment position="start">
-                                                            <LockIcon color="action" />
-                                                        </InputAdornment>
-                                                    ),
-                                                }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
                                                         borderRadius: '0.75rem',

@@ -1,0 +1,80 @@
+services:
+  # PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job_portal_app
+    restart: unless-stopped
+    volumes:
+      - ./:/var/www
+      - ./storage:/var/www/storage
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - job_portal_network
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.5'
+#          memory: 512M
+#        reservations:
+#          cpus: '0.2'
+#          memory: 256M
+
+  # Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: job_portal_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - job_portal_network
+    depends_on:
+      - app
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.5'
+#          memory: 512M
+#        reservations:
+#          cpus: '0.2'
+#          memory: 256M
+
+  # MySQL Service
+  db:
+    image: mysql:8.0
+    container_name: job_portal_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: password  # Ini untuk root
+      MYSQL_DATABASE: campus_job_portal
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - job_portal_network
+    ports:
+      - "3306:3306"
+#    deploy:
+#      resources:
+#        limits:
+#          cpus: '0.5'
+#          memory: 512M
+#        reservations:
+#          cpus: '0.2'
+#          memory: 256M
+
+# Networks
+networks:
+  job_portal_network:
+    driver: bridge
+
+# Volumes
+volumes:
+  dbdata:
+    driver: local

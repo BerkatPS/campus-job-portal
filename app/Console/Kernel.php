@@ -20,6 +20,29 @@ class Kernel extends ConsoleKernel
 
         // Generate weekly reports for admins
         $schedule->command('reports:generate-weekly')->weekly()->mondays()->at('9:00');
+
+        $schedule->command('notifications:job-recommendations')
+            ->twiceWeekly(1, 4, '9:00');
+
+        // Kirim pengingat kelengkapan profil sekali seminggu (Selasa)
+        $schedule->command('notifications:profile-completion-reminders')
+            ->weekly()->tuesdays()->at('10:00');
+
+        // Kirim pengingat interview setiap jam
+        $schedule->command('notifications:interview-reminders')
+            ->hourly();
+
+        // Kirim pengingat konfirmasi kehadiran setiap 4 jam
+        $schedule->command('notifications:event-response-reminders')
+            ->everyThreeMinutes();
+
+        // Hapus notifikasi lama sekali seminggu
+        $schedule->command('notifications:clean')
+            ->weekly();
+
+        // Update status lowongan yang sudah melewati batas waktu (daily)
+        $schedule->command('jobs:update-expired-status')
+            ->dailyAt('00:01');
     }
 
     /**

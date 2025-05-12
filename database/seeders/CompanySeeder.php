@@ -17,50 +17,50 @@ class CompanySeeder extends Seeder
     {
         // Get manager role ID
         $managerRole = Role::where('slug', 'manager')->first();
-        
+
         if (!$managerRole) {
-            $this->command->error('Manager role not found. Please run RoleSeeder first.');
+            $this->command->error('Peran manager tidak ditemukan. Harap jalankan RoleSeeder terlebih dahulu.');
             return;
         }
 
         // Get manager users
         $managerUsers = User::where('role_id', $managerRole->id)->get();
-        
+
         if ($managerUsers->isEmpty()) {
-            $this->command->error('No manager users found. Please run UserSeeder first.');
+            $this->command->error('Tidak ada pengguna manager yang ditemukan. Harap jalankan UserSeeder terlebih dahulu.');
             return;
         }
 
         // Sample companies
         $companies = [
             [
-                'name' => 'Tech Innovations Inc.',
-                'description' => 'A leading technology company specializing in innovative solutions.',
-                'website' => 'https://techinnovations.example.com',
-                'address' => '123 Tech Boulevard, Silicon Valley',
-                'phone' => '555-123-4567',
-                'email' => 'info@techinnovations.example.com',
-                'industry' => 'Technology',
+                'name' => 'Inovasi Teknologi Indonesia',
+                'description' => 'Perusahaan teknologi terkemuka yang mengkhususkan diri dalam solusi inovatif.',
+                'website' => 'https://inovasitech.co.id',
+                'address' => 'Jl. Teknologi No. 123, Jakarta Selatan',
+                'phone' => '021-5551234',
+                'email' => 'info@inovasitech.co.id',
+                'industry' => 'Teknologi',
                 'is_active' => true,
             ],
             [
-                'name' => 'Global Finance Group',
-                'description' => 'A financial services company providing banking and investment solutions.',
-                'website' => 'https://globalfinance.example.com',
-                'address' => '456 Finance Street, New York',
-                'phone' => '555-987-6543',
-                'email' => 'info@globalfinance.example.com',
-                'industry' => 'Finance',
+                'name' => 'Grup Finansial Global',
+                'description' => 'Perusahaan jasa keuangan yang menyediakan solusi perbankan dan investasi.',
+                'website' => 'https://globalfinansial.co.id',
+                'address' => 'Jl. Sudirman No. 456, Jakarta Pusat',
+                'phone' => '021-5559876',
+                'email' => 'info@globalfinansial.co.id',
+                'industry' => 'Keuangan',
                 'is_active' => true,
             ],
             [
-                'name' => 'Creative Designs Ltd.',
-                'description' => 'A creative agency specializing in graphic design and branding.',
-                'website' => 'https://creativedesigns.example.com',
-                'address' => '789 Creative Avenue, London',
-                'phone' => '555-456-7890',
-                'email' => 'info@creativedesigns.example.com',
-                'industry' => 'Design',
+                'name' => 'Kreasi Desain Indonesia',
+                'description' => 'Agensi kreatif yang mengkhususkan diri dalam desain grafis dan branding.',
+                'website' => 'https://kreasidesain.co.id',
+                'address' => 'Jl. Kreatif No. 789, Bandung',
+                'phone' => '022-5554567',
+                'email' => 'info@kreasidesain.co.id',
+                'industry' => 'Desain',
                 'is_active' => true,
             ],
         ];

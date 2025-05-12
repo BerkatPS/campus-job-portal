@@ -2,7 +2,6 @@ import React from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-// Import the theme from the Theme.js file
 import theme from './Theme';
 
 const muiTheme = createTheme({
