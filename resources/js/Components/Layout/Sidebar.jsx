@@ -7,7 +7,6 @@ import {
     ListItem,
     ListItemIcon,
     ListItemText,
-    Collapse,
     Divider,
     Typography,
     Avatar,
@@ -16,12 +15,8 @@ import {
     useTheme,
     useMediaQuery,
     alpha,
-    ButtonBase,
     InputBase,
-    Toolbar,
     Paper,
-    Fade,
-    Zoom,
     Chip
 } from '@mui/material';
 import {
@@ -32,30 +27,15 @@ import {
     Person as PersonIcon,
     Settings as SettingsIcon,
     Event as EventIcon,
-    Description as DescriptionIcon,
-    ExpandLess as ExpandLessIcon,
-    ExpandMore as ExpandMoreIcon,
     ChevronRight as ChevronRightIcon,
     Search as SearchIcon,
     Logout as LogoutIcon,
     MenuOpen as MenuOpenIcon,
-    Article as ArticleIcon,
     Folder as FolderIcon,
-    VerifiedUser as VerifiedUserIcon,
-    Build as BuildIcon,
-    ViewKanban as ViewKanbanIcon,
-    Analytics as AnalyticsIcon,
-    CalendarViewMonth as CalendarViewMonthIcon,
     SupervisedUserCircle as SupervisedUserCircleIcon,
-    ContactSupport as ContactSupportIcon,
     Assignment as AssignmentIcon,
-    Home as HomeIcon,
     Forum as ForumIcon,
-    Menu as MenuIcon,
-    KeyboardArrowRight as KeyboardArrowRightIcon,
     ArrowForwardIos as ArrowForwardIosIcon,
-    Apps as AppsIcon,
-    FilterList as FilterListIcon,
     FiberManualRecord as FiberManualRecordIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -95,8 +75,6 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
     const [searchTerm, setSearchTerm] = useState('');
     const [hoveredItem, setHoveredItem] = useState(null);
 
-    // Menghitung lebar drawer berdasarkan status collapse
-    const drawerWidth = collapsed ? 80 : 280;
 
     // Toggle submenu buka/tutup
     const toggleMenu = (menu) => {
@@ -104,11 +82,6 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
             ...prev,
             [menu]: !prev[menu]
         }));
-    };
-
-    // Menangani pencarian
-    const handleSearch = (values) => {
-        setSearchTerm(values.keyword || '');
     };
 
     // Tutup semua menu yang terbuka ketika drawer diciutkan
@@ -277,6 +250,11 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 route: 'candidate.events.index',
             },
             {
+                text: 'Portofolio',  // Menu baru
+                icon: <FolderIcon />, // Ikon untuk portofolio
+                // route: 'candidate.portfolio.index'  // Pastikan rute ini ada di backend
+            },
+            {
                 text: 'Profil',
                 icon: <PersonIcon />,
                 route: 'candidate.profile.index'
@@ -285,7 +263,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 text: 'Forum',
                 icon: <ForumIcon />,
                 route: 'public.forum.index'
-            }
+            },
         );
     }
 
@@ -405,11 +383,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                 <>
                                     <ListItemText
                                         primary={item.text}
-                                        primaryTypographyProps={{
-                                            fontWeight: isActive ? 700 : 500,
-                                            fontSize: '0.95rem',
-                                            transition: 'font-weight 0.2s ease'
-                                        }}
+
                                     />
 
                                     {item.badge && (
@@ -503,10 +477,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
 
                                                             <ListItemText
                                                                 primary={subItem.text}
-                                                                primaryTypographyProps={{
-                                                                    fontSize: '0.9rem',
-                                                                    fontWeight: isSubItemActive ? 600 : 400
-                                                                }}
+
                                                             />
 
                                                             {subItem.badge && (
@@ -600,7 +571,6 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                 title={collapsed ? item.text : ""}
                                 placement="right"
                                 arrow
-                                TransitionComponent={Zoom}
                             >
                                 <ListItemIcon
                                     sx={{
@@ -618,11 +588,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                 <>
                                     <ListItemText
                                         primary={item.text}
-                                        primaryTypographyProps={{
-                                            fontWeight: isActive ? 700 : 500,
-                                            fontSize: '0.95rem',
-                                            transition: 'font-weight 0.2s ease'
-                                        }}
+
                                     />
 
                                     {item.badge && (
@@ -1084,23 +1050,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
             variant={isMobile ? 'temporary' : 'permanent'}
             open={isOpen}
             onClose={onClose}
-            PaperProps={{
-                sx: {
-                    width: drawerWidth,
-                    transition: theme.transitions.create('width', {
-                        easing: theme.transitions.easing.easeInOut,
-                        duration: theme.transitions.duration.standard,
-                    }),
-                    overflowX: 'hidden',
-                    bgcolor: 'background.paper',
-                    borderRight: '1px solid',
-                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-                    boxShadow: mode === 'dark'
-                        ? '0 0 20px rgba(0, 0, 0, 0.3)'
-                        : '0 0 20px rgba(0, 0, 0, 0.05)',
-                    zIndex: theme.zIndex.appBar + 1,
-                }
-            }}
+
         >
             {drawerContent}
         </Drawer>
