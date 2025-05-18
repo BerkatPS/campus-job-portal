@@ -29,9 +29,9 @@ docker-compose up -d --build
 
 # 3. PERSIAPAN ENVIRONMENT
 echo "⚙️ Menyiapkan file environment..."
-# Membuat .env file di dalam container
-cat .env | docker-compose exec -T app bash -c 'cat > /var/www/.env'
-docker-compose exec -T app php -r "file_exists('/var/www/.env') ? echo 'File .env berhasil dibuat di container ✅' : echo 'Gagal membuat file .env ❌';"
+# Membuat .env file di dalam container menggunakan sh (Alpine tidak memiliki bash)
+cat .env | docker-compose exec -T app sh -c 'cat > /var/www/.env'
+docker-compose exec -T app php -r "file_exists('/var/www/.env') ? print('File .env berhasil dibuat di container ✅' . PHP_EOL) : print('Gagal membuat file .env ❌' . PHP_EOL);"
 
 # 4. INSTALASI DEPENDENSI BACKEND
 echo "📦 Menginstall dependensi PHP..."

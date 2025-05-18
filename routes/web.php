@@ -234,28 +234,7 @@ Route::middleware('auth')->group(function () {
             Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
 
             // Messages system for manager
-            Route::prefix('messages')->name('messages.')->group(function () {
-                Route::get('/', [App\Http\Controllers\Manager\MessageController::class, 'index'])->name('index');
-                Route::get('create', [App\Http\Controllers\Manager\MessageController::class, 'create'])->name('create');
-                Route::post('/', [App\Http\Controllers\Manager\MessageController::class, 'store'])->name('store');
-                Route::get('{message}', [App\Http\Controllers\Manager\MessageController::class, 'show'])->name('show');
-                Route::delete('{message}', [App\Http\Controllers\Manager\MessageController::class, 'destroy'])->name('destroy');
-                Route::post('upload-attachment', [App\Http\Controllers\Manager\MessageController::class, 'uploadAttachment'])->name('upload-attachment');
-                Route::post('reply/{message}', [App\Http\Controllers\Manager\MessageController::class, 'reply'])->name('reply');
 
-                // Navbar indicator routes
-                Route::get('recent', [App\Http\Controllers\Manager\MessageController::class, 'recent'])->name('recent');
-                Route::post('mark-read/{message}', [App\Http\Controllers\Manager\MessageController::class, 'markAsRead'])->name('mark-read');
-
-                // Messages from application panel
-                Route::get('create-from-application/{application}', [App\Http\Controllers\Manager\MessageController::class, 'createFromApplication'])->name('create-from-application');
-                Route::post('store-from-application', [App\Http\Controllers\Manager\MessageController::class, 'storeFromApplication'])->name('store-from-application');
-
-                // Message analytics and metrics
-                Route::get('analytics', [App\Http\Controllers\Manager\MessageAnalyticsController::class, 'index'])->name('analytics');
-                Route::get('response-times', [App\Http\Controllers\Manager\MessageAnalyticsController::class, 'responseTimeMetrics'])->name('response-times');
-                Route::get('application-analytics/{application}', [App\Http\Controllers\Manager\MessageAnalyticsController::class, 'applicationAnalytics'])->name('application-analytics');
-            });
 
             // Notifications
             Route::get('/notifications', [ManagerNotificationController::class, 'index'])->name('notifications.index');
@@ -291,16 +270,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/notifications/latest', [CandidateNotificationController::class, 'getLatest'])->name('notifications.latest');
         Route::post('/notifications/{id}/read', [CandidateNotificationController::class, 'markAsRead'])->name('notifications.read');
         Route::post('/notifications/mark-all-as-read', [CandidateNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
-
-        // Messages system for candidate
-        Route::get('/messages', [App\Http\Controllers\Candidate\MessageController::class, 'index'])->name('messages.index');
-        Route::get('/messages/create', [App\Http\Controllers\Candidate\MessageController::class, 'create'])->name('messages.create');
-        Route::post('/messages', [App\Http\Controllers\Candidate\MessageController::class, 'store'])->name('messages.store');
-        Route::get('/messages/{conversation}', [App\Http\Controllers\Candidate\MessageController::class, 'show'])->name('messages.show');
-        Route::post('/messages/{conversation}/reply', [App\Http\Controllers\Candidate\MessageController::class, 'reply'])->name('messages.reply');
-        Route::put('/messages/{conversation}/archive', [App\Http\Controllers\Candidate\MessageController::class, 'toggleArchive'])->name('messages.toggle-archive');
-        Route::get('/messages/attachment/{message}', [App\Http\Controllers\Candidate\MessageController::class, 'downloadAttachment'])->name('messages.download-attachment');
-        Route::get('/messages/managers-for-job', [App\Http\Controllers\Candidate\MessageController::class, 'getManagersForJob'])->name('messages.managers-for-job');
 
         // Applications
         Route::get('/applications', [CandidateApplicationController::class, 'index'])->name('applications.index');
