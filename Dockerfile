@@ -28,7 +28,8 @@ COPY package.json package-lock.json ./
 
 # Install required NPM packages before copying the app code
 RUN npm install
-RUN npm install @nivo/core @nivo/line @nivo/bar
+# Install all Nivo chart packages to prevent any missing dependencies
+RUN npm install @nivo/core @nivo/line @nivo/bar @nivo/pie @nivo/scatterplot @nivo/radar @nivo/heatmap @nivo/calendar @nivo/network
 
 # Copy composer files
 COPY composer.json composer.lock ./
