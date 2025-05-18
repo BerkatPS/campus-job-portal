@@ -20,12 +20,22 @@ if [ ! -f .env ]; then
     echo "⚠️ Pastikan mengubah konfigurasi di file .env sesuai dengan environment produksi"
 fi
 
+# Perbarui file .env dengan konfigurasi database yang benar
+echo "⚙️ Memperbarui konfigurasi database di .env..."
+sed -i.bak 's/DB_HOST=127.0.0.1/DB_HOST=db/g' .env
+sed -i.bak 's/DB_PASSWORD=/DB_PASSWORD=password/g' .env
+echo "✅ Konfigurasi database telah diperbarui"
+
 # 2. PERSIAPAN CONTAINER
 echo "🔄 Mendownload/memperbarui image terbaru..."
 docker-compose pull
 
 echo "🏗️ Membangun dan menjalankan container..."
 docker-compose up -d --build
+
+# Tunggu database siap menerima koneksi
+echo "⏳ Menunggu database siap..."
+sleep 10
 
 # 3. PERSIAPAN ENVIRONMENT
 echo "⚙️ Menyiapkan file environment..."

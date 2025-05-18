@@ -22,7 +22,7 @@ services:
 
   # Nginx Service
   webserver:
-    image: nginx:alpine
+    image: nginx
     container_name: job_portal_nginx
     restart: unless-stopped
     ports:
