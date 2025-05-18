@@ -26,7 +26,7 @@ class VerifyNIM
 
             if (!$this->verificationService->verifyNIM($nim)) {
                 return response()->json([
-                    'error' => 'Invalid NIM. Only students from this campus can register.',
+                    'error' => 'Nim Tidak Valid',
                     'field' => 'nim'
                 ], 422);
             }

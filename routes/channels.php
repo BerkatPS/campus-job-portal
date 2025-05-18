@@ -18,13 +18,31 @@ use Illuminate\Support\Facades\Config;
 
 // User-specific notification channel
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
+    // Log detailed authorization information for debugging
+    \Log::debug("Channel auth request for App.Models.User.{$id}");
+    \Log::debug("Current user: {$user->id}, Requested channel: {$id}");
+    \Log::debug("Request data: " . json_encode(request()->all()));
+    
+    // Always return true to ensure notifications work during development
     return (int) $user->id === (int) $id;
 });
 
+// For manager message notifications
+Broadcast::channel('manager.messages.{id}', function ($user, $id) {
+    \Log::debug("Manager messages channel auth request for {$id} from user {$user->id}");
+    return (int) $user->id === (int) $id;
+});
 
+// For candidate message notifications
+Broadcast::channel('candidate.messages.{id}', function ($user, $id) {
+    \Log::debug("Candidate messages channel auth request for {$id} from user {$user->id}");
+    return (int) $user->id === (int) $id;
+});
 
-
-
+// User private channel for messages
+Broadcast::channel('user.{userId}', function ($user, $userId) {
+    return (int) $user->id === (int) $userId;
+});
 
 // Company notifications channel
 Broadcast::channel('company.{companyId}', function ($user, $companyId) {
@@ -44,28 +62,23 @@ Broadcast::channel('company.{companyId}', function ($user, $companyId) {
 // Application notifications channel
 Broadcast::channel('application.{applicationId}', function ($user, $applicationId) {
     $application = JobApplication::find($applicationId);
-
+    
     if (!$application) {
         return false;
     }
-
-    // Admins can listen to all application channels
-    if ($user->isAdmin()) {
+    
+    // Allow the candidate who applied to listen
+    if ($user->id === $application->user_id) {
         return true;
     }
-
-    // Managers can only listen to applications for their companies
+    
+    // Allow managers of the company to listen
     if ($user->isManager()) {
-        $companyIds = $user->managedCompanies()->pluck('companies.id')->toArray();
-        return $application->job && in_array($application->job->company_id, $companyIds);
+        return $user->managedCompanies()->where('companies.id', $application->job->company_id)->exists();
     }
-
-    // Candidates can only listen to their own applications
-    if ($user->isCandidate()) {
-        return $application->user_id === $user->id;
-    }
-
-    return false;
+    
+    // Allow admins to listen to all applications
+    return $user->isAdmin();
 });
 
 // Event notifications channel

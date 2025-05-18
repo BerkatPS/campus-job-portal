@@ -153,6 +153,14 @@ const Layout = ({ children }) => {
 
             <LoadingBackdrop open={loading} />
 
+            {/* Toast notification at app root level */}
+            <ToastNotification />
+            
+            {/* Notification listener outside of scrollable area */}
+            {auth?.user?.id && (
+                <NotificationListener userId={auth.user.id} />
+            )}
+
             <Header
                 toggleSidebar={handleSidebarToggle}
                 onThemeToggle={toggleThemeMode}
@@ -202,16 +210,8 @@ const Layout = ({ children }) => {
                     }}
                     className="custom-scrollbar"
                 >
-
-
                     {/* Main content without any wrapping container */}
                     {children}
-
-                    <ToastNotification />
-                    {echoInitialized && auth?.user?.id && (
-                        <NotificationListener userId={auth.user.id} />
-                    )}
-
 
                     <Footer mode={mode} />
                 </Box>
@@ -219,6 +219,6 @@ const Layout = ({ children }) => {
         </Box>
         </MuiThemeProvider>
     );
-};
+}
 
 export default Layout;

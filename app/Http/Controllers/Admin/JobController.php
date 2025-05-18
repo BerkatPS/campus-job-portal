@@ -28,7 +28,14 @@ class JobController extends Controller
 
         // Apply filters
         if ($search) {
-            $query->where('title', 'like', "%{$search}%");
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhereHas('company', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  })
+                  ->orWhere('location', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
         if ($categoryId) {
@@ -43,9 +50,16 @@ class JobController extends Controller
             }
         }
 
+        // Apply sorting
+        $sortBy = $request->query('sort') ?? 'created_at';
+        $sortOrder = $request->query('sort_order') ?? 'desc';
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Set per_page from request or use default
+        $perPage = $request->query('per_page') ?? 10;
+        
         // Get jobs with pagination
-        $jobs = $query->latest()
-            ->paginate(10)
+        $jobs = $query->paginate($perPage)
             ->through(function ($job) {
                 return [
                     'id' => $job->id,
@@ -88,7 +102,11 @@ class JobController extends Controller
                 'category' => $categoryId,
                 'status' => $status
             ],
-            'categories' => $categories
+            'categories' => $categories,
+            'sorting' => [
+                'sort_by' => $sortBy,
+                'sort_order' => $sortOrder
+            ]
         ]);
     }
 

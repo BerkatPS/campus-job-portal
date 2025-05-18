@@ -189,56 +189,56 @@ class NotificationsTableSeeder extends Seeder
             case 'App\Notifications\NewCompanyRegistration':
                 $companyId = $companyIds[array_rand($companyIds)];
                 return [
-                    'title' => 'New Company Registration',
-                    'message' => 'A new company has registered and is awaiting approval.',
+                    'title' => 'Pendaftaran Perusahaan Baru',
+                    'message' => 'Perusahaan baru telah mendaftar dan menunggu persetujuan.',
                     'company_id' => $companyId,
                     'action_url' => "/admin/companies/$companyId",
-                    'action_text' => 'Review Company',
+                    'action_text' => 'Tinjau Perusahaan',
                 ];
 
             case 'App\Notifications\JobApprovalRequest':
                 $jobId = $jobIds[array_rand($jobIds)];
                 return [
-                    'title' => 'Job Approval Request',
-                    'message' => 'A new job posting requires your approval.',
+                    'title' => 'Permintaan Persetujuan Lowongan',
+                    'message' => 'Lowongan kerja baru membutuhkan persetujuan Anda.',
                     'job_id' => $jobId,
                     'action_url' => "/admin/jobs/$jobId",
-                    'action_text' => 'Review Job',
+                    'action_text' => 'Tinjau Lowongan',
                 ];
 
             case 'App\Notifications\PlatformStatistics':
                 return [
-                    'title' => 'Weekly Platform Statistics',
-                    'message' => 'Your weekly platform activity report is ready.',
+                    'title' => 'Statistik Platform Mingguan',
+                    'message' => 'Laporan aktivitas platform mingguan Anda sudah siap.',
                     'stats' => [
                         'new_users' => rand(10, 50),
                         'new_jobs' => rand(5, 20),
                         'new_applications' => rand(20, 100),
                     ],
                     'action_url' => "/admin/dashboard",
-                    'action_text' => 'View Dashboard',
+                    'action_text' => 'Lihat Dashboard',
                 ];
 
             case 'App\Notifications\UserReported':
                 $reportedUserId = $userIds[array_rand($userIds)];
                 return [
-                    'title' => 'User Reported',
-                    'message' => 'A user has been reported for inappropriate behavior.',
+                    'title' => 'Laporan Pengguna',
+                    'message' => 'Seorang pengguna telah dilaporkan karena perilaku yang tidak pantas.',
                     'reported_user_id' => $reportedUserId,
                     'action_url' => "/admin/users/$reportedUserId",
-                    'action_text' => 'Review Report',
+                    'action_text' => 'Tinjau Laporan',
                 ];
 
             case 'App\Notifications\SystemAlert':
-                $alertTypes = ['High Server Load', 'Database Performance Issue', 'Error Rate Spike', 'Security Alert'];
+                $alertTypes = ['Beban Server Tinggi', 'Masalah Performa Database', 'Lonjakan Tingkat Kesalahan', 'Peringatan Keamanan'];
                 $alertType = $alertTypes[array_rand($alertTypes)];
                 return [
-                    'title' => "System Alert: $alertType",
-                    'message' => "The system has detected an issue that requires attention: $alertType.",
+                    'title' => "Peringatan Sistem: $alertType",
+                    'message' => "Sistem telah mendeteksi masalah yang membutuhkan perhatian: $alertType.",
                     'alert_type' => strtolower(str_replace(' ', '_', $alertType)),
                     'alert_level' => ['info', 'warning', 'error'][array_rand([0, 1, 2])],
                     'action_url' => "/admin/system-status",
-                    'action_text' => 'View System Status',
+                    'action_text' => 'Lihat Status Sistem',
                 ];
 
             // Manager notifications
@@ -246,142 +246,150 @@ class NotificationsTableSeeder extends Seeder
                 $jobId = $jobIds[array_rand($jobIds)];
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 return [
-                    'title' => 'New Job Application Received',
-                    'message' => 'A new candidate has applied for your job posting.',
+                    'title' => 'Lamaran Kerja Baru Diterima',
+                    'message' => 'Kandidat baru telah melamar untuk lowongan kerja Anda.',
                     'job_id' => $jobId,
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/manager/applications/$jobApplicationId",
-                    'action_text' => 'Review Application',
+                    'action_text' => 'Tinjau Lamaran',
                 ];
 
             case 'App\Notifications\CandidateWithdrawal':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 return [
-                    'title' => 'Candidate Withdrew Application',
-                    'message' => 'A candidate has withdrawn their application.',
+                    'title' => 'Kandidat Menarik Lamaran',
+                    'message' => 'Seorang kandidat telah menarik lamaran mereka.',
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/manager/applications/$jobApplicationId",
-                    'action_text' => 'View Details',
+                    'action_text' => 'Lihat Detail',
                 ];
 
             case 'App\Notifications\InterviewConfirmed':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 $interviewDate = Carbon::now()->addDays(rand(1, 14))->format('Y-m-d H:i:s');
                 return [
-                    'title' => 'Interview Confirmed',
-                    'message' => 'A candidate has confirmed their interview schedule.',
+                    'title' => 'Wawancara Dikonfirmasi',
+                    'message' => 'Seorang kandidat telah mengkonfirmasi jadwal wawancara mereka.',
                     'interview_date' => $interviewDate,
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/manager/calendar",
-                    'action_text' => 'View Calendar',
+                    'action_text' => 'Lihat Kalender',
                 ];
 
             case 'App\Notifications\InterviewCancelled':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 return [
-                    'title' => 'Interview Cancelled',
-                    'message' => 'A candidate has cancelled their scheduled interview.',
+                    'title' => 'Wawancara Dibatalkan',
+                    'message' => 'Seorang kandidat telah membatalkan wawancara yang dijadwalkan.',
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/manager/applications/$jobApplicationId",
-                    'action_text' => 'Reschedule',
+                    'action_text' => 'Jadwalkan Ulang',
                 ];
 
             case 'App\Notifications\JobApplicationUpdated':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 return [
-                    'title' => 'Application Updated',
-                    'message' => 'A candidate has updated their job application.',
+                    'title' => 'Lamaran Diperbarui',
+                    'message' => 'Seorang kandidat telah memperbarui lamaran kerja mereka.',
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/manager/applications/$jobApplicationId",
-                    'action_text' => 'View Updates',
+                    'action_text' => 'Lihat Pembaruan',
                 ];
 
             case 'App\Notifications\JobPostingExpiringSoon':
                 $jobId = $jobIds[array_rand($jobIds)];
                 $daysRemaining = rand(1, 5);
                 return [
-                    'title' => 'Job Posting Expiring Soon',
-                    'message' => "Your job posting will expire in $daysRemaining days.",
+                    'title' => 'Lowongan Segera Berakhir',
+                    'message' => "Lowongan kerja Anda akan berakhir dalam $daysRemaining hari.",
                     'job_id' => $jobId,
                     'days_remaining' => $daysRemaining,
                     'action_url' => "/manager/jobs/$jobId/edit",
-                    'action_text' => 'Extend Posting',
+                    'action_text' => 'Perpanjang Lowongan',
                 ];
 
             // Candidate notifications
             case 'App\Notifications\ApplicationStatusChanged':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 $statuses = ['pending', 'under_review', 'shortlisted', 'rejected', 'hired'];
+                $statusLabels = [
+                    'pending' => 'Menunggu',
+                    'under_review' => 'Sedang Ditinjau',
+                    'shortlisted' => 'Masuk Seleksi',
+                    'rejected' => 'Ditolak',
+                    'hired' => 'Diterima'
+                ];
                 $status = $statuses[array_rand($statuses)];
+                $statusLabel = $statusLabels[$status];
                 return [
-                    'title' => 'Application Status Updated',
-                    'message' => "Your application status has been changed to " . ucwords(str_replace('_', ' ', $status)),
+                    'title' => 'Status Lamaran Diperbarui',
+                    'message' => "Status lamaran Anda telah diubah menjadi $statusLabel",
                     'status' => $status,
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/candidate/applications/$jobApplicationId",
-                    'action_text' => 'View Application',
+                    'action_text' => 'Lihat Lamaran',
                 ];
 
             case 'App\Notifications\InterviewScheduled':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 $interviewDate = Carbon::now()->addDays(rand(1, 14))->format('Y-m-d H:i:s');
                 return [
-                    'title' => 'Interview Scheduled',
-                    'message' => 'An interview has been scheduled for your job application.',
+                    'title' => 'Wawancara Dijadwalkan',
+                    'message' => 'Wawancara telah dijadwalkan untuk lamaran kerja Anda.',
                     'interview_date' => $interviewDate,
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/candidate/events",
                     'meeting_link' => rand(0, 1) ? 'https://meet.google.com/' . Str::random(10) : null,
-                    'action_text' => 'View Schedule',
+                    'action_text' => 'Lihat Jadwal',
                 ];
 
             case 'App\Notifications\JobOfferSent':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 return [
-                    'title' => 'Job Offer Received',
-                    'message' => 'Congratulations! You have received a job offer.',
+                    'title' => 'Tawaran Pekerjaan Diterima',
+                    'message' => 'Selamat! Anda telah menerima tawaran pekerjaan.',
                     'job_application_id' => $jobApplicationId,
                     'action_url' => "/candidate/applications/$jobApplicationId",
                     'expires_at' => Carbon::now()->addDays(7)->format('Y-m-d'),
-                    'action_text' => 'View Offer',
+                    'action_text' => 'Lihat Tawaran',
                 ];
 
             case 'App\Notifications\NewJobPosted':
                 $jobId = $jobIds[array_rand($jobIds)];
                 $companyId = $companyIds[array_rand($companyIds)];
                 return [
-                    'title' => 'New Job Posted',
-                    'message' => 'A new job matching your profile has been posted.',
+                    'title' => 'Lowongan Baru Diposting',
+                    'message' => 'Lowongan baru yang sesuai dengan profil Anda telah diposting.',
                     'job_id' => $jobId,
                     'company_id' => $companyId,
                     'action_url' => "/candidate/jobs/$jobId",
-                    'action_text' => 'View Job',
+                    'action_text' => 'Lihat Lowongan',
                 ];
 
             case 'App\Notifications\ApplicationStageChanged':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 $hiringStageId = $hiringStageIds[array_rand($hiringStageIds)];
-                $stages = ['Applied', 'Resume Screening', 'Phone Interview', 'Technical Test', 'On-site Interview', 'Final Decision'];
+                $stages = ['Dilamar', 'Peninjauan Resume', 'Wawancara Telepon', 'Tes Teknis', 'Wawancara Tatap Muka', 'Keputusan Akhir'];
                 $stageName = $stages[array_rand($stages)];
                 return [
-                    'title' => 'Application Stage Updated',
-                    'message' => "Your application has moved to the $stageName stage.",
+                    'title' => 'Tahap Lamaran Diperbarui',
+                    'message' => "Lamaran Anda telah berpindah ke tahap $stageName.",
                     'job_application_id' => $jobApplicationId,
                     'hiring_stage_id' => $hiringStageId,
                     'stage_name' => $stageName,
                     'action_url' => "/candidate/applications/$jobApplicationId",
-                    'action_text' => 'View Details',
+                    'action_text' => 'Lihat Detail',
                 ];
 
             case 'App\Notifications\ApplicationViewed':
                 $jobApplicationId = $jobApplicationIds[array_rand($jobApplicationIds)];
                 return [
-                    'title' => 'Application Viewed',
-                    'message' => 'A hiring manager has viewed your application.',
+                    'title' => 'Lamaran Dilihat',
+                    'message' => 'Manager perekrutan telah melihat lamaran Anda.',
                     'job_application_id' => $jobApplicationId,
                     'viewed_at' => Carbon::now()->subHours(rand(1, 24))->format('Y-m-d H:i:s'),
                     'action_url' => "/candidate/applications/$jobApplicationId",
-                    'action_text' => 'View Application',
+                    'action_text' => 'Lihat Lamaran',
                 ];
 
             // Shared notifications
@@ -390,13 +398,13 @@ class NotificationsTableSeeder extends Seeder
                 $forumTopicId = rand(1, 30);
                 $mentionedBy = !empty($userIds) ? $userIds[array_rand($userIds)] : $userId;
                 return [
-                    'title' => 'You were mentioned in a forum post',
-                    'message' => 'Someone mentioned you in a forum discussion.',
+                    'title' => 'Anda disebutkan dalam postingan forum',
+                    'message' => 'Seseorang menyebutkan Anda dalam diskusi forum.',
                     'forum_post_id' => $forumPostId,
                     'forum_topic_id' => $forumTopicId,
                     'mentioned_by' => $mentionedBy,
                     'action_url' => "/forum/topik/$forumTopicId?post=$forumPostId",
-                    'action_text' => 'View Post',
+                    'action_text' => 'Lihat Postingan',
                 ];
 
             case 'App\Notifications\ForumTopicReplied':
@@ -404,39 +412,39 @@ class NotificationsTableSeeder extends Seeder
                 $forumPostId = rand(1, 100);
                 $repliedBy = !empty($userIds) ? $userIds[array_rand($userIds)] : $userId;
                 return [
-                    'title' => 'New Reply to Your Topic',
-                    'message' => 'Someone replied to a forum topic you created or participated in.',
+                    'title' => 'Balasan Baru untuk Topik Anda',
+                    'message' => 'Seseorang membalas topik forum yang Anda buat atau ikuti.',
                     'forum_topic_id' => $forumTopicId,
                     'forum_post_id' => $forumPostId,
                     'replied_by' => $repliedBy,
                     'action_url' => "/forum/topik/$forumTopicId?post=$forumPostId",
-                    'action_text' => 'View Reply',
+                    'action_text' => 'Lihat Balasan',
                 ];
 
             case 'App\Notifications\WelcomeNotification':
                 return [
-                    'title' => 'Welcome to Campus Job Portal',
-                    'message' => 'Thank you for joining our platform. Complete your profile to get started.',
+                    'title' => 'Selamat Datang di Portal Lowongan Kerja Kampus',
+                    'message' => 'Terima kasih telah bergabung dengan platform kami. Lengkapi profil Anda untuk memulai.',
                     'action_url' => '/profile/edit',
-                    'action_text' => 'Complete Profile',
+                    'action_text' => 'Lengkapi Profil',
                 ];
 
             case 'App\Notifications\ProfileCompletionReminder':
                 $completionPercentage = rand(10, 90);
                 return [
-                    'title' => 'Complete Your Profile',
-                    'message' => "Your profile is $completionPercentage% complete. Finish setting up your profile to improve your chances of success.",
+                    'title' => 'Lengkapi Profil Anda',
+                    'message' => "Profil Anda $completionPercentage% lengkap. Selesaikan pengaturan profil Anda untuk meningkatkan peluang kesuksesan.",
                     'completion_percentage' => $completionPercentage,
                     'action_url' => '/profile/edit',
-                    'action_text' => 'Complete Profile',
+                    'action_text' => 'Lengkapi Profil',
                 ];
 
             default:
                 return [
-                    'title' => 'System Notification',
-                    'message' => 'You have a new notification.',
+                    'title' => 'Notifikasi Sistem',
+                    'message' => 'Anda memiliki notifikasi baru.',
                     'action_url' => '/notifications',
-                    'action_text' => 'View Details',
+                    'action_text' => 'Lihat Detail',
                 ];
         }
     }

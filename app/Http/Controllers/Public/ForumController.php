@@ -9,6 +9,9 @@ use App\Models\ForumCategory;
 use App\Models\ForumTopic;
 use App\Models\ForumPost;
 use App\Models\ForumLike;
+use App\Models\User;
+use App\Notifications\ForumMentioned;
+use App\Notifications\ForumTopicReplied;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -146,12 +149,15 @@ class ForumController extends Controller
         ]);
         
         // Buat post pertama dengan is_first_post = true
-        ForumPost::create([
+        $post = ForumPost::create([
             'content' => $request->content,
             'forum_topic_id' => $topic->id,
             'user_id' => Auth::id(),
             'is_first_post' => true,
         ]);
+        
+        // Proses mention jika ada di post pertama
+        $this->processMentions($request->content, $post, $topic);
         
         return redirect()->route('public.forum.topic', $topic->slug)
                 ->with('success', 'Topik baru berhasil dibuat!');
@@ -187,9 +193,17 @@ class ForumController extends Controller
             'is_first_post' => false,
         ]);
         
-        // Update topic updated_at
         $topic = ForumTopic::findOrFail($request->topic_id);
         $topic->touch();
+        
+        // Kirim notifikasi ke pemilik topik jika bukan dirinya sendiri yang membalas
+        if ($topic->user_id != Auth::id()) {
+            $topicOwner = $topic->user;
+            $topicOwner->notify(new ForumTopicReplied($topicOwner, $topic, $post));
+        }
+        
+        // Proses mention jika ada
+        $this->processMentions($request->content, $post, $topic);
         
         return redirect()->back()->with('success', 'Komentar berhasil ditambahkan!');
     }
@@ -229,4 +243,35 @@ class ForumController extends Controller
         
         return redirect()->back()->with('success', $message);
     }
-} 
+    
+    /**
+     * Memproses dan mengirim notifikasi ke user yang di-mention dalam konten
+     *
+     * @param string $content Konten yang mungkin berisi mention
+     * @param ForumPost $post Post yang berisi mention
+     * @param ForumTopic $topic Topik forum
+     * @return void
+     */
+    private function processMentions($content, $post, $topic)
+    {
+        // Temukan semua mention dalam format @username
+        preg_match_all('/@([a-zA-Z0-9_]+)/', $content, $matches);
+        
+        if (!empty($matches[1])) {
+            $usernames = array_unique($matches[1]);
+            $currentUserId = Auth::id();
+            
+            foreach ($usernames as $username) {
+                // Cari user berdasarkan username
+                $mentionedUser = User::where('username', $username)->first();
+                
+                // Kirim notifikasi jika user ditemukan dan bukan user yang melakukan mention
+                if ($mentionedUser && $mentionedUser->id != $currentUserId) {
+                    $mentionedUser->notify(
+                        new ForumMentioned($mentionedUser, $post, Auth::user(), $topic)
+                    );
+                }
+            }
+        }
+    }
+}

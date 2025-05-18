@@ -4,20 +4,47 @@ namespace App\Notifications;
 
 use App\Models\JobApplication;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Messages\BroadcastMessage;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Notification;
+use Illuminate\Broadcasting\PrivateChannel;
 
-class NewJobApplication extends BaseNotification
+class NewJobApplication extends Notification implements ShouldQueue
 {
+    use Queueable;
+
+    /**
+     * The job application instance.
+     *
+     * @var JobApplication
+     */
+    protected $application;
+
+    /**
+     * Additional data.
+     * 
+     * @var array
+     */
+    protected $data;
+
     /**
      * Create a new notification instance.
+     *
+     * @param JobApplication $application
+     * @param array $data
      */
     public function __construct(JobApplication $application, array $data = [])
     {
-        $this->notifiable = $application;
+        $this->application = $application;
         $this->data = $data;
     }
 
     /**
      * Get the notification's delivery channels.
+     *
+     * @param mixed $notifiable
+     * @return array
      */
     public function via($notifiable)
     {
@@ -26,10 +53,13 @@ class NewJobApplication extends BaseNotification
 
     /**
      * Get the mail representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return MailMessage
      */
     public function toMail($notifiable)
     {
-        $application = $this->notifiable;
+        $application = $this->application;
 
         return (new MailMessage)
             ->subject("Lamaran Baru Diterima: {$application->job->title}")
@@ -44,13 +74,16 @@ class NewJobApplication extends BaseNotification
 
     /**
      * Get the database representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return array
      */
     public function toDatabase($notifiable)
     {
-        $application = $this->notifiable;
+        $application = $this->application;
 
         return [
-            'type' => 'new_job_application',
+            'title' => 'Lamaran Pekerjaan Baru',
             'application_id' => $application->id,
             'job_id' => $application->job_id,
             'job_title' => $application->job->title,
@@ -58,8 +91,36 @@ class NewJobApplication extends BaseNotification
             'candidate_name' => $application->user->name,
             'candidate_email' => $application->user->email,
             'message' => "Lamaran baru untuk posisi {$application->job->title} dari {$application->user->name}",
-            'url' => url('/manager/applications/' . $application->id),
+            'action_url' => url('/manager/applications/' . $application->id),
             'created_at' => $application->created_at->format('Y-m-d H:i:s'),
         ];
+    }
+
+    /**
+     * Get the broadcast representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return BroadcastMessage
+     */
+        public function toBroadcast($notifiable)
+    {
+        return new BroadcastMessage([
+            'id' => $this->id,
+            'type' => get_class($this),
+            'data' => $this->toDatabase($notifiable),
+            'created_at' => now()->toISOString(),
+            'read_at' => null,
+        ]);
+    }
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @param mixed $notifiable
+     * @return array
+     */
+    public function toArray($notifiable)
+    {
+        return $this->toDatabase($notifiable);
     }
 }

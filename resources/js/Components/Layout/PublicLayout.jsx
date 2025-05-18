@@ -32,16 +32,14 @@ import {
     Logout as LogoutIcon,
     Home as HomeIcon,
     Business as BusinessIcon,
-    Info as InfoIcon,
     ContactPhone as ContactPhoneIcon,
     Close as CloseIcon,
     Forum as ForumIcon,
-    Notifications as NotificationsIcon
+    Work
 } from '@mui/icons-material';
 import Footer from './Footer';
 import { motion } from 'framer-motion';
 import Button from '../Shared/Button';
-import Card from '../Shared/Card';
 import CustomBadge from '../Shared/Badge';
 import Dropdown from '../Shared/Dropdown';
 import SearchBar from '../Shared/SearchBar';
@@ -131,11 +129,11 @@ const PublicLayout = ({ children }) => {
 
     const menuItems = [
         { text: 'Beranda', route: 'public.home', icon: <HomeIcon /> },
-        { text: 'Lowongan', route: 'public.jobs.index', icon: <BusinessIcon /> },
+        { text: 'Lowongan', route: 'public.jobs.index', icon: <Work /> },
         ...(auth?.user?.role_id === 3 || auth?.user?.role === 1 ? [
             { text: 'Forum', route: 'public.forum.index', icon: <ForumIcon />, badge: auth?.user?.role === 'candidate' ? 'New' : null }
         ] : []),
-        { text: 'Tentang', route: 'public.about', icon: <InfoIcon /> },
+        { text: 'Perusahaan', route: 'public.companies.index', icon: <BusinessIcon/> },
         { text: 'Kontak', route: 'public.contact', icon: <ContactPhoneIcon /> },
     ];
 
@@ -159,50 +157,58 @@ const PublicLayout = ({ children }) => {
                     <AppBar
                         position="fixed"
                         color="default"
-                        elevation={scrolled ? 4 : 0}
+                        elevation={0}
                         sx={{
                             background: scrolled ? 'rgba(255, 255, 255, 0.95)' : 'rgba(255, 255, 255, 0.8)',
                             backdropFilter: 'blur(10px)',
-                            borderBottom: scrolled ? '1px solid rgba(229, 231, 235, 0.8)' : 'none',
+                            borderBottom: scrolled ? '1px solid rgba(0, 0, 0, 0.05)' : 'none',
                             transition: 'all 0.3s ease-in-out',
                             color: theme.palette.text.primary,
-                            boxShadow: scrolled ? '0 4px 20px rgba(0, 0, 0, 0.05)' : 'none',
+                            boxShadow: scrolled ? '0 4px 20px rgba(0, 0, 0, 0.04)' : 'none',
                         }}
-                        className="border-b border-gray-100/80"
                     >
                         <Container maxWidth="xl">
-                            <Toolbar sx={{ minHeight: { xs: '4.5rem' }, p: { xs: 1, sm: 2 } }}>
+                            <Toolbar sx={{ minHeight: { xs: '4rem', md: '4.5rem' }, p: { xs: 1, sm: 2 } }}>
                                 <Link href={route('public.home')} className="flex items-center mr-6">
                                     <Box
-                                        className="bg-primary-500 text-white p-2 rounded-xl shadow-md shadow-primary-500/20 mr-2"
-                                        sx={{ display: { xs: 'none', sm: 'flex' } }}
+                                        sx={{
+                                            backgroundImage: `url('images/stia.png')`,
+                                            backgroundSize: 'cover',
+                                            display: { xs: 'none', sm: 'flex' },
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                            color: theme.palette.text.primary,
+                                            p: 1.5,
+                                            borderRadius: 2,
+                                            mr: 1.5
+                                        }}
                                     >
-                                        <BusinessIcon />
                                     </Box>
                                     <Typography
-                                        variant="h5"
+                                        variant="h6"
                                         component="div"
                                         sx={{
-                                            fontWeight: 'bold',
+                                            fontWeight: 600,
                                             letterSpacing: '-0.5px',
                                             display: { xs: 'none', sm: 'block' },
                                             color: theme.palette.text.primary
                                         }}
                                     >
-                                        STIA Bayu Angga Loker
+                                        STIA Bayu Angga<Box component="span" sx={{ opacity: 0.7 }}> Loker</Box>
                                     </Typography>
                                 </Link>
 
                                 {/* Desktop menu */}
                                 <Box sx={{
                                     display: { xs: 'none', md: 'flex' },
-                                    gap: 0.5,
+                                    gap: 1,
                                     mx: 'auto'
                                 }}>
                                     {menuItems.map((item) => (
                                         <motion.div
                                             key={item.text}
-                                            whileHover={{ y: -2 }}
+                                            whileHover={{ y: -1 }}
                                             transition={{ type: 'spring', stiffness: 300 }}
                                         >
                                             <Link href={route(item.route)}>
@@ -211,24 +217,33 @@ const PublicLayout = ({ children }) => {
                                                     sx={{
                                                         px: 2,
                                                         py: 1,
-                                                        borderRadius: '0.75rem',
+                                                        borderRadius: '10px',
                                                         color: route().current(item.route) ?
-                                                            theme.palette.primary.main :
-                                                            theme.palette.text.primary,
+                                                            theme.palette.text.primary :
+                                                            theme.palette.text.secondary,
                                                         bgcolor: route().current(item.route) ?
-                                                            alpha(theme.palette.primary.main, 0.1) :
+                                                            'rgba(0, 0, 0, 0.04)' :
                                                             'transparent',
+                                                        fontWeight: route().current(item.route) ? 500 : 400,
                                                         '&:hover': {
-                                                            bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                                            bgcolor: 'rgba(0, 0, 0, 0.04)'
                                                         }
                                                     }}
-                                                    startIcon={item.icon}
-                                                    className={route().current(item.route) ? 'font-medium' : ''}
+                                                    startIcon={
+                                                        <Box sx={{
+                                                            color: route().current(item.route) ?
+                                                                theme.palette.text.primary :
+                                                                theme.palette.text.secondary,
+                                                            opacity: route().current(item.route) ? 1 : 0.7
+                                                        }}>
+                                                            {item.icon}
+                                                        </Box>
+                                                    }
                                                 >
                                                     {item.text}
                                                     {item.badge && (
                                                         <CustomBadge
-                                                            label={item.badge}
+                                                            labe={item.badge}
                                                             color="error"
                                                             size="small"
                                                             sx={{ ml: 1 }}
@@ -241,39 +256,19 @@ const PublicLayout = ({ children }) => {
                                 </Box>
 
                                 <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    {/*<Tooltip title="Cari">*/}
-                                    {/*    <IconButton*/}
-                                    {/*        onClick={() => setSearchOpen(true)}*/}
-                                    {/*        sx={{*/}
-                                    {/*            color: Theme.palette.text.primary,*/}
-                                    {/*            '&:hover': {*/}
-                                    {/*                bgcolor: alpha(Theme.palette.primary.main, 0.1)*/}
-                                    {/*            }*/}
-                                    {/*        }}*/}
-                                    {/*        className="rounded-xl"*/}
-                                    {/*    >*/}
-                                    {/*        <SearchIcon />*/}
-                                    {/*    </IconButton>*/}
-                                    {/*</Tooltip>*/}
-
                                     {auth.user ? (
                                         <>
                                             <Tooltip title="Notifikasi">
                                                 <IconButton
                                                     sx={{
-                                                        color: theme.palette.text.primary,
+                                                        color: theme.palette.text.secondary,
+                                                        borderRadius: '10px',
                                                         '&:hover': {
-                                                            bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                                            bgcolor: 'rgba(0, 0, 0, 0.04)'
                                                         }
                                                     }}
-                                                    className="rounded-xl"
                                                 >
-                                                    <CustomBadge
-                                                        label={notificationCount}
-                                                        color="error"
-                                                    >
-                                                        <NotificationsIcon />
-                                                    </CustomBadge>
+
                                                 </IconButton>
                                             </Tooltip>
 
@@ -286,15 +281,15 @@ const PublicLayout = ({ children }) => {
                                                             onClick={handleProfileMenuOpen}
                                                             variant="text"
                                                             sx={{
-                                                                borderRadius: '50px',
+                                                                borderRadius: '10px',
                                                                 px: { xs: 1, sm: 2 },
                                                                 py: 1,
                                                                 color: theme.palette.text.primary,
                                                                 '&:hover': {
-                                                                    bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                                                    bgcolor: 'rgba(0, 0, 0, 0.04)'
                                                                 }
                                                             }}
-                                                            endIcon={!isSmall && <KeyboardArrowDown />}
+                                                            endIcon={!isSmall && <KeyboardArrowDown sx={{ color: theme.palette.text.secondary }} />}
                                                         >
                                                             <Avatar
                                                                 src={auth.user.profile_photo || undefined}
@@ -303,14 +298,21 @@ const PublicLayout = ({ children }) => {
                                                                     width: 32,
                                                                     height: 32,
                                                                     mr: { xs: 0, sm: 1 },
-                                                                    border: `2px solid ${theme.palette.primary.main}`
+                                                                    bgcolor: 'rgba(0, 0, 0, 0.08)'
                                                                 }}
                                                             >
                                                                 {auth.user.name?.charAt(0)}
                                                             </Avatar>
-                                                            <span className="font-medium hidden sm:inline truncate max-w-[100px]">
+                                                            <Box component="span" sx={{
+                                                                fontWeight: 500,
+                                                                display: { xs: 'none', sm: 'inline' },
+                                                                maxWidth: '120px',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap'
+                                                            }}>
                                                                 {auth.user.name}
-                                                            </span>
+                                                            </Box>
                                                         </Button>
                                                     }
                                                     items={[
@@ -344,16 +346,20 @@ const PublicLayout = ({ children }) => {
                                         </>
                                     ) : (
                                         <Box sx={{ display: 'flex', gap: 1 }}>
-                                            <motion.div whileHover={{ scale: 1.05 }}>
+                                            <motion.div whileHover={{ scale: 1.02 }}>
                                                 <Link href={route('login')}>
                                                     <Button
-                                                        variant="outlined"
-                                                        color="primary"
+                                                        variant="text"
                                                         sx={{
                                                             display: { xs: 'none', sm: 'inline-flex' },
-                                                            borderRadius: '0.75rem',
+                                                            borderRadius: '10px',
                                                             px: 2,
                                                             py: 1,
+                                                            color: theme.palette.text.primary,
+                                                            bgcolor: 'transparent',
+                                                            '&:hover': {
+                                                                bgcolor: 'rgba(0, 0, 0, 0.04)'
+                                                            }
                                                         }}
                                                         startIcon={<LoginIcon />}
                                                     >
@@ -362,15 +368,19 @@ const PublicLayout = ({ children }) => {
                                                 </Link>
                                             </motion.div>
 
-                                            <motion.div whileHover={{ scale: 1.05 }}>
+                                            <motion.div whileHover={{ scale: 1.02 }}>
                                                 <Link href={route('register')}>
                                                     <Button
                                                         variant="contained"
-                                                        color="primary"
                                                         sx={{
-                                                            borderRadius: '0.75rem',
+                                                            borderRadius: '10px',
                                                             px: { xs: 2, sm: 3 },
                                                             py: 1,
+                                                            bgcolor: 'rgba(0, 0, 0, 0.8)',
+                                                            color: '#fff',
+                                                            '&:hover': {
+                                                                bgcolor: 'rgba(0, 0, 0, 0.7)'
+                                                            }
                                                         }}
                                                         startIcon={<PersonAddIcon />}
                                                     >
@@ -388,11 +398,11 @@ const PublicLayout = ({ children }) => {
                                             onClick={toggleMobileMenu}
                                             sx={{
                                                 color: theme.palette.text.primary,
+                                                borderRadius: '10px',
                                                 '&:hover': {
-                                                    bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                                    bgcolor: 'rgba(0, 0, 0, 0.04)'
                                                 }
                                             }}
-                                            className="rounded-xl"
                                         >
                                             <MenuIcon />
                                         </IconButton>
@@ -430,127 +440,182 @@ const PublicLayout = ({ children }) => {
                     anchor="right"
                     open={mobileMenuOpen}
                     onClose={toggleMobileMenu}
-
+                    sx={{
+                        '& .MuiDrawer-paper': {
+                            width: '85%',
+                            maxWidth: '360px'
+                        }
+                    }}
                 >
                     <motion.div
-                        initial={{ x: 100, opacity: 0 }}
-                        animate={{ x: 0, opacity: 1 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
                     >
                         <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                 <Box
-                                    className="bg-primary-500 text-white p-2 rounded-xl shadow-md shadow-primary-500/20 mr-2"
+                                    sx={{
+                                        backgroundImage: `url('images/stia.png')`,
+                                        backgroundSize: 'cover',
+                                        display: { xs: 'none', sm: 'flex' },
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        bgcolor: 'rgba(0, 0, 0, 0.04)',
+                                        color: theme.palette.text.primary,
+                                        p: 1,
+                                        borderRadius: 1.5,
+                                        mr: 1.5,
+                                    }}
                                 >
-                                    <BusinessIcon />
+                                    <BusinessIcon fontSize="small" />
                                 </Box>
-                                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                    Campus<span style={{ color: theme.palette.primary.main }}>Job</span>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                    STIA Bayu Angga
                                 </Typography>
                             </Box>
                             <IconButton
                                 onClick={toggleMobileMenu}
                                 edge="end"
-                                color="inherit"
-                                className="rounded-xl hover:bg-primary-50"
+                                sx={{
+                                    color: theme.palette.text.secondary,
+                                    borderRadius: '10px',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(0, 0, 0, 0.04)'
+                                    }
+                                }}
                             >
                                 <CloseIcon />
                             </IconButton>
                         </Box>
 
-                        <Divider />
+                        <Divider sx={{ opacity: 0.6 }} />
 
                         {auth.user && (
                             <Box sx={{ p: 3 }}>
-                                <Card
+                                <Paper
+                                    elevation={0}
                                     sx={{
-                                        p: 3,
-                                        bgcolor: theme.palette.mode === 'dark' ?
-                                            alpha(theme.palette.primary.main, 0.1) :
-                                            alpha(theme.palette.primary.light, 0.1),
-                                        borderRadius: '1rem',
+                                        p: 2.5,
+                                        bgcolor: 'rgba(0, 0, 0, 0.02)',
+                                        borderRadius: 3,
+                                        border: '1px solid rgba(0, 0, 0, 0.05)'
                                     }}
-                                    className="border-0 shadow-md shadow-primary-500/5"
                                 >
                                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                                         <Avatar
                                             src={auth.user.profile_photo || undefined}
                                             alt={auth.user.name}
                                             sx={{
-                                                width: 48,
-                                                height: 48,
-                                                border: `2px solid ${theme.palette.primary.main}`
+                                                width: 44,
+                                                height: 44,
+                                                bgcolor: 'rgba(0, 0, 0, 0.08)'
                                             }}
                                         >
                                             {auth.user.name?.charAt(0)}
                                         </Avatar>
-                                        <Box>
-                                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                        <Box sx={{ flex: 1, overflow: 'hidden' }}>
+                                            <Typography variant="subtitle1" sx={{ fontWeight: 600, lineHeight: 1.3 }}>
                                                 {auth.user.name}
                                             </Typography>
-                                            <Typography variant="body2" color="text.secondary" noWrap>
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                sx={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap'
+                                                }}
+                                            >
                                                 {auth.user.email}
                                             </Typography>
                                         </Box>
                                     </Box>
 
-                                    <Stack direction="row" spacing={1} sx={{ mt: 3 }}>
+                                    <Stack direction="row" spacing={1.5} sx={{ mt: 2.5 }}>
                                         <Link href={route(userDashboardRoute())} className="flex-1">
                                             <Button
-                                                variant="contained"
-                                                color="primary"
+                                                variant="outlined"
                                                 fullWidth
-                                                sx={{ borderRadius: '0.75rem', py: 1 }}
-                                                startIcon={<DashboardIcon />}
+                                                sx={{
+                                                    borderRadius: '10px',
+                                                    py: 1,
+                                                    borderColor: 'rgba(0, 0, 0, 0.2)',
+                                                    color: theme.palette.text.primary,
+                                                    '&:hover': {
+                                                        borderColor: 'rgba(0, 0, 0, 0.3)',
+                                                        bgcolor: 'rgba(0, 0, 0, 0.02)'
+                                                    }
+                                                }}
+                                                startIcon={<DashboardIcon fontSize="small" />}
                                             >
                                                 Dashboard
                                             </Button>
                                         </Link>
-                                        <Link href={route('logout')} method="post" className="flex-1">
+                                        <Link href="#" onClick={handleLogout} className="flex-1">
                                             <Button
                                                 variant="outlined"
-                                                color="primary"
                                                 fullWidth
-                                                sx={{ borderRadius: '0.75rem', py: 1 }}
-                                                startIcon={<LogoutIcon />}
+                                                sx={{
+                                                    borderRadius: '10px',
+                                                    py: 1,
+                                                    borderColor: 'rgba(0, 0, 0, 0.12)',
+                                                    color: theme.palette.error.main,
+                                                    '&:hover': {
+                                                        borderColor: theme.palette.error.main,
+                                                        bgcolor: alpha(theme.palette.error.main, 0.04)
+                                                    }
+                                                }}
+                                                startIcon={<LogoutIcon fontSize="small" />}
                                             >
                                                 Logout
                                             </Button>
                                         </Link>
                                     </Stack>
-                                </Card>
+                                </Paper>
                             </Box>
                         )}
 
-                        <List sx={{ px: 3, py: 1 }}>
+                        <List sx={{ px: 2, py: 1 }}>
                             {menuItems.map((item) => (
                                 <Link key={item.route} href={route(item.route)}>
                                     <ListItem
                                         button
                                         onClick={toggleMobileMenu}
                                         sx={{
-                                            borderRadius: '0.75rem',
-                                            mb: 1,
+                                            borderRadius: '10px',
+                                            mb: 0.75,
                                             bgcolor: route().current(item.route) ?
-                                                alpha(theme.palette.primary.main, 0.1) :
+                                                'rgba(0, 0, 0, 0.04)' :
                                                 'transparent',
                                             '&:hover': {
-                                                bgcolor: alpha(theme.palette.primary.main, 0.05)
+                                                bgcolor: 'rgba(0, 0, 0, 0.02)'
                                             }
                                         }}
                                     >
                                         <ListItemIcon sx={{
                                             minWidth: 40,
                                             color: route().current(item.route) ?
-                                                theme.palette.primary.main :
-                                                theme.palette.text.secondary
+                                                theme.palette.text.primary :
+                                                theme.palette.text.secondary,
+                                            opacity: route().current(item.route) ? 1 : 0.7
                                         }}>
                                             {item.icon}
                                         </ListItemIcon>
                                         <ListItemText
                                             primary={
                                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    {item.text}
+                                                    <Typography
+                                                        variant="body1"
+                                                        sx={{
+                                                            fontWeight: route().current(item.route) ? 500 : 400,
+                                                            color: route().current(item.route) ?
+                                                                theme.palette.text.primary :
+                                                                theme.palette.text.secondary
+                                                        }}
+                                                    >
+                                                        {item.text}
+                                                    </Typography>
                                                     {item.badge && (
                                                         <CustomBadge
                                                             label={item.badge}
@@ -568,18 +633,30 @@ const PublicLayout = ({ children }) => {
                         </List>
 
                         {!auth.user && (
-                            <Box sx={{ p: 3, mt: 2 }}>
-                                <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 3 }}>
+                            <Box sx={{ p: 3, mt: 1 }}>
+                                <Typography variant="subtitle2" sx={{
+                                    fontWeight: 500,
+                                    mb: 2.5,
+                                    color: theme.palette.text.secondary,
+                                    px: 1
+                                }}>
                                     Bergabung dengan STIA Bayu Angga Loker
                                 </Typography>
 
-                                <Stack spacing={2}>
+                                <Stack spacing={1.5}>
                                     <Link href={route('register')} className="w-full">
                                         <Button
                                             variant="contained"
-                                            color="primary"
                                             fullWidth
-                                            sx={{ borderRadius: '0.75rem', py: 1.5 }}
+                                            sx={{
+                                                borderRadius: '10px',
+                                                py: 1.5,
+                                                bgcolor: 'rgba(0, 0, 0, 0.8)',
+                                                color: '#fff',
+                                                '&:hover': {
+                                                    bgcolor: 'rgba(0, 0, 0, 0.7)'
+                                                }
+                                            }}
                                             startIcon={<PersonAddIcon />}
                                         >
                                             Daftar Akun Baru
@@ -588,9 +665,17 @@ const PublicLayout = ({ children }) => {
                                     <Link href={route('login')} className="w-full">
                                         <Button
                                             variant="outlined"
-                                            color="primary"
                                             fullWidth
-                                            sx={{ borderRadius: '0.75rem', py: 1.5 }}
+                                            sx={{
+                                                borderRadius: '10px',
+                                                py: 1.5,
+                                                borderColor: 'rgba(0, 0, 0, 0.2)',
+                                                color: theme.palette.text.primary,
+                                                '&:hover': {
+                                                    borderColor: 'rgba(0, 0, 0, 0.3)',
+                                                    bgcolor: 'rgba(0, 0, 0, 0.02)'
+                                                }
+                                            }}
                                             startIcon={<LoginIcon />}
                                         >
                                             Login
@@ -602,20 +687,16 @@ const PublicLayout = ({ children }) => {
                     </motion.div>
                 </Drawer>
 
-                {/* Main content */}
-                <Box
-                    sx={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        minHeight: '100vh',
-                    }}
-                >
-                    <Box sx={{ height: { xs: '4.5rem' } }} />
-
+                {/* Main Content */}
+                <Box sx={{
+                    flex: '1 0 auto',
+                    pt: { xs: '4rem', md: '4.5rem' },
+                    bgcolor: 'background.default'
+                }}>
                     {children}
-
                 </Box>
 
+                {/* Footer */}
                 <Footer />
             </Box>
         </MuiThemeProvider>

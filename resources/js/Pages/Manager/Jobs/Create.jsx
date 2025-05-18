@@ -21,7 +21,8 @@ import {
     alpha,
     Stack,
     useTheme,
-    Tooltip
+    Tooltip,
+    Switch, FormControlLabel
 } from '@mui/material';
 import {
     DeleteOutline as DeleteIcon,
@@ -47,8 +48,22 @@ import {
 import MDEditor from '@uiw/react-md-editor';
 
 import Layout from '@/Components/Layout/Layout';
-import NumberFormatInput from '@/Utils/NumberFormatInput';
-import { parseFormattedNumber } from '@/Utils/CurrencyFormatter';
+
+// Format angka menjadi format Rupiah (dengan titik sebagai pemisah ribuan)
+const formatRupiah = (angka) => {
+    if (!angka) return '';
+    // Hapus semua karakter non-digit
+    const numStr = angka.toString().replace(/\D/g, '');
+    // Format dengan pemisah ribuan
+    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Parse string angka berformat menjadi number
+const parseRupiah = (rupiahStr) => {
+    if (!rupiahStr) return '';
+    // Hapus semua titik
+    return rupiahStr.toString().replace(/\./g, '');
+};
 
 export default function Create({ companies, hiringStages, categories, skills }) {
     const [skillInput, setSkillInput] = useState('');
@@ -81,22 +96,16 @@ export default function Create({ companies, hiringStages, categories, skills }) 
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Validasi data yang diperlukan sebelum mengirimkan
-        if (!data.company_id || !data.title || !data.location || !data.submission_deadline) {
-            alert('Beberapa data wajib belum diisi!');
-            return;
-        }
-
-        // Ensure is_active and status are in sync
-        const formData = {
+        // Process form data
+        const processedData = {
             ...data,
-            salary_min: data.salary_min ? parseFormattedNumber(data.salary_min) : '',
-            salary_max: data.salary_max ? parseFormattedNumber(data.salary_max) : '',
-            is_active: data.status === 'active', // Ensure is_active matches status
+            salary_min: parseRupiah(data.salary_min),
+            salary_max: parseRupiah(data.salary_max),
+            is_active: data.status === 'active',
+            is_salary_visible: data.is_salary_visible, // Update is_salary_visible
         };
 
-        // Mengirim POST request ke route create
-        post(route('manager.jobs.store'), formData);
+        post(route('manager.jobs.store'), processedData);
     };
 
     // Function to submit as active job
@@ -404,18 +413,24 @@ export default function Create({ companies, hiringStages, categories, skills }) 
 
                                 {/* Gaji Row */}
                                 <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 3 }}>
-                                    <NumberFormatInput
+                                    <TextField
                                         label="Gaji Minimum"
                                         fullWidth
                                         value={data.salary_min}
-                                        onChange={(e) => setData('salary_min', e.target.rawValue)}
+                                        onChange={(e) => {
+                                            // Format angka saat input
+                                            const formatted = formatRupiah(e.target.value);
+                                            setData('salary_min', formatted);
+                                        }}
                                         error={!!errors.salary_min}
                                         helperText={errors.salary_min}
-                                        startAdornment={
-                                            <InputAdornment position="start">
-                                                <AttachMoneyIcon color="action" />
-                                            </InputAdornment>
-                                        }
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <AttachMoneyIcon color="action" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 borderRadius: '0.75rem',
@@ -423,23 +438,43 @@ export default function Create({ companies, hiringStages, categories, skills }) 
                                         }}
                                     />
 
-                                    <NumberFormatInput
+                                    <TextField
                                         label="Gaji Maksimum"
                                         fullWidth
                                         value={data.salary_max}
-                                        onChange={(e) => setData('salary_max', e.target.rawValue)}
+                                        onChange={(e) => {
+                                            // Format angka saat input
+                                            const formatted = formatRupiah(e.target.value);
+                                            setData('salary_max', formatted);
+                                        }}
                                         error={!!errors.salary_max}
                                         helperText={errors.salary_max}
-                                        startAdornment={
-                                            <InputAdornment position="start">
-                                                <AttachMoneyIcon color="action" />
-                                            </InputAdornment>
-                                        }
+                                        InputProps={{
+                                            startAdornment: (
+                                                <InputAdornment position="start">
+                                                    <AttachMoneyIcon color="action" />
+                                                </InputAdornment>
+                                            ),
+                                        }}
                                         sx={{
                                             '& .MuiOutlinedInput-root': {
                                                 borderRadius: '0.75rem',
                                             }
                                         }}
+                                    />
+                                </Box>
+
+                                {/* Salary Visibility Option */}
+                                <Box sx={{ pl: 1, mt: 1 }}>
+                                    <FormControlLabel
+                                        control={
+                                            <Switch
+                                                checked={data.is_salary_visible}
+                                                onChange={(e) => setData('is_salary_visible', e.target.checked)}
+                                                color="primary"
+                                            />
+                                        }
+                                        label="Tampilkan informasi gaji kepada kandidat"
                                     />
                                 </Box>
 

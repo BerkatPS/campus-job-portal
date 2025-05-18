@@ -24,21 +24,21 @@ export default function ToastNotification() {
         };
     }, []);
 
-    const getColor = (type) => {
+    const getAccentColor = (type) => {
         switch (type) {
-            case 'error': return { bg: '#f44336', text: '#ffffff' };
-            case 'success': return { bg: '#4caf50', text: '#ffffff' };
-            case 'warning': return { bg: '#ff9800', text: '#ffffff' };
-            default: return { bg: '#2196f3', text: '#ffffff' };
+            case 'error': return '#e53935';
+            case 'success': return '#43a047';
+            case 'warning': return '#fb8c00';
+            default: return '#1e88e5';
         }
     };
 
     const getIcon = (type) => {
         switch (type) {
-            case 'error': return '❌';
-            case 'success': return '✅';
-            case 'warning': return '⚠️';
-            default: return 'ℹ️';
+            case 'error': return 'error';
+            case 'success': return 'check_circle';
+            case 'warning': return 'warning';
+            default: return 'info';
         }
     };
 
@@ -46,9 +46,9 @@ export default function ToastNotification() {
         <div
             style={{
                 position: 'fixed',
-                top: '80px', // Increased from 20px to 80px to position below the header
+                top: '80px', // Positioned below the header
                 right: '20px',
-                zIndex: 10000, // Extremely high z-index to ensure visibility
+                zIndex: 10000,
                 pointerEvents: 'none',
                 width: '100%',
                 maxWidth: '400px',
@@ -60,7 +60,7 @@ export default function ToastNotification() {
         >
             <AnimatePresence>
                 {toasts.map((toast) => {
-                    const colors = getColor(toast.type);
+                    const accentColor = getAccentColor(toast.type);
 
                     return (
                         <motion.div
@@ -70,54 +70,59 @@ export default function ToastNotification() {
                             exit={{ opacity: 0, y: -20, x: 50 }}
                             transition={{ duration: 0.3 }}
                             style={{
-                                backgroundColor: colors.bg,
-                                color: colors.text,
+                                backgroundColor: '#ffffff',
+                                color: '#333333',
                                 padding: '16px 20px',
-                                borderRadius: '12px',
-                                boxShadow: '0 5px 15px rgba(0,0,0,0.3), 0 0 0 1px rgba(0,0,0,0.05)',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08), 0 0 0 1px rgba(0,0,0,0.02)',
                                 width: 'calc(100% - 20px)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 gap: '12px',
                                 pointerEvents: 'auto',
                                 position: 'relative',
-                                fontSize: '16px',
+                                fontSize: '14px',
                                 fontWeight: 500,
                                 overflow: 'hidden',
-                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderLeft: `4px solid ${accentColor}`,
                             }}
                         >
-                            {/* Notification header line */}
-                            <div
-                                style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                    right: 0,
-                                    height: '4px',
-                                    background: 'rgba(255,255,255 ,0.4)'
+                            {/* Icon with accent color */}
+                            <span 
+                                className="material-icons" 
+                                style={{ 
+                                    fontSize: '20px', 
+                                    color: accentColor 
                                 }}
-                            />
-
-                            <span style={{ fontSize: '22px' }}>{getIcon(toast.type)}</span>
+                            >
+                                {getIcon(toast.type)}
+                            </span>
+                            
+                            {/* Message */}
                             <div style={{ flex: 1, wordBreak: 'break-word' }}>{toast.message}</div>
+                            
+                            {/* Close button */}
                             <button
                                 onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
                                 style={{
-                                    background: 'rgba(255,255,255,0.2)',
+                                    background: 'transparent',
                                     border: 'none',
-                                    color: colors.text,
+                                    color: '#9e9e9e',
                                     cursor: 'pointer',
                                     fontSize: '18px',
                                     fontWeight: 'bold',
-                                    width: '28px',
-                                    height: '28px',
+                                    width: '24px',
+                                    height: '24px',
                                     borderRadius: '50%',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     padding: 0,
-                                    marginLeft: '8px'
+                                    marginLeft: '8px',
+                                    transition: 'background-color 0.2s',
+                                    '&:hover': {
+                                        backgroundColor: 'rgba(0,0,0,0.05)'
+                                    }
                                 }}
                             >
                                 ×

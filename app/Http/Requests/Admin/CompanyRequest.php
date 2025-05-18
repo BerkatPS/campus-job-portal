@@ -24,9 +24,9 @@ class CompanyRequest extends FormRequest
         $rules = [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'website' => 'nullable|url|max:255',
-            'address' => 'nullable|string',
+            'logo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // 2MB max
+            'website' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'industry' => 'nullable|string|max:100',
@@ -52,6 +52,28 @@ class CompanyRequest extends FormRequest
             'is_active' => 'active status',
             'managers.*' => 'manager',
             'primary_manager' => 'primary manager',
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Nama perusahaan wajib diisi',
+            'name.max' => 'Nama perusahaan tidak boleh lebih dari 255 karakter',
+            'logo.image' => 'Logo harus berupa file gambar',
+            'logo.mimes' => 'Logo harus berformat: jpeg, png, jpg, atau gif',
+            'logo.max' => 'Ukuran logo tidak boleh lebih dari 2MB',
+            'email.email' => 'Format email tidak valid',
+            'email.max' => 'Email tidak boleh lebih dari 255 karakter',
+            'website.max' => 'Website tidak boleh lebih dari 255 karakter',
+            'address.max' => 'Alamat tidak boleh lebih dari 255 karakter',
+            'phone.max' => 'Nomor telepon tidak boleh lebih dari 20 karakter',
+            'industry.max' => 'Industri tidak boleh lebih dari 100 karakter',
         ];
     }
 

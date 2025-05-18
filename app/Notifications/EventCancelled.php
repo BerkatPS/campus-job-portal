@@ -72,7 +72,7 @@ class EventCancelled extends Notification implements ShouldQueue
      * @param mixed $notifiable
      * @return BroadcastMessage
      */
-    public function toBroadcast($notifiable)
+        public function toBroadcast($notifiable)
     {
         return new BroadcastMessage([
             'id' => $this->id,

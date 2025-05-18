@@ -81,9 +81,22 @@ class JobRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Parse salary values from formatted strings (e.g., "5.000.000" to 5000000)
+        $salaryMin = $this->salary_min;
+        if (is_string($salaryMin)) {
+            $salaryMin = str_replace('.', '', $salaryMin);
+        }
+
+        $salaryMax = $this->salary_max;
+        if (is_string($salaryMax)) {
+            $salaryMax = str_replace('.', '', $salaryMax);
+        }
+
         $this->merge([
             'is_active' => $this->boolean('is_active'),
             'is_salary_visible' => $this->boolean('is_salary_visible'),
+            'salary_min' => $salaryMin ?: null,
+            'salary_max' => $salaryMax ?: null,
         ]);
     }
 }

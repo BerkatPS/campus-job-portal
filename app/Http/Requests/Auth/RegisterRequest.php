@@ -27,10 +27,11 @@ class RegisterRequest extends FormRequest
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
             'nim' => ['required', 'string', 'max:20', 'unique:users'],
-            'phone' => ['required', 'string', 'max:20'],
-            'address' => ['required', 'string', 'max:255'],
-            'date_of_birth' => ['required', 'date'],
-            'education' => ['required', 'string', 'max:255'],
+            // Make the following fields optional for initial registration
+            'phone' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'date_of_birth' => ['nullable', 'date'],
+            'education' => ['nullable', 'string', 'max:255'],
             'experience' => ['nullable', 'string'],
             'skills' => ['nullable', 'string'],
             'linkedin' => ['nullable', 'string', 'max:255', 'url'],
@@ -58,6 +59,7 @@ class RegisterRequest extends FormRequest
             'password.confirmed' => 'Konfirmasi password tidak sesuai',
             'nim.required' => 'NIM wajib diisi',
             'nim.unique' => 'NIM sudah terdaftar',
+            // Update message for now-optional fields
             'phone.required' => 'Nomor telepon wajib diisi',
             'address.required' => 'Alamat wajib diisi',
             'date_of_birth.required' => 'Tanggal lahir wajib diisi',
@@ -72,4 +74,4 @@ class RegisterRequest extends FormRequest
             'profile_picture.max' => 'Ukuran foto profil maksimal 2MB',
         ];
     }
-} 
+}

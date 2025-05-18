@@ -19,6 +19,7 @@ import {
     Paper,
     Chip
 } from '@mui/material';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 import {
     Dashboard as DashboardIcon,
     Business as BusinessIcon,
@@ -36,7 +37,8 @@ import {
     Assignment as AssignmentIcon,
     Forum as ForumIcon,
     ArrowForwardIos as ArrowForwardIosIcon,
-    FiberManualRecord as FiberManualRecordIcon
+    FiberManualRecord as FiberManualRecordIcon,
+    AutoFixHigh as AutoFixHighIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -106,25 +108,8 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
         setInitialOpenMenus();
     }, []);
 
-    // Gaya badge berdasarkan peran
-    const getRoleBadgeStyles = () => {
-        if (userRole === 'admin') {
-            return {
-                bgcolor: 'error.main',
-                color: 'white'
-            };
-        } else if (userRole === 'manager') {
-            return {
-                bgcolor: 'info.main',
-                color: 'white'
-            };
-        } else {
-            return {
-                bgcolor: 'success.main',
-                color: 'white'
-            };
-        }
-    };
+    // Primary color for the entire sidebar
+    const primaryColor = theme.palette.primary.main;
 
     // Definisi item menu
     const menuItems = [];
@@ -135,12 +120,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
             {
                 text: 'Dasbor',
                 icon: <DashboardIcon />,
-                route: 'admin.dashboard'
+                route: 'admin.dashboard',
+                color: primaryColor
             },
             {
                 text: 'Perusahaan',
                 icon: <BusinessIcon />,
                 route: 'admin.companies.index',
+                color: primaryColor,
                 submenu: [
                     { text: 'Semua Perusahaan', route: 'admin.companies.index', icon: <ChevronRightIcon fontSize="small" /> },
                     { text: 'Tambah Perusahaan', route: 'admin.companies.create', icon: <ChevronRightIcon fontSize="small" /> },
@@ -151,6 +138,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 text: 'Lowongan',
                 icon: <WorkIcon />,
                 route: 'admin.jobs.index',
+                color: primaryColor,
                 submenu: [
                     { text: 'Semua Lowongan', route: 'admin.jobs.index', icon: <ChevronRightIcon fontSize="small" /> },
                     { text: 'Tambah Lowongan', route: 'admin.jobs.create', icon: <ChevronRightIcon fontSize="small" /> },
@@ -161,6 +149,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 text: 'Manajer',
                 icon: <SupervisedUserCircleIcon />,
                 route: 'admin.managers.index',
+                color: primaryColor,
                 submenu: [
                     { text: 'Semua Manajer', route: 'admin.managers.index', icon: <ChevronRightIcon fontSize="small" /> },
                     { text: 'Tambah Manajer', route: 'admin.managers.create', icon: <ChevronRightIcon fontSize="small" /> }
@@ -170,6 +159,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 text: 'Pengguna',
                 icon: <PeopleIcon />,
                 route: 'admin.users.index',
+                color: primaryColor,
                 submenu: [
                     { text: 'Semua Pengguna', route: 'admin.users.index', icon: <ChevronRightIcon fontSize="small" /> },
                     { text: 'Tambah Pengguna', route: 'admin.users.create', icon: <ChevronRightIcon fontSize="small" /> }
@@ -185,12 +175,14 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
             {
                 text: 'Dashboard',
                 icon: <DashboardIcon />,
-                route: 'manager.dashboard'
+                route: 'manager.dashboard',
+                color: primaryColor
             },
             {
                 text: 'Lowongan',
                 icon: <WorkIcon />,
                 route: 'manager.jobs.index',
+                color: primaryColor,
                 submenu: [
                     { text: 'Semua Lowongan', route: 'manager.jobs.index', icon: <ChevronRightIcon fontSize="small" /> },
                     { text: 'Tambah Lowongan', route: 'manager.jobs.create', icon: <ChevronRightIcon fontSize="small" /> },
@@ -201,6 +193,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 text: 'Lamaran',
                 icon: <AssignmentIcon />,
                 route: 'manager.applications.index',
+                color: primaryColor,
                 submenu: [
                     { text: 'Tampilan Daftar', route: 'manager.applications.index', icon: <ChevronRightIcon fontSize="small" /> },
                     // { text: 'Tampilan Kanban', route: 'manager.applications.kanban', icon: <ChevronRightIcon fontSize="small" /> }
@@ -210,59 +203,94 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 text: 'Acara',
                 icon: <EventIcon />,
                 route: 'manager.events.index',
+                color: primaryColor
             },
-            // {
-            //     text: 'Tim',
-            //     icon: <PeopleIcon />,
-            //     route: 'manager.team'
-            // },
-            // {
-            //     text: 'Profil Perusahaan',
-            //     icon: <BusinessIcon />,
-            //     route: 'manager.company'
-            // },
-            // {
-            //     text: 'Analitik',
-            //     icon: <AnalyticsIcon />,
-            //     route: 'manager.analytics'
-            // }
+            {
+                text: 'Tim',
+                icon: <PeopleIcon />,
+                route: 'manager.team.index',
+                color: primaryColor,
+                submenu: [
+                    { text: 'Daftar Tim', route: 'manager.team.index', icon: <ChevronRightIcon fontSize="small" /> }
+                ]
+            },
+            {
+                text: 'Profil',
+                icon: <PersonIcon />,
+                route: 'manager.profile.index',
+                color: primaryColor,
+                submenu: [
+                    { text: 'Profil Saya', route: 'manager.profile.index', icon: <ChevronRightIcon fontSize="small" /> },
+                    { text: 'Edit Profil', route: 'manager.profile.edit', icon: <ChevronRightIcon fontSize="small" /> },
+                    { text: 'Keamanan', route: 'manager.profile.security', icon: <ChevronRightIcon fontSize="small" /> }
+                ]
+            },
+            {
+                text: 'Profil Perusahaan',
+                icon: <BusinessIcon />,
+                route: 'manager.company-profile.index',
+                color: primaryColor,
+                submenu: [
+                    { text: 'Detail Perusahaan', route: 'manager.company-profile.index', icon: <ChevronRightIcon fontSize="small" /> },
+                    { text: 'Edit Perusahaan', route: 'manager.company-profile.edit', icon: <ChevronRightIcon fontSize="small" /> }
+                ]
+            },
+            {
+                text: 'Analitik',
+                icon: <AnalyticsIcon />,
+                route: 'manager.analytics.index',
+                color: primaryColor
+            }
         );
     } else {
         menuItems.push(
             {
                 text: 'Dasbor',
                 icon: <DashboardIcon />,
-                route: 'candidate.dashboard'
+                route: 'candidate.dashboard',
+                color: primaryColor
             },
             {
                 text: 'Daftar Lowongan',
                 icon: <WorkIcon />,
-                route: 'candidate.jobs.index'
+                route: 'candidate.jobs.index',
+                color: primaryColor
             },
             {
                 text: 'Lamaran Saya',
                 icon: <AssignmentIcon />,
                 route: 'candidate.applications.index',
+                color: primaryColor
+            },
+            {
+                text: 'Resume AI',
+                icon: <AutoFixHighIcon />,
+                route: 'candidate.resume-enhancer.index',
+                color: primaryColor
             },
             {
                 text: 'Acara',
                 icon: <EventIcon />,
                 route: 'candidate.events.index',
+                color: primaryColor
             },
             {
-                text: 'Portofolio',  // Menu baru
-                icon: <FolderIcon />, // Ikon untuk portofolio
-                // route: 'candidate.portfolio.index'  // Pastikan rute ini ada di backend
+                text: 'Portofolio',
+                icon: <FolderIcon />,
+                route: 'candidate.portfolio.index',
+                color: primaryColor
             },
             {
                 text: 'Profil',
                 icon: <PersonIcon />,
-                route: 'candidate.profile.index'
+                route: 'candidate.profile.index',
+                color: primaryColor
             },
             {
                 text: 'Forum',
                 icon: <ForumIcon />,
-                route: 'public.forum.index'
+                route: 'public.forum.index',
+                color: primaryColor
             },
         );
     }
@@ -320,12 +348,12 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                         transition={{ delay: index * 0.05 }}
                     >
                         <ListItem
-                            component="button"
+                            component="div"
                             onClick={() => toggleMenu(item.text)}
                             onMouseEnter={() => setHoveredItem(item.text)}
                             onMouseLeave={() => setHoveredItem(null)}
                             sx={{
-                                borderRadius: '12px',
+                                borderRadius: '16px',
                                 mb: 0.8,
                                 pl: collapsed ? 2.5 : 3,
                                 pr: collapsed ? 2.5 : 2,
@@ -337,18 +365,29 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                 background: 'none',
                                 width: '100%',
                                 textAlign: 'left',
+                                transition: 'all 0.2s ease',
                                 '&:hover': {
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                    backgroundColor: alpha(primaryColor, 0.08),
+                                    transform: 'translateX(3px)',
                                     '&::before': {
-                                        opacity: 1
+                                        opacity: 1,
+                                        height: '50%'
+                                    },
+                                    '& .menu-icon-wrapper': {
+                                        backgroundColor: alpha(primaryColor, 0.15),
                                     }
                                 },
                                 ...(isActive && {
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                                    color: theme.palette.primary.main,
+                                    backgroundColor: mode === 'dark'
+                                        ? alpha(primaryColor, 0.15)
+                                        : alpha(primaryColor, 0.12),
+                                    color: primaryColor,
                                     fontWeight: 600,
                                     '& .MuiListItemIcon-root': {
-                                        color: theme.palette.primary.main
+                                        color: 'white'
+                                    },
+                                    '& .menu-icon-wrapper': {
+                                        backgroundColor: primaryColor,
                                     }
                                 }),
                                 '&::before': {
@@ -358,46 +397,75 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                     top: '50%',
                                     transform: 'translateY(-50%)',
                                     width: 4,
-                                    height: isActive ? '80%' : '0%',
-                                    backgroundColor: theme.palette.primary.main,
+                                    height: isActive ? '70%' : '0%',
+                                    backgroundColor: primaryColor,
                                     borderRadius: '0 4px 4px 0',
                                     opacity: isActive ? 1 : 0,
-                                    transition: 'all 0.3s ease'
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: isActive ? `0 0 10px ${alpha(primaryColor, 0.5)}` : 'none'
                                 }
                             }}
                         >
                             <Tooltip title={collapsed ? item.text : ""} placement="right" arrow>
-                                <ListItemIcon
+                                <Box
+                                    className="menu-icon-wrapper"
                                     sx={{
-                                        minWidth: 'auto',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: '12px',
+                                        backgroundColor: isActive
+                                            ? primaryColor
+                                            : (mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                                        transition: 'all 0.2s ease',
                                         mr: collapsed ? 0 : 3,
-                                        color: isActive ? theme.palette.primary.main : (hoveredItem === item.text ? theme.palette.primary.main : 'inherit'),
-                                        transition: 'color 0.2s ease'
                                     }}
                                 >
-                                    {item.icon}
-                                </ListItemIcon>
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 'auto',
+                                            color: isActive
+                                                ? 'white'
+                                                : (hoveredItem === item.text
+                                                    ? primaryColor
+                                                    : mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)'),
+                                            transition: 'color 0.2s ease, transform 0.2s ease',
+                                            transform: hoveredItem === item.text ? 'scale(1.1)' : 'scale(1)',
+                                            m: 0
+                                        }}
+                                    >
+                                        {item.icon}
+                                    </ListItemIcon>
+                                </Box>
                             </Tooltip>
 
                             {!collapsed && (
                                 <>
                                     <ListItemText
                                         primary={item.text}
-
+                                        primaryTypographyProps={{
+                                            sx: {
+                                                fontWeight: isActive ? 600 : 500,
+                                                fontSize: '0.95rem',
+                                                letterSpacing: '0.1px',
+                                                color: isActive ? primaryColor : 'inherit'
+                                            }
+                                        }}
                                     />
 
                                     {item.badge && (
                                         <Chip
                                             label={item.badge}
                                             size="small"
-                                            color="primary"
                                             sx={{
                                                 height: 20,
                                                 fontSize: '0.7rem',
                                                 fontWeight: 700,
-                                                mr: 1.5,
                                                 borderRadius: '10px',
-                                                backgroundColor: theme.palette.primary.main,
+                                                backgroundColor: primaryColor,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                                                 '.MuiChip-label': {
                                                     px: 1,
                                                 }
@@ -405,14 +473,27 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                         />
                                     )}
 
-                                    <motion.div
-                                        animate={{
-                                            rotate: openMenus[item.text] ? 90 : 0,
+                                    <Box
+                                        sx={{
+                                            width: 24,
+                                            height: 24,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            borderRadius: '8px',
+                                            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                                            transition: 'all 0.2s ease',
                                         }}
-                                        transition={{ duration: 0.2 }}
                                     >
-                                        <ArrowForwardIosIcon sx={{ fontSize: 14 }} />
-                                    </motion.div>
+                                        <motion.div
+                                            animate={{
+                                                rotate: openMenus[item.text] ? 90 : 0,
+                                            }}
+                                            transition={{ duration: 0.2 }}
+                                        >
+                                            <ArrowForwardIosIcon sx={{ fontSize: 12, color: isActive ? primaryColor : 'inherit' }} />
+                                        </motion.div>
+                                    </Box>
                                 </>
                             )}
                         </ListItem>
@@ -432,33 +513,33 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                             return (
                                                 <Link key={subItem.text} href={route(subItem.route)}>
                                                     <motion.div
-                                                        whileHover={{ x: 5 }}
-                                                        transition={{ duration: 0.2 }}
+                                                        whileHover={{ x: 8, transition: { type: 'spring', stiffness: 400, damping: 10 } }}
                                                     >
                                                         <ListItem
-                                                            component="button"
+                                                            component="div"
                                                             sx={{
-                                                                pl: 7,
+                                                                pl: 8,
                                                                 pr: 2,
                                                                 py: 1.2,
                                                                 mx: 2,
                                                                 mb: 0.5,
-                                                                borderRadius: '10px',
+                                                                borderRadius: '12px',
                                                                 position: 'relative',
                                                                 overflow: 'hidden',
                                                                 border: 'none',
-                                                                background: 'none',
                                                                 width: '100%',
                                                                 textAlign: 'left',
+                                                                transition: 'all 0.2s ease',
                                                                 '&:hover': {
-                                                                    backgroundColor: alpha(theme.palette.primary.main, 0.06),
+                                                                    backgroundColor: alpha(primaryColor, 0.06),
                                                                 },
                                                                 ...(isSubItemActive && {
-                                                                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                                                                    color: theme.palette.primary.main,
+                                                                    backgroundColor: alpha(primaryColor, 0.08),
+                                                                    color: primaryColor,
                                                                     fontWeight: 600,
                                                                     '& .MuiListItemIcon-root': {
-                                                                        color: theme.palette.primary.main
+                                                                        color: primaryColor,
+                                                                        transform: 'scale(1.2)'
                                                                     }
                                                                 }),
                                                                 cursor: 'pointer'
@@ -468,8 +549,11 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                                                 sx={{
                                                                     minWidth: 18,
                                                                     mr: 2,
-                                                                    color: isSubItemActive ? theme.palette.primary.main : theme.palette.text.secondary,
-                                                                    opacity: 0.7
+                                                                    color: isSubItemActive
+                                                                        ? primaryColor
+                                                                        : theme.palette.text.secondary,
+                                                                    opacity: isSubItemActive ? 1 : 0.6,
+                                                                    transition: 'transform 0.2s ease, opacity 0.2s ease',
                                                                 }}
                                                             >
                                                                 <FiberManualRecordIcon sx={{ fontSize: 8 }} />
@@ -477,20 +561,27 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
 
                                                             <ListItemText
                                                                 primary={subItem.text}
-
+                                                                primaryTypographyProps={{
+                                                                    sx: {
+                                                                        fontSize: '0.85rem',
+                                                                        fontWeight: isSubItemActive ? 600 : 400,
+                                                                        letterSpacing: isSubItemActive ? '0.1px' : 'normal',
+                                                                        color: isSubItemActive ? primaryColor : 'inherit'
+                                                                    }
+                                                                }}
                                                             />
 
                                                             {subItem.badge && (
                                                                 <Chip
                                                                     label={subItem.badge}
                                                                     size="small"
-                                                                    color="primary"
                                                                     sx={{
                                                                         height: 18,
                                                                         fontSize: '0.65rem',
                                                                         fontWeight: 700,
                                                                         borderRadius: '10px',
-                                                                        backgroundColor: theme.palette.primary.main,
+                                                                        backgroundColor: primaryColor,
+                                                                        boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
                                                                         '.MuiChip-label': {
                                                                             px: 1,
                                                                         }
@@ -521,11 +612,11 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 >
                     <Link href={route(item.route)}>
                         <ListItem
-                            component="button"
+                            component="div"
                             onMouseEnter={() => setHoveredItem(item.text)}
                             onMouseLeave={() => setHoveredItem(null)}
                             sx={{
-                                borderRadius: '12px',
+                                borderRadius: '16px',
                                 mb: 0.8,
                                 pl: collapsed ? 2.5 : 3,
                                 pr: collapsed ? 2.5 : 2,
@@ -537,18 +628,29 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                 background: 'none',
                                 width: '100%',
                                 textAlign: 'left',
+                                transition: 'all 0.2s ease',
                                 '&:hover': {
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                                    backgroundColor: alpha(primaryColor, 0.08),
+                                    transform: 'translateX(3px)',
                                     '&::before': {
-                                        opacity: 1
+                                        opacity: 1,
+                                        height: '50%'
+                                    },
+                                    '& .menu-icon-wrapper': {
+                                        backgroundColor: alpha(primaryColor, 0.15),
                                     }
                                 },
                                 ...(isActive && {
-                                    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                                    color: theme.palette.primary.main,
+                                    backgroundColor: mode === 'dark'
+                                        ? alpha(primaryColor, 0.15)
+                                        : alpha(primaryColor, 0.12),
+                                    color: primaryColor,
                                     fontWeight: 600,
                                     '& .MuiListItemIcon-root': {
-                                        color: theme.palette.primary.main
+                                        color: 'white'
+                                    },
+                                    '& .menu-icon-wrapper': {
+                                        backgroundColor: primaryColor,
                                     }
                                 }),
                                 '&::before': {
@@ -558,50 +660,76 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                                     top: '50%',
                                     transform: 'translateY(-50%)',
                                     width: 4,
-                                    height: isActive ? '80%' : '0%',
-                                    backgroundColor: theme.palette.primary.main,
+                                    height: isActive ? '70%' : '0%',
+                                    backgroundColor: primaryColor,
                                     borderRadius: '0 4px 4px 0',
                                     opacity: isActive ? 1 : 0,
-                                    transition: 'all 0.3s ease'
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: isActive ? `0 0 10px ${alpha(primaryColor, 0.5)}` : 'none'
                                 },
                                 cursor: 'pointer'
                             }}
                         >
-                            <Tooltip
-                                title={collapsed ? item.text : ""}
-                                placement="right"
-                                arrow
-                            >
-                                <ListItemIcon
+                            <Tooltip title={collapsed ? item.text : ""} placement="right" arrow>
+                                <Box
+                                    className="menu-icon-wrapper"
                                     sx={{
-                                        minWidth: 'auto',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        width: 36,
+                                        height: 36,
+                                        borderRadius: '12px',
+                                        backgroundColor: isActive
+                                            ? primaryColor
+                                            : (mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'),
+                                        transition: 'all 0.2s ease',
                                         mr: collapsed ? 0 : 3,
-                                        color: isActive ? theme.palette.primary.main : (hoveredItem === item.text ? theme.palette.primary.main : 'inherit'),
-                                        transition: 'color 0.2s ease'
                                     }}
                                 >
-                                    {item.icon}
-                                </ListItemIcon>
+                                    <ListItemIcon
+                                        sx={{
+                                            minWidth: 'auto',
+                                            color: isActive
+                                                ? 'white'
+                                                : (hoveredItem === item.text
+                                                    ? primaryColor
+                                                    : mode === 'dark' ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)'),
+                                            transition: 'color 0.2s ease, transform 0.2s ease',
+                                            transform: hoveredItem === item.text ? 'scale(1.1)' : 'scale(1)',
+                                            m: 0
+                                        }}
+                                    >
+                                        {item.icon}
+                                    </ListItemIcon>
+                                </Box>
                             </Tooltip>
 
                             {!collapsed && (
                                 <>
                                     <ListItemText
                                         primary={item.text}
-
+                                        primaryTypographyProps={{
+                                            sx: {
+                                                fontWeight: isActive ? 600 : 500,
+                                                fontSize: '0.95rem',
+                                                letterSpacing: '0.1px',
+                                                color: isActive ? primaryColor : 'inherit'
+                                            }
+                                        }}
                                     />
 
                                     {item.badge && (
                                         <Chip
                                             label={item.badge}
                                             size="small"
-                                            color="primary"
                                             sx={{
                                                 height: 20,
                                                 fontSize: '0.7rem',
                                                 fontWeight: 700,
                                                 borderRadius: '10px',
-                                                backgroundColor: theme.palette.primary.main,
+                                                backgroundColor: primaryColor,
+                                                boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
                                                 '.MuiChip-label': {
                                                     px: 1,
                                                 }
@@ -617,430 +745,316 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
         });
     };
 
+    // Render drawer content
     const drawerContent = (
-        <Box sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            height: '100%',
-            bgcolor: mode === 'dark' ? alpha('#1A2027', 0.98) : '#FFFFFF',
-            background: mode === 'dark'
-                ? 'linear-gradient(180deg, #1F2937 0%, #111827 100%)'
-                : 'linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%)',
-            position: 'relative',
-            zIndex: 1,
-            borderRight: '1px solid',
-            borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
-        }}>
-            {/* Pola Latar Belakang Dekoratif */}
-            <Box
-                sx={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: -1,
-                    opacity: 0.03,
-                    background: mode === 'dark'
-                        ? 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23FFFFFF\' fill-opacity=\'0.2\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
-                        : 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%234F46E5\' fill-opacity=\'0.2\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")'
-                }}
-            />
-
-            {/* Logo / Header */}
-            <Box
-                sx={{
-                    p: 2.5,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: collapsed ? 'center' : 'flex-start',
-                    borderBottom: '1px solid',
-                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'
-                }}
-            >
-                {collapsed ? (
-                    <motion.div
-                        whileHover={{ scale: 1.1 }}
-                        transition={{ duration: 0.2 }}
-                    >
-                        <Avatar
-                            alt="Logo"
-                            src="/images/logo-icon.svg"
-                            sx={{
-                                width: 40,
-                                height: 40,
-                                backgroundColor: 'primary.main',
-                                boxShadow: '0 4px 8px rgba(79, 70, 229, 0.2)'
-                            }}
-                        />
-                    </motion.div>
-                ) : (
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <Avatar
-                                alt="Logo"
-                                src="/images/logo-icon.svg"
-                                sx={{
-                                    width: 40,
-                                    height: 40,
-                                    mr: 2,
-                                    backgroundColor: 'primary.main',
-                                    boxShadow: '0 4px 8px rgba(79, 70, 229, 0.2)'
-                                }}
-                            />
-                        </motion.div>
-
-                        <Typography
-                            variant="h6"
-                            fontWeight="800"
-                            sx={{
-                                background: 'linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent'
-                            }}
-                        >
-                            Portal Karir
-                        </Typography>
-                    </Box>
-                )}
-            </Box>
-
-            {/* Bagian bilah pencarian */}
-            <Box
-                sx={{
-                    px: 2,
-                    py: 2,
-                    transition: 'padding 0.3s ease',
-                    display: 'flex',
-                    justifyContent: collapsed ? 'center' : 'flex-start'
-                }}
-            >
-                {collapsed ? (
-                    <IconButton
-                        size="small"
-                        sx={{
-                            backgroundColor: mode === 'dark' ? alpha('#4F46E5', 0.1) : '#F3F4F6',
-                            borderRadius: '10px',
-                            width: 40,
-                            height: 40,
-                            color: theme.palette.primary.main,
-                            '&:hover': {
-                                backgroundColor: alpha(theme.palette.primary.main, 0.1)
-                            }
-                        }}
-                    >
-                        <SearchIcon fontSize="small" />
-                    </IconButton>
-                ) : (
-                    <Paper
-                        elevation={0}
-                        sx={{
+        <Box
+            sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                backgroundColor: mode === 'dark' ? 'background.default' : 'background.paper',
+                backgroundImage: mode === 'dark'
+                    ? 'linear-gradient(rgba(20, 20, 30, 0.8), rgba(10, 10, 20, 0.9))'
+                    : 'linear-gradient(rgba(255, 255, 255, 0.9), rgba(250, 250, 255, 1))',
+                borderRight: '1px solid',
+                borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                boxShadow: collapsed ? 'none' : (mode === 'dark' ? '0 0 20px rgba(0,0,0,0.5)' : '0 0 20px rgba(0,0,0,0.05)')
+            }}
+        >
+            <Box sx={{
+                p: 2,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: collapsed ? 'center' : 'space-between',
+                borderBottom: '1px solid',
+                borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                backdropFilter: 'blur(8px)',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10,
+                backgroundColor: mode === 'dark' ? 'rgba(18, 18, 30, 0.7)' : 'rgba(255, 255, 255, 0.8)'
+            }}>
+                {!collapsed && (
+                    <Link href="/">
+                        <Box sx={{
                             display: 'flex',
                             alignItems: 'center',
-                            width: '100%',
-                            py: 0.5,
-                            px: 1.5,
-                            borderRadius: '12px',
-                            backgroundColor: mode === 'dark' ? alpha('#4F46E5', 0.1) : '#F3F4F6',
-                            border: '1px solid',
-                            borderColor: mode === 'dark' ? 'transparent' : 'rgba(0,0,0,0.05)'
-                        }}
-                    >
-                        <SearchIcon
-                            sx={{
-                                color: mode === 'dark' ? alpha('#FFF', 0.7) : alpha('#000', 0.5),
-                                mr: 1
-                            }}
-                            fontSize="small"
-                        />
-                        <InputBase
-                            placeholder="Cari menu..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            sx={{
-                                flex: 1,
-                                fontSize: '0.9rem',
-                                '& .MuiInputBase-input': {
-                                    py: 0.7
-                                }
-                            }}
-                        />
-                        {searchTerm && (
-                            <IconButton
-                                size="small"
-                                onClick={() => setSearchTerm('')}
-                                sx={{ p: 0.5 }}
-                            >
-                                <motion.div whileHover={{ rotate: 90 }} transition={{ duration: 0.2 }}>
-                                    <MenuOpenIcon fontSize="small" />
-                                </motion.div>
-                            </IconButton>
-                        )}
-                    </Paper>
-                )}
-            </Box>
-
-            {/* Header kategori dengan animasi */}
-            <Box sx={{ mb: 0.5 }}>
-                {!collapsed && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2, duration: 0.3 }}
-                    >
-                        <Typography
-                            variant="overline"
-                            sx={{
-                                px: 4,
-                                py: 1,
-                                fontWeight: 700,
-                                display: 'block',
-                                fontSize: '0.65rem',
-                                letterSpacing: '0.1em',
-                                color: mode === 'dark' ? alpha('#FFF', 0.5) : theme.palette.text.secondary
-                            }}
-                        >
-                            NAVIGASI UTAMA
-                        </Typography>
-                    </motion.div>
-                )}
-            </Box>
-
-            {/* Item menu */}
-            <Box
-                sx={{
-                    flexGrow: 1,
-                    overflow: 'auto',
-                    px: collapsed ? 0 : 1,
-                    pb: 2,
-                    maskImage: 'linear-gradient(to bottom, transparent, black 10px, black 90%, transparent)',
-                    '&::-webkit-scrollbar': {
-                        width: '5px',
-                    },
-                    '&::-webkit-scrollbar-track': {
-                        backgroundColor: 'transparent',
-                    },
-                    '&::-webkit-scrollbar-thumb': {
-                        backgroundColor: mode === 'dark' ? alpha('#FFF', 0.2) : alpha('#000', 0.1),
-                        borderRadius: '10px',
-                    }
-                }}
-            >
-                <AnimatePresence>
-                    <List component="nav" sx={{ px: 0 }}>
-                        {filteredMenuItems.length > 0 ? (
-                            renderMenuItems(filteredMenuItems)
-                        ) : (
-                            <motion.div
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.3 }}
-                            >
-                                <Box sx={{ px: 3, py: 2 }}>
-                                    <Paper
-                                        elevation={0}
-                                        sx={{
-                                            p: 2,
-                                            textAlign: 'center',
-                                            borderRadius: '12px',
-                                            backgroundColor: mode === 'dark' ? alpha('#4F46E5', 0.1) : alpha('#F3F4F6', 0.8),
-                                            border: '1px dashed',
-                                            borderColor: mode === 'dark' ? alpha('#FFF', 0.1) : alpha('#000', 0.1),
-                                        }}
-                                    >
-                                        <SearchIcon
-                                            sx={{
-                                                fontSize: 40,
-                                                color: mode === 'dark' ? alpha('#FFF', 0.3) : alpha('#000', 0.2),
-                                                mb: 1
-                                            }}
-                                        />
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                color: mode === 'dark' ? alpha('#FFF', 0.7) : alpha('#000', 0.7),
-                                                fontWeight: 500
-                                            }}
-                                        >
-                                            Tidak ada menu yang cocok
-                                        </Typography>
-                                    </Paper>
-                                </Box>
-                            </motion.div>
-                        )}
-                    </List>
-                </AnimatePresence>
-            </Box>
-
-            <Divider sx={{
-                borderColor: mode === 'dark' ? alpha('#FFF', 0.05) : alpha('#000', 0.05)
-            }} />
-
-            {/* Bagian pengguna */}
-            <Box
-                sx={{
-                    p: collapsed ? 2 : 3,
-                    mt: 'auto',
-                    borderTop: '1px solid',
-                    borderColor: mode === 'dark' ? alpha('#FFF', 0.05) : alpha('#000', 0.05),
-                    background: mode === 'dark'
-                        ? 'linear-gradient(180deg, rgba(79, 70, 229, 0.1) 0%, rgba(79, 70, 229, 0.05) 100%)'
-                        : 'linear-gradient(180deg, rgba(249, 250, 251, 0.7) 0%, rgba(249, 250, 251, 1) 100%)',
-                    backdropFilter: 'blur(10px)'
-                }}
-            >
-                <Box sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    mb: collapsed ? 0 : 1.5
-                }}>
-                    <motion.div whileHover={{ scale: 1.1 }} transition={{ duration: 0.2 }}>
-                        <Avatar
-                            alt={user?.name || 'User'}
-                            src={user?.avatar}
-                            sx={{
-                                width: 42,
-                                height: 42,
-                                boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-                                border: '2px solid',
-                                borderColor: getRoleBadgeStyles().bgcolor,
-                                ...(collapsed && {
-                                    mx: 'auto'
-                                })
-                            }}
-                        >
-                            {user?.name ? user.name.charAt(0) : 'U'}
-                        </Avatar>
-                    </motion.div>
-
-                    {!collapsed && (
-                        <Box sx={{ overflow: 'hidden' }}>
+                            gap: 1,
+                            transform: 'translateY(0px)',
+                            transition: 'transform 0.3s ease',
+                            '&:hover': {
+                                transform: 'translateY(-2px)',
+                            }
+                        }}>
                             <Typography
-                                variant="body2"
-                                fontWeight="bold"
+                                variant="h6"
                                 noWrap
+                                component="div"
                                 sx={{
-                                    color: mode === 'dark' ? '#FFF' : 'text.primary'
+                                    fontWeight: 800,
+                                    letterSpacing: '-0.5px',
+                                    background: 'linear-gradient(90deg, #4F46E5, #06B6D4)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                    fontSize: '1.3rem',
                                 }}
                             >
-                                {user?.name || 'Pengguna'}
+                                CampusJobs
                             </Typography>
-
-                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 0.5 }}>
-                                <Chip
-                                    label={roleName}
-                                    size="small"
-                                    sx={{
-                                        height: 20,
-                                        fontSize: '0.65rem',
-                                        fontWeight: 700,
-                                        borderRadius: '10px',
-                                        ...getRoleBadgeStyles(),
-                                        '.MuiChip-label': {
-                                            px: 1,
-                                        }
-                                    }}
-                                />
-                            </Box>
                         </Box>
-                    )}
-
-                    {!collapsed && (
-                        <IconButton
-                            size="small"
-                            sx={{
-                                ml: 'auto',
-                                backgroundColor: mode === 'dark' ? alpha('#FFF', 0.05) : alpha('#000', 0.05),
-                                '&:hover': {
-                                    backgroundColor: mode === 'dark' ? alpha('#FFF', 0.1) : alpha('#000', 0.1),
-                                }
-                            }}
-                        >
-                            <SettingsIcon sx={{ fontSize: 16 }} />
-                        </IconButton>
-                    )}
-                </Box>
-
-                {!collapsed && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.3 }}
-                    >
-                        <Button
-                            component={Link}
-                            href={route('logout')}
-                            method="post"
-                            variant="contained"
-                            color="primary"
-                            size="small"
-                            fullWidth
-                            startIcon={<LogoutIcon fontSize="small" />}
-                            sx={{
-                                py: 1,
-                                borderRadius: '10px',
-                                background: 'linear-gradient(90deg, #14b8a6 0%, #0f766e 100%)',
-                                boxShadow: '0 4px 10px rgba(79, 70, 229, 0.2)',
-                                fontWeight: 600,
-                                textTransform: 'none',
-                                '&:hover': {
-                                    background: 'linear-gradient(90deg, #14b8a6 0%, #0f766e 100%)',
-                                    boxShadow: '0 4px 12px rgba(79, 70, 229, 0.3)',
-                                    transform: 'translateY(-1px)'
-                                },
-                                transition: 'all 0.2s ease'
-                            }}
-                        >
-                            Keluar
-                        </Button>
-                    </motion.div>
+                    </Link>
+                )}
+                {!isMobile && (
+                    <IconButton onClick={toggleCollapsed} size="small" sx={{
+                        borderRadius: '12px',
+                        backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+                        padding: '8px',
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)',
+                            transform: 'scale(1.05)'
+                        }
+                    }}>
+                        <MenuOpenIcon sx={{
+                            transform: collapsed ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.3s ease'
+                        }} />
+                    </IconButton>
                 )}
             </Box>
 
-            {/* Tombol ciutkan */}
-            <Box
-                sx={{
-                    p: 1.5,
-                    textAlign: 'center',
-                    borderTop: '1px solid',
-                    borderColor: mode === 'dark' ? alpha('#FFF', 0.05) : alpha('#000', 0.05)
-                }}
-            >
-                <Tooltip
-                    title={collapsed ? "Perluas Sidebar" : "Ciutkan Sidebar"}
-                    placement="right"
-                    arrow
-                >
-                    <IconButton
-                        onClick={toggleCollapsed}
-                        size="small"
+            {!collapsed && (
+                <Box sx={{
+                    px: 2,
+                    py: 2.5,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    borderBottom: '1px solid',
+                    borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                    mb: 1,
+                    background: mode === 'dark'
+                        ? 'linear-gradient(rgba(30, 30, 50, 0.3), rgba(20, 20, 40, 0.1))'
+                        : 'linear-gradient(rgba(245, 245, 255, 0.5), rgba(240, 240, 250, 0.2))',
+                    borderRadius: '16px',
+                    mx: 2,
+                    boxShadow: mode === 'dark'
+                        ? '0 4px 20px rgba(0,0,0,0.2)'
+                        : '0 4px 20px rgba(0,0,0,0.03)'
+                }}>
+                    <Avatar
+                        src={user.avatar_url || '/default-avatar.png'}
+                        alt={user.name}
                         sx={{
-                            border: '1px solid',
-                            borderColor: alpha(theme.palette.primary.main, 0.2),
-                            backgroundColor: alpha(theme.palette.primary.main, 0.05),
-                            color: theme.palette.primary.main,
-                            '&:hover': {
-                                backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                                transform: 'scale(1.1)'
+                            width: 70,
+                            height: 70,
+                            mb: 1.5,
+                            border: '3px solid',
+                            borderColor: primaryColor,
+                            boxShadow: `0 4px 15px ${alpha(primaryColor, 0.3)}`,
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                borderRadius: '50%',
+                                background: 'transparent',
+                                border: `2px solid ${alpha(primaryColor, 0.5)}`,
+                                transform: 'scale(1.15)',
+                                opacity: 0.5,
+                                transition: 'all 0.3s ease'
                             },
-                            transition: 'all 0.2s ease'
+                            '&:hover': {
+                                transform: 'scale(1.05)',
+                                boxShadow: `0 6px 20px ${alpha(primaryColor, 0.4)}`,
+                                '&::before': {
+                                    transform: 'scale(1.2)',
+                                    opacity: 0.7
+                                }
+                            },
+                            transition: 'all 0.3s ease'
+                        }}
+                    />
+                    <Typography
+                        variant="subtitle1"
+                        noWrap
+                        align="center"
+                        sx={{
+                            fontWeight: 600,
+                            fontSize: '1rem',
+                            lineHeight: 1.2,
+                            mb: 0.2,
+                            color: mode === 'dark' ? 'white' : 'text.primary'
                         }}
                     >
-                        <motion.div
-                            animate={{
-                                rotate: collapsed ? 0 : 180,
-                            }}
-                            transition={{ duration: 0.3 }}
-                        >
-                            <MenuOpenIcon fontSize="small" />
-                        </motion.div>
+                        {user.name || 'Pengguna'}
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{
+                            mb: 1.5,
+                            opacity: 0.8,
+                            fontWeight: 500
+                        }}
+                    >
+                        {user.email || 'guest@example.com'}
+                    </Typography>
+
+                    <Chip
+                        label={roleName}
+                        size="small"
+                        sx={{
+                            borderRadius: '12px',
+                            fontWeight: 600,
+                            fontSize: '0.7rem',
+                            backgroundColor: alpha(primaryColor, 0.1),
+                            color: primaryColor,
+                            border: `1px solid ${alpha(primaryColor, 0.2)}`,
+                            '.MuiChip-label': {
+                                px: 1.2,
+                                py: 0.3
+                            }
+                        }}
+                    />
+                </Box>
+            )}
+
+            {collapsed && (
+                <Box sx={{
+                    py: 2,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center'
+                }}>
+                    <Avatar
+                        src={user.avatar_url || '/default-avatar.png'}
+                        alt={user.name}
+                        sx={{
+                            width: 40,
+                            height: 40,
+                            border: '2px solid',
+                            borderColor: primaryColor,
+                            boxShadow: `0 4px 15px ${alpha(primaryColor, 0.3)}`,
+                            '&::before': {
+                                content: '""',
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                borderRadius: '50%',
+                                background: 'transparent',
+                                border: `2px solid ${alpha(primaryColor, 0.5)}`,
+                                transform: 'scale(1.15)',
+                                opacity: 0.5,
+                                transition: 'all 0.3s ease'
+                            },
+                            '&:hover': {
+                                transform: 'scale(1.05)',
+                                boxShadow: `0 6px 20px ${alpha(primaryColor, 0.4)}`,
+                                '&::before': {
+                                    transform: 'scale(1.2)',
+                                    opacity: 0.7
+                                }
+                            },
+                            transition: 'all 0.3s ease'
+                        }}
+                    />
+                </Box>
+            )}
+
+            {!collapsed && (
+                <Paper
+                    elevation={0}
+                    sx={{
+                        mx: 2,
+                        mb: 2,
+                        borderRadius: '12px',
+                        boxShadow: 'inset 0 0 0 1px rgba(0, 0, 0, 0.05)',
+                        backgroundColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        pl: 1.5,
+                        pr: 1
+                    }}
+                >
+                    <InputBase
+                        placeholder="Search..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        sx={{
+                            flex: 1,
+                            fontSize: '0.85rem',
+                            '& .MuiInputBase-input': {
+                                py: 1,
+                            }
+                        }}
+                    />
+                    <IconButton size="small" sx={{ p: 0.5 }}>
+                        <SearchIcon fontSize="small" sx={{ opacity: 0.7 }} />
                     </IconButton>
-                </Tooltip>
+                </Paper>
+            )}
+
+            <Box sx={{
+                flexGrow: 1,
+                overflowY: 'auto',
+                px: collapsed ? 0 : 0,
+                '&::-webkit-scrollbar': {
+                    width: '4px',
+                },
+                '&::-webkit-scrollbar-track': {
+                    background: 'transparent',
+                },
+                '&::-webkit-scrollbar-thumb': {
+                    background: mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                    borderRadius: '20px',
+                },
+                scrollbarWidth: 'thin',
+                scrollbarColor: mode === 'dark' ? 'rgba(255,255,255,0.1) transparent' : 'rgba(0,0,0,0.1) transparent',
+                py: 1
+            }}>
+                <List sx={{ pt: 0 }}>
+                    <AnimatePresence>
+                        {renderMenuItems(filteredMenuItems)}
+                    </AnimatePresence>
+                </List>
+            </Box>
+
+            <Box sx={{
+                p: 2,
+                borderTop: '1px solid',
+                borderColor: mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                display: 'flex',
+                justifyContent: collapsed ? 'center' : 'flex-start'
+            }}>
+                <Button
+                    href={route('logout')}
+                    method="post"
+                    as="button"
+                    startIcon={collapsed ? null : <LogoutIcon />}
+                    color="error"
+                    size={collapsed ? "small" : "medium"}
+                    sx={{
+                        borderRadius: '12px',
+                        px: collapsed ? 1 : 3,
+                        py: 1,
+                        backgroundColor: mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)',
+                        color: 'error.main',
+                        fontWeight: 600,
+                        transition: 'all 0.2s ease',
+                        '&:hover': {
+                            backgroundColor: mode === 'dark' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)',
+                            transform: 'translateY(-2px)',
+                        }
+                    }}
+                >
+                    {collapsed ? <LogoutIcon fontSize="small" /> : 'Logout'}
+                </Button>
             </Box>
         </Box>
     );

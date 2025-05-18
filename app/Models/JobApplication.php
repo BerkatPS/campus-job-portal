@@ -23,6 +23,7 @@ class JobApplication extends Model
         'resume',
         'notes',
         'is_favorite',
+        'has_review',
     ];
 
     /**
@@ -32,6 +33,7 @@ class JobApplication extends Model
      */
     protected $casts = [
         'is_favorite' => 'boolean',
+        'has_review' => 'boolean',
     ];
 
     /**
@@ -67,6 +69,15 @@ class JobApplication extends Model
     }
 
     /**
+     * Get the portfolio items attached to this job application.
+     */
+    public function portfolioItems()
+    {
+        return $this->belongsToMany(PortfolioItem::class, 'job_application_portfolio')
+            ->withTimestamps();
+    }
+
+    /**
      * Get the stage history for the job application.
      */
     public function stageHistory()
@@ -88,6 +99,14 @@ class JobApplication extends Model
     public function events()
     {
         return $this->hasMany(Event::class);
+    }
+
+    /**
+     * Get the review associated with this job application.
+     */
+    public function review()
+    {
+        return $this->hasOne(CompanyReview::class);
     }
 
     /**

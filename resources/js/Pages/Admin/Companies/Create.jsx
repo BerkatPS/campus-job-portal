@@ -66,7 +66,15 @@ const CompanyCreate = ({ industries = [], company = null, }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
 
-        // Buat FormData object dengan benar
+        if (!data.name.trim()) {
+            setAlertMessage('Company name is required.');
+            setAlertSeverity('error');
+            setShowAlert(true);
+            window.scrollTo(0, 0);
+            return;
+        }
+
+        // Create FormData object 
         const formData = new FormData();
         formData.append('name', data.name);
         formData.append('description', data.description || '');
@@ -77,15 +85,20 @@ const CompanyCreate = ({ industries = [], company = null, }) => {
         formData.append('industry', data.industry || '');
         formData.append('is_active', data.is_active ? '1' : '0');
 
-        // Pastikan logoFile adalah objek File yang valid
+        // Make sure logoFile is a valid File object
         if (logoFile) {
             formData.append('logo', logoFile);
+            console.log('Appending logo file:', logoFile.name, logoFile.type, logoFile.size);
         }
 
-        // PENTING: Kirim formData langsung, bukan di dalam objek data
+        // Important: Send the formData directly
         post(route('admin.companies.store'), formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
             onSuccess: () => {
                 // Success handling
+                console.log('Company created successfully');
             },
             onError: (errors) => {
                 console.error('Form validation errors:', errors);
@@ -97,13 +110,30 @@ const CompanyCreate = ({ industries = [], company = null, }) => {
         });
     };
 
-
-
     const handleFileChange = (file) => {
         if (!file) {
             setLogoFile(null);
             setLogoPreview(null);
             setData('logo', null);
+            return;
+        }
+
+        console.log('File selected:', file.name, file.type, file.size);
+
+        // Validate file type
+        const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+        if (!validTypes.includes(file.type)) {
+            setAlertMessage('Please upload a valid image file (JPG, PNG, or GIF)');
+            setAlertSeverity('error');
+            setShowAlert(true);
+            return;
+        }
+
+        // Validate file size (max 2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            setAlertMessage('Image size should be less than 2MB');
+            setAlertSeverity('error');
+            setShowAlert(true);
             return;
         }
 

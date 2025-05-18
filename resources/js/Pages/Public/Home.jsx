@@ -73,7 +73,7 @@ export default function Home({ auth, latestJobs = [] }) {
                 <motion.div
                     className="absolute inset-0 w-full h-full"
                     style={{
-                        backgroundImage: 'url(/images/hero-pattern.svg)',
+                        backgroundImage: 'url(/images/background-login.jpg)',
                         backgroundSize: 'cover',
                         y: scrollY * 0.5,
                         opacity: 0.2
@@ -89,6 +89,7 @@ export default function Home({ auth, latestJobs = [] }) {
 
                 <div className="container mx-auto px-6 h-full flex flex-col justify-center relative z-10">
                     <motion.div
+
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8 }}
@@ -129,13 +130,13 @@ export default function Home({ auth, latestJobs = [] }) {
                     </motion.div>
 
                     <motion.div
-                        className="absolute bottom-0 right-0 -mb-24 mr-0 sm:mr-12 lg:mr-24 xl:mr-48 hidden lg:block"
+                        className="absolute  right-0 -mb-12 mr-0 sm:mr-12 lg:mr-24 xl:mr-48 hidden lg:block"
                         initial={{ opacity: 0, y: 100 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.8, delay: 0.4 }}
                     >
                         <img
-                            src="/images/hero-illustration.svg"
+                            src="/images/stia.png"
                             alt="Job Search Illustration"
                             className="w-full max-w-xl h-auto filter drop-shadow-2xl"
                             onError={(e) => {
@@ -308,7 +309,7 @@ export default function Home({ auth, latestJobs = [] }) {
                                 role="Frontend Developer"
                                 company="Tech Innovators"
                                 image="https://randomuser.me/api/portraits/men/1.jpg"
-                                quote="Campus Job Portal membantu saya mendapatkan pekerjaan pertama saya setelah lulus. Fitur AI matching sangat akurat merekomendasikan pekerjaan yang sesuai dengan skill saya."
+                                quote="STIA Bayu Angga membantu saya mendapatkan pekerjaan pertama saya setelah lulus. Fitur AI matching sangat akurat merekomendasikan pekerjaan yang sesuai dengan skill saya."
                             />
                         </motion.div>
 

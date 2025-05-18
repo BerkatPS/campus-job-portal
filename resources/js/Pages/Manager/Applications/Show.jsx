@@ -20,7 +20,8 @@ import {
     Stack,
     useTheme,
     LinearProgress,
-    useMediaQuery
+    useMediaQuery,
+    Grid
 } from '@mui/material';
 
 // MUI Lab Components for Timeline
@@ -57,6 +58,10 @@ import {
     AccessTime,
     CheckCircle as CheckCircleIcon,
     Cancel as CancelIcon,
+    ArrowBack as ArrowBackIcon,
+    Comment as CommentIcon,
+    Mail as MailIcon,
+    Send as SendIcon,
 } from '@mui/icons-material';
 
 // Custom Components
@@ -101,11 +106,13 @@ const SectionTitle = ({ title, color = 'primary.main' }) => (
         mt: 1
     }}>
         <Box sx={{
+            p: 1,
             width: 4,
             height: 20,
             bgcolor: color,
             borderRadius: 1,
-            mr: 1.5
+            mr: 1.5,
+            opacity: 0.8
         }} />
         <Typography variant="h6" fontWeight="700" color="text.primary" className="text-gray-800">
             {title}
@@ -299,8 +306,8 @@ const Show = () => {
                     <Box
                         sx={{
                             bgcolor: 'background.paper',
-                            borderRadius: '1rem',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                            borderRadius: '0.75rem',
+                            boxShadow: 'none',
                             overflow: 'hidden',
                             border: '1px solid',
                             borderColor: 'divider'
@@ -336,10 +343,10 @@ const Show = () => {
                                     <Link href={route('manager.applications.index')}>
                                         <IconButton
                                             sx={{
-                                                bgcolor: theme => alpha(theme.palette.primary.main, 0.1),
+                                                bgcolor: alpha(theme.palette.primary.main, 0.04),
                                                 borderRadius: '0.75rem',
                                                 '&:hover': {
-                                                    bgcolor: theme => alpha(theme.palette.primary.main, 0.2),
+                                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
                                                 }
                                             }}
                                         >
@@ -382,13 +389,13 @@ const Show = () => {
                                             borderRadius: '0.75rem',
                                             py: 1.25,
                                             fontWeight: 600,
-                                            boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.25)',
+                                            boxShadow: 'none',
                                             '&:hover': {
-                                                boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
+                                                boxShadow: '0 2px 8px 0 rgba(20, 184, 166, 0.15)',
                                             },
-                                            transition: 'all 0.3s ease'
+                                            transition: 'all 0.2s ease'
                                         }}
-                                        className="transition-all duration-300"
+                                        className="transition-all duration-200"
                                     >
                                         Aksi
                                     </Dropdown>
@@ -411,7 +418,7 @@ const Show = () => {
                                         <Box sx={{
                                             mb: 3,
                                             bgcolor: 'background.paper',
-                                            borderRadius: '1rem',
+                                            borderRadius: '0.75rem',
                                             border: '1px solid',
                                             borderColor: 'divider',
                                             overflow: 'hidden'
@@ -446,7 +453,7 @@ const Show = () => {
                                                 <Paper
                                                     elevation={0}
                                                     sx={{
-                                                        borderRadius: '1rem',
+                                                        borderRadius: '0.75rem',
                                                         border: '1px solid',
                                                         borderColor: 'divider',
                                                         p: { xs: 2, md: 3 }
@@ -491,12 +498,12 @@ const Show = () => {
                                                                     sx={{
                                                                         height: 28,
                                                                         fontWeight: 600,
-                                                                        backgroundColor: alpha(application?.status?.color, 0.1),
+                                                                        backgroundColor: alpha(application?.status?.color, 0.08),
                                                                         color: application?.status?.color,
                                                                         fontSize: '0.75rem',
-                                                                        borderRadius: '0.5rem',
+                                                                        borderRadius: '6px',
                                                                         border: '1px solid',
-                                                                        borderColor: `${alpha(application?.status?.color, 0.3)}`
+                                                                        borderColor: `${alpha(application?.status?.color, 0.2)}`
                                                                     }}
                                                                 />
                                                             </Box>
@@ -517,12 +524,12 @@ const Show = () => {
                                                                         sx={{
                                                                             height: 24,
                                                                             fontWeight: 600,
-                                                                            backgroundColor: alpha(application?.current_stage?.color, 0.1),
+                                                                            backgroundColor: alpha(application?.current_stage?.color, 0.08),
                                                                             color: application?.current_stage?.color,
                                                                             fontSize: '0.75rem',
-                                                                            borderRadius: '0.5rem',
+                                                                            borderRadius: '6px',
                                                                             border: '1px solid',
-                                                                            borderColor: `${alpha(application?.current_stage?.color, 0.3)}`
+                                                                            borderColor: `${alpha(application?.current_stage?.color, 0.2)}`
                                                                         }}
                                                                     />
                                                                 </Box>
@@ -539,9 +546,9 @@ const Show = () => {
                                                                 sx={{
                                                                     p: 3,
                                                                     borderRadius: '0.75rem',
-                                                                    bgcolor: alpha(theme.palette.primary.main, 0.03),
+                                                                    bgcolor: alpha(theme.palette.primary.main, 0.02),
                                                                     border: '1px solid',
-                                                                    borderColor: alpha(theme.palette.primary.main, 0.1)
+                                                                    borderColor: alpha(theme.palette.primary.main, 0.08)
                                                                 }}
                                                             >
                                                                 <Typography variant="body2" sx={{
@@ -563,9 +570,9 @@ const Show = () => {
                                                                     sx={{
                                                                         p: 3,
                                                                         borderRadius: '0.75rem',
-                                                                        bgcolor: alpha(theme.palette.warning.main, 0.05),
+                                                                        bgcolor: alpha(theme.palette.warning.main, 0.03),
                                                                         border: '1px solid',
-                                                                        borderColor: alpha(theme.palette.warning.main, 0.2)
+                                                                        borderColor: alpha(theme.palette.warning.main, 0.12)
                                                                     }}
                                                                 >
                                                                     <Typography variant="body2" sx={{
@@ -588,11 +595,10 @@ const Show = () => {
                                                 <Paper
                                                     elevation={0}
                                                     sx={{
-                                                        borderRadius: '1rem',
+                                                        borderRadius: '0.75rem',
                                                         border: '1px solid',
                                                         borderColor: 'divider',
-                                                        p: { xs: 2, md: 3 },
-                                                        position: 'relative'
+                                                        p: { xs: 2, md: 3 }
                                                     }}
                                                 >
                                                     {application?.resume ? (
@@ -605,7 +611,7 @@ const Show = () => {
                                                                 sx={{
                                                                     border: 'none',
                                                                     borderRadius: '0.75rem',
-                                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                                                                    boxShadow: 'none'
                                                                 }}
                                                             />
                                                             <Button
@@ -645,7 +651,7 @@ const Show = () => {
                                                                     display: 'flex',
                                                                     alignItems: 'center',
                                                                     justifyContent: 'center',
-                                                                    backgroundColor: alpha(theme.palette.grey[500], 0.1),
+                                                                    backgroundColor: alpha(theme.palette.primary.main, 0.1),
                                                                     mb: 2
                                                                 }}
                                                             >
@@ -671,7 +677,7 @@ const Show = () => {
                                                 <Paper
                                                     elevation={0}
                                                     sx={{
-                                                        borderRadius: '1rem',
+                                                        borderRadius: '0.75rem',
                                                         border: '1px solid',
                                                         borderColor: 'divider',
                                                         p: { xs: 2, md: 3 }
@@ -784,7 +790,7 @@ const Show = () => {
                                                 <Paper
                                                     elevation={0}
                                                     sx={{
-                                                        borderRadius: '1rem',
+                                                        borderRadius: '0.75rem',
                                                         border: '1px solid',
                                                         borderColor: 'divider',
                                                         p: { xs: 2, md: 3 }
@@ -814,14 +820,14 @@ const Show = () => {
                                                                 py: 1.25,
                                                                 px: 2,
                                                                 fontWeight: 600,
-                                                                boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.25)',
+                                                                boxShadow: 'none',
                                                                 '&:hover': {
-                                                                    boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
+                                                                    boxShadow: '0 2px 8px 0 rgba(20, 184, 166, 0.15)',
                                                                     transform: 'translateY(-2px)'
                                                                 },
-                                                                transition: 'all 0.3s ease'
+                                                                transition: 'all 0.2s ease'
                                                             }}
-                                                            className="transition-all duration-300"
+                                                            className="transition-all duration-200"
                                                         >
                                                             Jadwalkan Acara
                                                         </Button>
@@ -844,10 +850,10 @@ const Show = () => {
                                                                             borderColor: 'divider',
                                                                             transition: 'all 0.2s ease-in-out',
                                                                             '&:hover': {
-                                                                                boxShadow: '0 4px 14px rgba(0,0,0,0.08)',
+                                                                                boxShadow: '0 2px 8px 0 rgba(0,0,0,0.08)',
                                                                             }
                                                                         }}
-                                                                        className="transition-all duration-300"
+                                                                        className="transition-all duration-200"
                                                                     >
                                                                         <Stack direction={{ xs: "column", sm: "row" }} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "flex-start" }} spacing={2}>
                                                                             <Stack direction="row" spacing={2} alignItems="flex-start">
@@ -857,6 +863,9 @@ const Show = () => {
                                                                                         color: 'primary.main',
                                                                                         width: 48,
                                                                                         height: 48,
+                                                                                        mr: 2,
+                                                                                        border: '2px solid',
+                                                                                        borderColor: 'primary.main',
                                                                                         borderRadius: '0.75rem'
                                                                                     }}
                                                                                 >
@@ -1009,7 +1018,7 @@ const Show = () => {
                                         <Paper
                                             elevation={0}
                                             sx={{
-                                                borderRadius: '1rem',
+                                                borderRadius: '0.75rem',
                                                 border: '1px solid',
                                                 borderColor: 'divider',
                                                 overflow: 'hidden'
@@ -1215,7 +1224,7 @@ const Show = () => {
                                         <Paper
                                             elevation={0}
                                             sx={{
-                                                borderRadius: '1rem',
+                                                borderRadius: '0.75rem',
                                                 border: '1px solid',
                                                 borderColor: 'divider',
                                                 overflow: 'hidden'
@@ -1430,7 +1439,7 @@ const Show = () => {
                                         <Paper
                                             elevation={0}
                                             sx={{
-                                                borderRadius: '1rem',
+                                                borderRadius: '0.75rem',
                                                 border: '1px solid',
                                                 borderColor: 'divider',
                                                 overflow: 'hidden'
@@ -1469,14 +1478,14 @@ const Show = () => {
                                                             borderRadius: '0.75rem',
                                                             py: 1.25,
                                                             fontWeight: 600,
-                                                            boxShadow: '0 4px 14px 0 rgba(76, 175, 80, 0.25)',
+                                                            boxShadow: 'none',
                                                             '&:hover': {
-                                                                boxShadow: '0 6px 20px 0 rgba(76, 175, 80, 0.35)',
+                                                                boxShadow: '0 2px 8px 0 rgba(76, 175, 80, 0.15)',
                                                                 transform: 'translateY(-2px)'
                                                             },
-                                                            transition: 'all 0.3s ease'
+                                                            transition: 'all 0.2s ease'
                                                         }}
-                                                        className="transition-all duration-300"
+                                                        className="transition-all duration-200"
                                                     >
                                                         Terima Lamaran
                                                     </Button>
@@ -1522,6 +1531,21 @@ const Show = () => {
                                                     >
                                                         Jadwalkan Wawancara
                                                     </Button>
+                                                    {/*<Grid container spacing={2} sx={{ mt: 2 }}>*/}
+                                                    {/*    /!*<Grid item xs={12} md={6}>*!/*/}
+                                                    {/*    /!*    <Button*!/*/}
+                                                    {/*    /!*        fullWidth*!/*/}
+                                                    {/*    /!*        component={Link}*!/*/}
+                                                    {/*    /!*        href={route('manager.candidates.show', application.user.id)}*!/*/}
+                                                    {/*    /!*        startIcon={<PersonIcon />}*!/*/}
+                                                    {/*    /!*        variant="outlined"*!/*/}
+                                                    {/*    /!*        sx={{ mb: 2 }}*!/*/}
+                                                    {/*    /!*    >*!/*/}
+                                                    {/*    /!*        Lihat Profil Kandidat*!/*/}
+                                                    {/*    /!*    </Button>*!/*/}
+                                                    {/*    /!*</Grid>*!/*/}
+
+                                                    {/*</Grid>*/}
                                                 </Stack>
                                             </Box>
                                         </Paper>
@@ -1539,7 +1563,7 @@ const Show = () => {
                                 onConfirm={handleStatusSubmit}
                                 maxWidth="sm"
                                 PaperProps={{
-                                    sx: { borderRadius: '1rem' }
+                                    sx: { borderRadius: '0.75rem' }
                                 }}
                             >
                                 <Box sx={{ p: 1 }}>
@@ -1574,7 +1598,7 @@ const Show = () => {
                                 onConfirm={handleStageSubmit}
                                 maxWidth="sm"
                                 PaperProps={{
-                                    sx: { borderRadius: '1rem' }
+                                    sx: { borderRadius: '0.75rem' }
                                 }}
                             >
                                 <Box sx={{ p: 1 }}>
@@ -1625,7 +1649,7 @@ const Show = () => {
                                 onConfirm={handleNotesSubmit}
                                 maxWidth="sm"
                                 PaperProps={{
-                                    sx: { borderRadius: '1rem' }
+                                    sx: { borderRadius: '0.75rem' }
                                 }}
                             >
                                 <Box sx={{ p: 1 }}>
@@ -1661,7 +1685,7 @@ const Show = () => {
                                 onConfirm={rejectApplication}
                                 maxWidth="sm"
                                 PaperProps={{
-                                    sx: { borderRadius: '1rem' }
+                                    sx: { borderRadius: '0.75rem' }
                                 }}
                             >
                                 <Box sx={{ p: 1 }}>

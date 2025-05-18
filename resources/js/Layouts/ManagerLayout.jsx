@@ -1,10 +1,12 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Box, CssBaseline } from '@mui/material';
 import Header from '@/Components/Layout/Header';
 import Sidebar from '@/Components/Layout/Sidebar';
+import NotificationListener from '@/Components/NotificationListener';
 
 export default function ManagerLayout({ children, title }) {
+    const { auth } = usePage().props;
     const [open, setOpen] = React.useState(false);
     const [collapsed, setCollapsed] = React.useState(false);
 
@@ -25,6 +27,9 @@ export default function ManagerLayout({ children, title }) {
             <CssBaseline />
             
             <Head title={title} />
+            
+            {/* Menambahkan NotificationListener untuk menangkap notifikasi real-time */}
+            {auth?.user?.id && <NotificationListener userId={auth.user.id} />}
             
             <Sidebar 
                 isOpen={open} 
@@ -65,4 +70,4 @@ export default function ManagerLayout({ children, title }) {
             </Box>
         </Box>
     );
-} 
+}

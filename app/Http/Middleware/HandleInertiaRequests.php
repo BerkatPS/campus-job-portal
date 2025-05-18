@@ -31,7 +31,10 @@ class HandleInertiaRequests extends Middleware
     {
         return array_merge(parent::share($request), [
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? array_merge($request->user()->toArray(), [
+                    'has_resume' => $request->user()->candidateProfile && 
+                        ($request->user()->candidateProfile->resume || $request->user()->candidateProfile->resume_name)
+                ]) : null,
                 'unreadNotificationsCount' => $request->user()
                     ? $request->user()->unreadNotifications()->count()
                     : 0,
@@ -40,8 +43,21 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
             ],
+            // Add CSRF token to prevent 419 errors
+            'csrf_token' => csrf_token(),
+            // Add the application URL for API requests
+            'appUrl' => config('app.url'),
+            // Add session information
+            'session' => [
+                'status' => fn () => $request->session()->get('status'),
+            ],
+            // Add latestNotifications and unreadMessagesCount
+            'latestNotifications' => $request->user() 
+                ? $request->user()->notifications()->latest()->take(5)->get() 
+                : [],
+            'unreadMessagesCount' => $request->user() && method_exists($request->user(), 'getUnreadMessagesCount')
+                ? $request->user()->getUnreadMessagesCount()
+                : 0,
         ]);
     }
-
-
 }

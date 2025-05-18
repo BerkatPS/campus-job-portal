@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, usePage, Link, router } from '@inertiajs/react';
 import {
     Box,
@@ -25,6 +25,7 @@ import {
     Stack,
     Button as MuiButton,
     MenuItem,
+    Grid
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -57,6 +58,217 @@ import Spinner from '@/Components/Shared/Spinner';
 import Modal from '@/Components/Shared/Modal';
 import Alert from '@/Components/Shared/Alert';
 import Layout from '@/Components/Layout/Layout';
+import CustomPagination from '@/Components/Shared/Pagination';
+
+// Company Logo Component with Fallback
+const CompanyLogo = ({ company, size = 48 }) => {
+    const [hasError, setHasError] = useState(false);
+    const theme = useTheme();
+
+    // Generate colors based on company name
+    const generateColorFromName = (name) => {
+        if (!name) return theme.palette.primary.main;
+
+        const colors = [
+            theme.palette.primary.main,
+            theme.palette.secondary.main,
+            theme.palette.success.main,
+            theme.palette.warning.main,
+            theme.palette.info.main,
+        ];
+
+        const hash = name.split('').reduce((acc, char) => {
+            return char.charCodeAt(0) + acc;
+        }, 0);
+
+        return colors[hash % colors.length];
+    };
+
+    // Default logo content - company initial with background color
+    const renderDefaultLogo = () => {
+        const bgColor = generateColorFromName(company.name);
+        const initial = company.name?.charAt(0).toUpperCase() || 'C';
+
+        return (
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    height: '100%',
+                    bgcolor: bgColor,
+                    color: 'white',
+                    fontSize: size * 0.5,
+                    fontWeight: 700,
+                    borderRadius: 1,
+                }}
+            >
+                {initial}
+            </Box>
+        );
+    };
+
+    if (!company.logo || hasError) {
+        return (
+            <Box
+                sx={{
+                    width: size,
+                    height: size,
+                    borderRadius: 1,
+                    overflow: 'hidden',
+                }}
+            >
+                {renderDefaultLogo()}
+            </Box>
+        );
+    }
+
+    return (
+        <Box
+            component="img"
+            src={company.logo}
+            alt={company.name}
+            onError={() => setHasError(true)}
+            sx={{
+                width: size,
+                height: size,
+                objectFit: 'contain',
+                borderRadius: 1,
+                border: '1px solid',
+                borderColor: 'divider',
+                p: 0.5,
+                bgcolor: 'white',
+            }}
+        />
+    );
+};
+
+// Modal component for deletion confirmation
+const DeleteModal = ({ open, onClose, company, onDelete, loading }) => {
+    return (
+        <Modal
+            open={open}
+            onClose={onClose}
+            title="Hapus Perusahaan"
+            description={
+                <>
+                    <Typography variant="body1">
+                        Apakah Anda yakin ingin menghapus {company?.name}?
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        Tindakan ini tidak dapat dibatalkan. Semua data terkait perusahaan ini akan dihapus secara permanen.
+                    </Typography>
+                </>
+            }
+            confirmButton
+            cancelButton
+            confirmText="Hapus"
+            confirmColor="error"
+            onConfirm={onDelete}
+            loading={loading}
+        />
+    );
+};
+
+// Stats Card component to reduce duplication
+const StatsCard = ({ icon, count, label, color = "primary", delay = 0 }) => {
+    const theme = useTheme();
+
+    // Handle special case for grey which may not have .main property
+    const getColorValue = (colorName) => {
+        if (colorName === "grey") {
+            return {
+                bgColor: alpha(theme.palette.grey[500], 0.03),
+                avatarBgColor: alpha(theme.palette.grey[500], 0.1),
+                avatarColor: theme.palette.grey[600]
+            };
+        } else {
+            return {
+                bgColor: alpha(theme.palette[colorName].main, 0.03),
+                avatarBgColor: alpha(theme.palette[colorName].main, 0.1),
+                avatarColor: theme.palette[colorName].main
+            };
+        }
+    };
+
+    const colorValues = getColorValue(color);
+
+    return (
+        <Box sx={{ flex: 1, minWidth: '220px', maxWidth: '270px' }}>
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay }}
+            >
+                <MuiCard
+                    elevation={0}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        p: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                        boxShadow: `0 1px 5px ${alpha(theme.palette.common.black, 0.05)}`,
+                        bgcolor: colorValues.bgColor,
+                    }}
+                >
+                    <Avatar
+                        sx={{
+                            bgcolor: colorValues.avatarBgColor,
+                            color: colorValues.avatarColor,
+                            width: 56,
+                            height: 56,
+                            mr: 2
+                        }}
+                    >
+                        {icon}
+                    </Avatar>
+                    <Box>
+                        <Typography variant="h4" fontWeight={700} gutterBottom>
+                            {count}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {label}
+                        </Typography>
+                    </Box>
+                </MuiCard>
+            </motion.div>
+        </Box>
+    );
+};
+
+// Actions Menu component
+const ActionsMenu = ({ anchorEl, onClose }) => {
+    return (
+        <Menu
+            anchorEl={anchorEl}
+            open={Boolean(anchorEl)}
+            onClose={onClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        >
+            <MenuItem onClick={onClose}>
+                <ListItemIcon>
+                    <CloudDownloadIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Ekspor CSV</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={onClose}>
+                <ListItemIcon>
+                    <PrintIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Cetak Daftar</ListItemText>
+            </MenuItem>
+            <MenuItem onClick={onClose}>
+                <ListItemIcon>
+                    <RefreshIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText>Segarkan Data</ListItemText>
+            </MenuItem>
+        </Menu>
+    );
+};
 
 const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] } }) => {
     const { flash } = usePage().props;
@@ -72,6 +284,17 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
     const [filterStatus, setFilterStatus] = useState('');
     const [tabValue, setTabValue] = useState(0);
     const [actionsAnchorEl, setActionsAnchorEl] = useState(null);
+
+    // Calculate stats
+    const totalCompanies = useMemo(() => companies?.total || companies?.data?.length || 0, [companies]);
+    const activeCompanies = useMemo(() =>
+        companies?.data?.filter(company => company.is_active)?.length || 0,
+        [companies]
+    );
+    const inactiveCompanies = useMemo(() =>
+        companies?.data?.filter(company => !company.is_active)?.length || 0,
+        [companies]
+    );
 
     useEffect(() => {
         // Check for flash messages from the backend
@@ -124,25 +347,13 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     justifyContent: 'center',
                     alignItems: 'center',
                 }}>
-                    <Avatar
-                        src={logo || '/default-logo.png'}
-                        alt={company.name}
-                        variant="rounded"
-                        sx={{
-                            width: 44,
-                            height: 44,
-                            bgcolor: logo ? 'transparent' : alpha(theme.palette.primary.main, 0.08),
-                            border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                        }}
-                    >
-                        {!logo && <BusinessIcon color="primary" />}
-                    </Avatar>
+                    <CompanyLogo company={company} size={44} />
                 </Box>
             ),
         },
         {
             field: 'name',
-            header: 'Company Name',
+            header: 'Nama Perusahaan',
             sortable: true,
             render: (name, company) => (
                 <Box sx={{ display: 'flex', flexDirection: 'column' }}>
@@ -150,18 +361,18 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                         {name}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                        {company.address ? company.address.split(',')[0] : 'No location specified'}
+                        {company.address ? company.address.split(',')[0] : 'Lokasi tidak tersedia'}
                     </Typography>
                 </Box>
             ),
         },
         {
             field: 'industry',
-            header: 'Industry',
+            header: 'Industri',
             sortable: true,
             render: (industry) => (
                 <Chip
-                    label={industry || 'Not specified'}
+                    label={industry || 'Tidak tersedia'}
                     size="small"
                     color={industry ? 'primary' : 'default'}
                     variant={industry ? 'filled' : 'outlined'}
@@ -185,7 +396,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     {isActive ? (
                         <Chip
                             icon={<CheckCircleOutlineIcon fontSize="small" />}
-                            label="Active"
+                            label="Aktif"
                             color="success"
                             size="small"
                             variant="filled"
@@ -202,7 +413,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     ) : (
                         <Chip
                             icon={<DoDisturbOnIcon fontSize="small" />}
-                            label="Inactive"
+                            label="Tidak Aktif"
                             color="default"
                             size="small"
                             variant="outlined"
@@ -243,16 +454,16 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                 </Button>
             ) : (
                 <Typography variant="body2" color="text.disabled">
-                    Not provided
+                    Tidak tersedia
                 </Typography>
             ),
         },
         {
             field: 'created_at',
-            header: 'Created',
+            header: 'Tanggal Dibuat',
             sortable: true,
             render: (date) => {
-                const formattedDate = new Date(date).toLocaleDateString(undefined, {
+                const formattedDate = new Date(date).toLocaleDateString('id-ID', {
                     year: 'numeric',
                     month: 'short',
                     day: 'numeric'
@@ -266,24 +477,68 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
         },
     ];
 
-    // Filter companies based on search term and filters
-    const filteredCompanies = companies?.data?.filter(company => {
-        const matchesSearch = company?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (company?.industry && company.industry.toLowerCase().includes(searchTerm.toLowerCase()));
+    // Apply filters to companies
+    const filteredCompanies = useMemo(() => {
+        // Ensure companies.data exists and is an array
+        if (!companies?.data || !Array.isArray(companies.data)) {
+            return [];
+        }
+        
+        let filtered = [...companies.data];
+        
+        // Apply search filter
+        if (searchTerm) {
+            const lowerSearch = searchTerm.toLowerCase();
+            filtered = filtered.filter(company => 
+                (company.name && company.name.toLowerCase().includes(lowerSearch)) ||
+                (company.industry && company.industry.toLowerCase().includes(lowerSearch)) ||
+                (company.address && company.address.toLowerCase().includes(lowerSearch))
+            );
+        }
+        
+        // Apply industry filter
+        if (filterIndustry) {
+            filtered = filtered.filter(company => company.industry === filterIndustry);
+        }
+        
+        // Apply status filter
+        if (filterStatus === 'active') {
+            filtered = filtered.filter(company => company.is_active);
+        } else if (filterStatus === 'inactive') {
+            filtered = filtered.filter(company => !company.is_active);
+        }
+        
+        return filtered;
+    }, [companies?.data, searchTerm, filterIndustry, filterStatus]);
 
-        const matchesIndustry = !filterIndustry || company?.industry === filterIndustry;
-
-        const matchesStatus = !filterStatus ||
-            (filterStatus === 'active' && company?.is_active) ||
-            (filterStatus === 'inactive' && !company?.is_active);
-
-        return matchesSearch && matchesIndustry && matchesStatus;
-    }) || [];
-
-    // Get stats for tabs
-    const totalCompanies = companies?.data?.length || 0;
-    const activeCompanies = companies?.data?.filter(c => c.is_active)?.length || 0;
-    const inactiveCompanies = companies?.data?.filter(c => !c.is_active)?.length || 0;
+    // When search, filter or tab changes, update the URL to maintain state
+    useEffect(() => {
+        if (companies?.data) {
+            // Only update URL if user explicitly changed filters (not on initial load)
+            if (searchTerm || filterIndustry || filterStatus) {
+                const params = { ...route().params };
+                
+                // Add filters to URL params
+                if (searchTerm) params.search = searchTerm;
+                else delete params.search;
+                
+                if (filterIndustry) params.industry = filterIndustry;
+                else delete params.industry;
+                
+                if (filterStatus) params.status = filterStatus;
+                else delete params.status;
+                
+                // Reset to page 1 when filters change
+                params.page = 1;
+                
+                router.get(route('admin.companies.index', params), {}, {
+                    preserveState: true,
+                    replace: true,
+                    only: ['companies']
+                });
+            }
+        }
+    }, [searchTerm, filterIndustry, filterStatus]);
 
     // Handle company deletion
     const handleDelete = () => {
@@ -294,12 +549,12 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
             onSuccess: () => {
                 setDeleteModal(false);
                 setCompanyToDelete(null);
-                setAlertMessage('Company deleted successfully.');
+                setAlertMessage('Perusahaan berhasil dihapus.');
                 setAlertSeverity('success');
                 setShowAlert(true);
             },
             onError: (errors) => {
-                setAlertMessage('Failed to delete company: ' + Object.values(errors).flat().join(' '));
+                setAlertMessage('Gagal menghapus perusahaan: ' + Object.values(errors).flat().join(' '));
                 setAlertSeverity('error');
                 setShowAlert(true);
             },
@@ -311,12 +566,12 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
     const handleToggleActive = (company) => {
         router.post(route('admin.companies.toggle-active', company.id), {
             onSuccess: () => {
-                setAlertMessage(`Company status ${company.is_active ? 'deactivated' : 'activated'} successfully.`);
+                setAlertMessage(`Status perusahaan ${company.is_active ? 'dinonaktifkan' : 'diaktifkan'} berhasil.`);
                 setAlertSeverity('success');
                 setShowAlert(true);
             },
             onError: (errors) => {
-                setAlertMessage('Failed to update company status: ' + Object.values(errors).flat().join(' '));
+                setAlertMessage('Gagal mengupdate status perusahaan: ' + Object.values(errors).flat().join(' '));
                 setAlertSeverity('error');
                 setShowAlert(true);
             }
@@ -326,7 +581,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
     // Prepare the actions for the table
     const actions = (company) => (
         <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-            <Tooltip title="View Details">
+            <Tooltip title="Lihat Detail">
                 <IconButton
                     size="small"
                     component={Link}
@@ -354,7 +609,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     <EditIcon fontSize="small" />
                 </IconButton>
             </Tooltip>
-            <Tooltip title={company.is_active ? "Deactivate" : "Activate"}>
+            <Tooltip title={company.is_active ? "Nonaktifkan" : "Aktifkan"}>
                 <IconButton
                     size="small"
                     onClick={() => handleToggleActive(company)}
@@ -371,7 +626,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     {company.is_active ? <DoDisturbOnIcon fontSize="small" /> : <CheckCircleOutlineIcon fontSize="small" />}
                 </IconButton>
             </Tooltip>
-            <Tooltip title="Delete">
+            <Tooltip title="Hapus">
                 <IconButton
                     size="small"
                     onClick={() => {
@@ -390,16 +645,23 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
         </Box>
     );
 
+    // Reset all filters and go back to "All" tab
     const resetFilters = () => {
         setSearchTerm('');
         setFilterIndustry('');
         setFilterStatus('');
         setTabValue(0);
+        
+        // Reset URL query params and reload companies data
+        router.get(route('admin.companies.index'), {}, {
+            preserveState: false,  // Don't preserve state to ensure complete refresh
+            only: ['companies']
+        });
     };
 
     return (
         <Layout>
-            <Head title="Companies Management" />
+            <Head title="Perusahaan" />
 
             {/* Header Section */}
             <Box sx={{ mb: 4, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -416,10 +678,10 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     </Avatar>
                     <Box>
                         <Typography variant="h4" component="h1" fontWeight={700}>
-                            Companies
+                            Perusahaan
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Manage all registered companies in the portal
+                            Kelola perusahaan dan profil mereka
                         </Typography>
                     </Box>
                 </Box>
@@ -433,10 +695,19 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                         size="large"
                         sx={{ px: 3 }}
                     >
-                        Add Company
+                        Tambah Perusahaan
                     </Button>
                 </motion.div>
             </Box>
+
+            {/* Delete Confirmation Modal */}
+            <DeleteModal
+                open={deleteModal}
+                onClose={() => setDeleteModal(false)}
+                company={companyToDelete}
+                onDelete={handleDelete}
+                loading={loading}
+            />
 
             <AnimatePresence>
                 {showAlert && (
@@ -459,128 +730,27 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
 
             {/* Stats Cards */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
-                <Box sx={{ flex: 1, minWidth: '220px', maxWidth: '270px' }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3 }}
-                    >
-                        <MuiCard
-                            elevation={0}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                                boxShadow: `0 1px 5px ${alpha(theme.palette.common.black, 0.05)}`,
-                                bgcolor: alpha(theme.palette.primary.main, 0.03),
-                            }}
-                        >
-                            <Avatar
-                                sx={{
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    color: theme.palette.primary.main,
-                                    width: 56,
-                                    height: 56,
-                                    mr: 2
-                                }}
-                            >
-                                <BusinessIcon />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="h4" fontWeight={700} gutterBottom>
-                                    {totalCompanies}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Total Companies
-                                </Typography>
-                            </Box>
-                        </MuiCard>
-                    </motion.div>
-                </Box>
-
-                <Box sx={{ flex: 1, minWidth: '220px', maxWidth: '270px' }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.1 }}
-                    >
-                        <MuiCard
-                            elevation={0}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                                boxShadow: `0 1px 5px ${alpha(theme.palette.common.black, 0.05)}`,
-                                bgcolor: alpha(theme.palette.success.main, 0.03),
-                            }}
-                        >
-                            <Avatar
-                                sx={{
-                                    bgcolor: alpha(theme.palette.success.main, 0.1),
-                                    color: theme.palette.success.main,
-                                    width: 56,
-                                    height: 56,
-                                    mr: 2
-                                }}
-                            >
-                                <CheckCircleOutlineIcon />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="h4" fontWeight={700} gutterBottom>
-                                    {activeCompanies}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Active Companies
-                                </Typography>
-                            </Box>
-                        </MuiCard>
-                    </motion.div>
-                </Box>
-
-                <Box sx={{ flex: 1, minWidth: '220px', maxWidth: '270px' }}>
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: 0.2 }}
-                    >
-                        <MuiCard
-                            elevation={0}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                p: 2,
-                                borderRadius: 2,
-                                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                                boxShadow: `0 1px 5px ${alpha(theme.palette.common.black, 0.05)}`,
-                                bgcolor: alpha(theme.palette.grey[500], 0.03),
-                            }}
-                        >
-                            <Avatar
-                                sx={{
-                                    bgcolor: alpha(theme.palette.grey[500], 0.1),
-                                    color: theme.palette.grey[600],
-                                    width: 56,
-                                    height: 56,
-                                    mr: 2
-                                }}
-                            >
-                                <DoDisturbOnIcon />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="h4" fontWeight={700} gutterBottom>
-                                    {inactiveCompanies}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    Inactive Companies
-                                </Typography>
-                            </Box>
-                        </MuiCard>
-                    </motion.div>
-                </Box>
+                <StatsCard
+                    icon={<BusinessIcon />}
+                    count={totalCompanies}
+                    label="Total Perusahaan"
+                    color="primary"
+                    delay={0}
+                />
+                <StatsCard
+                    icon={<CheckCircleOutlineIcon />}
+                    count={activeCompanies}
+                    label="Perusahaan Aktif"
+                    color="success"
+                    delay={0.1}
+                />
+                <StatsCard
+                    icon={<DoDisturbOnIcon />}
+                    count={inactiveCompanies}
+                    label="Perusahaan Tidak Aktif"
+                    color="grey"
+                    delay={0.2}
+                />
             </Box>
 
             {/* Main Content */}
@@ -607,42 +777,20 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <BusinessIcon color="primary" />
                         <Typography variant="h6" fontWeight={600}>
-                            Company Directory
+                            Direktori Perusahaan
                         </Typography>
                     </Box>
 
                     <Box>
-                        <Tooltip title="More Actions">
+                        <Tooltip title="Lihat Lebih Banyak">
                             <IconButton onClick={handleOpenActionsMenu}>
                                 <MoreVertIcon />
                             </IconButton>
                         </Tooltip>
-                        <Menu
+                        <ActionsMenu
                             anchorEl={actionsAnchorEl}
-                            open={Boolean(actionsAnchorEl)}
                             onClose={handleCloseActionsMenu}
-                            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-                            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-                        >
-                            <MenuItem onClick={handleCloseActionsMenu}>
-                                <ListItemIcon>
-                                    <CloudDownloadIcon fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText>Export to CSV</ListItemText>
-                            </MenuItem>
-                            <MenuItem onClick={handleCloseActionsMenu}>
-                                <ListItemIcon>
-                                    <PrintIcon fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText>Print List</ListItemText>
-                            </MenuItem>
-                            <MenuItem onClick={handleCloseActionsMenu}>
-                                <ListItemIcon>
-                                    <RefreshIcon fontSize="small" />
-                                </ListItemIcon>
-                                <ListItemText>Refresh Data</ListItemText>
-                            </MenuItem>
-                        </Menu>
+                        />
                     </Box>
                 </Box>
 
@@ -651,7 +799,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     <Tabs
                         value={tabValue}
                         onChange={handleTabChange}
-                        aria-label="company status tabs"
+                        aria-label="status perusahaan tabs"
                         sx={{
                             '.MuiTabs-indicator': {
                                 height: 3,
@@ -666,9 +814,9 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                             }
                         }}
                     >
-                        <Tab label="All Companies" />
-                        <Tab label="Active" />
-                        <Tab label="Inactive" />
+                        <Tab label="Semua Perusahaan" />
+                        <Tab label="Aktif" />
+                        <Tab label="Tidak Aktif" />
                     </Tabs>
                 </Box>
 
@@ -678,7 +826,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                         <Box sx={{ flex: '1 1 260px' }}>
                             <TextField
                                 fullWidth
-                                placeholder="Search companies by name or industry..."
+                                placeholder="Cari perusahaan berdasarkan nama atau industri..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 InputProps={{
@@ -701,7 +849,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                                 select
                                 fullWidth
                                 size="small"
-                                label="Industry"
+                                label="Industri"
                                 value={filterIndustry}
                                 onChange={(e) => setFilterIndustry(e.target.value)}
                                 InputProps={{
@@ -715,7 +863,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                                     }
                                 }}
                             >
-                                <MenuItem value="">All Industries</MenuItem>
+                                <MenuItem value="">Semua Industri</MenuItem>
                                 {filters?.industries?.map((industry) => (
                                     <MenuItem key={industry} value={industry}>
                                         {industry}
@@ -724,7 +872,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                             </TextField>
                         </Box>
                         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                            <Tooltip title="Reset all filters">
+                            <Tooltip title="Reset Semua Filter">
                                 <span>
                                     <IconButton
                                         color="primary"
@@ -748,8 +896,8 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                 <Box sx={{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>
                         <Typography variant="body2" color="text.secondary">
-                            {filteredCompanies.length} {filteredCompanies.length === 1 ? 'company' : 'companies'} found
-                            {(searchTerm || filterIndustry || filterStatus) ? ' with current filters' : ''}
+                            {filteredCompanies.length} {filteredCompanies.length === 1 ? 'perusahaan' : 'perusahaan'} ditemukan
+                            {(searchTerm || filterIndustry || filterStatus) ? ' dengan filter saat ini' : ''}
                         </Typography>
                     </Box>
                     {(searchTerm || filterIndustry || tabValue > 0) && (
@@ -759,7 +907,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                             startIcon={<FilterIcon fontSize="small" />}
                             onClick={resetFilters}
                         >
-                            Clear Filters
+                            Hapus Filter
                         </Button>
                     )}
                 </Box>
@@ -778,10 +926,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                             data={filteredCompanies}
                             columns={columns}
                             actions={actions}
-                            pagination
-                            paginationInfo={companies?.meta}
-                            baseRoute="admin.companies.index"
-                            emptyMessage="No companies found with the current filters."
+                            emptyMessage="Tidak ada perusahaan ditemukan dengan filter saat ini."
                             sx={{
                                 '.MuiTableHead-root': {
                                     bgcolor: alpha(theme.palette.primary.main, 0.02),
@@ -799,180 +944,67 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                 </Box>
             </Paper>
 
-            {/* Delete Confirmation Modal */}
-            <Modal
-                open={deleteModal}
-                onClose={() => setDeleteModal(false)}
-                title={
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ bgcolor: alpha(theme.palette.error.main, 0.1), color: theme.palette.error.main }}>
-                            <DeleteIcon />
-                        </Avatar>
-                        <Typography variant="h6" component="h2" fontWeight={600}>
-                            Confirm Deletion
-                        </Typography>
-                    </Box>
-                }
-                contentSx={{
-                    p: 3,
-                    minWidth: { xs: '90vw', sm: 400, md: 500 }
-                }}
-                actions={
-                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                        <Button
-                            variant="outlined"
-                            onClick={() => setDeleteModal(false)}
-                            disabled={loading}
-                        >
-                            Cancel
-                        </Button>
-                        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                            <Button
-                                variant="contained"
-                                color="error"
-                                onClick={handleDelete}
-                                loading={loading}
-                                startIcon={<DeleteIcon />}
-                            >
-                                Delete
-                            </Button>
-                        </motion.div>
-                    </Box>
-                }
-            >
-                {companyToDelete && (
-                    <Box>
-                        <Box sx={{
-                            p: 2,
-                            mb: 3,
-                            bgcolor: alpha(theme.palette.error.main, 0.05),
-                            borderRadius: 2,
-                            border: `1px solid ${alpha(theme.palette.error.main, 0.1)}`,
-                        }}>
-                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                Are you sure you want to delete this company?
-                            </Typography>
-                        </Box>
-
-                        <Paper
-                            elevation={0}
-                            sx={{
-                                p: 2,
-                                borderRadius: 2,
-                                bgcolor: alpha(theme.palette.background.default, 0.4),
-                                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                                mb: 3,
-                            }}
-                        >
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                                <Avatar
-                                    src={companyToDelete.logo || null}
-                                    alt={companyToDelete.name}
-                                    variant="rounded"
-                                    sx={{
-                                        width: 64,
-                                        height: 64,
-                                        bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                    }}
-                                >
-                                    {!companyToDelete.logo && <BusinessIcon fontSize="large" color="primary" />}
-                                </Avatar>
-                                <Box>
-                                    <Typography variant="h6" fontWeight={600}>
-                                        {companyToDelete.name}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary">
-                                        {companyToDelete.industry || 'No industry specified'} • {companyToDelete.address ? companyToDelete.address.split(',')[0] : 'No location'}
-                                    </Typography>
-                                    <Box sx={{ mt: 1 }}>
-                                        <Chip
-                                            label={companyToDelete.is_active ? 'Active' : 'Inactive'}
-                                            color={companyToDelete.is_active ? 'success' : 'default'}
-                                            size="small"
-                                            variant={companyToDelete.is_active
-                                                ? 'filled'
-                                                : 'outlined'}
-                                            sx={{
-                                                fontWeight: 500,
-                                                bgcolor: companyToDelete.is_active
-                                                    ? alpha(theme.palette.success.main, 0.1)
-                                                    : 'transparent',
-                                                color: companyToDelete.is_active
-                                                    ? theme.palette.success.dark
-                                                    : theme.palette.text.disabled,
-                                            }}
-                                        />
-                                    </Box>
-                                </Box>
-                            </Box>
-
-                            {companyToDelete.website && (
-                                <Box sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 1,
-                                    mt: 2,
-                                    p: 1,
-                                    borderRadius: 1,
-                                    bgcolor: alpha(theme.palette.background.paper, 0.5),
-                                }}>
-                                    <LanguageIcon fontSize="small" color="primary" />
-                                    <Typography variant="body2" component="a"
-                                                href={companyToDelete.website.startsWith('http') ? companyToDelete.website : `https://${companyToDelete.website}`}
-                                                target="_blank"
-                                                sx={{ color: theme.palette.primary.main, textDecoration: 'none' }}
-                                    >
-                                        {companyToDelete.website}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </Paper>
-
-                        <Box sx={{
-                            display: 'flex',
-                            gap: 1,
-                            alignItems: 'center',
-                            p: 2,
-                            bgcolor: alpha(theme.palette.warning.main, 0.05),
-                            borderRadius: 2,
-                            border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+            {/* Pagination */}
+            {companies?.meta?.last_page > 1 && (
+                <Paper
+                    elevation={0}
+                    sx={{
+                        borderRadius: '1rem',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: 'none',
+                        p: 2,
+                        mb: 4
+                    }}
+                >
+                    <CustomPagination
+                        currentPage={companies.meta.current_page}
+                        totalPages={companies.meta.last_page}
+                        totalItems={companies.meta.total}
+                        perPage={companies.meta.per_page}
+                        onPageChange={(page) => {
+                            // Store current filters in URL
+                            const params = {
+                                ...route().params,
+                                page: page
+                            };
+                            
+                            // Add current filters to URL if they exist
+                            if (searchTerm) params.search = searchTerm;
+                            if (filterIndustry) params.industry = filterIndustry;
+                            if (filterStatus) params.status = filterStatus;
+                            
+                            router.get(route('admin.companies.index', params), {}, {
+                                preserveState: true,
+                                replace: true,
+                                only: ['companies']
+                            });
                         }}
-                        >
-                            <InfoIcon color="warning" fontSize="small" />
-                            <Typography variant="body2" color="text.secondary">
-                                <strong>Warning:</strong> This action cannot be undone. All data associated with this company will be permanently deleted.
-                            </Typography>
-                        </Box>
-
-                        <Box sx={{ mt: 3, p: 2, bgcolor: alpha(theme.palette.error.main, 0.03), borderRadius: 2 }}>
-                            <Typography variant="body2" color="error.main" sx={{ fontWeight: 500, mb: 1 }}>
-                                The following data will be deleted:
-                            </Typography>
-                            <Stack spacing={1}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Chip size="small" label="Company Profile" />
-                                    <Typography variant="body2" color="text.secondary">
-                                        All company information and logo
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Chip size="small" label="Job Listings" />
-                                    <Typography variant="body2" color="text.secondary">
-                                        All active and inactive job postings
-                                    </Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                    <Chip size="small" label="Manager Assignments" />
-                                    <Typography variant="body2" color="text.secondary">
-                                        All manager associations
-                                    </Typography>
-                                </Box>
-                            </Stack>
-                        </Box>
-                    </Box>
-
-                )}
-            </Modal>
+                        onPerPageChange={(newPerPage) => {
+                            // Store current filters in URL
+                            const params = {
+                                ...route().params,
+                                per_page: newPerPage,
+                                page: 1
+                            };
+                            
+                            // Add current filters to URL if they exist
+                            if (searchTerm) params.search = searchTerm;
+                            if (filterIndustry) params.industry = filterIndustry;
+                            if (filterStatus) params.status = filterStatus;
+                            
+                            router.get(route('admin.companies.index', params), {}, {
+                                preserveState: true,
+                                replace: true,
+                                only: ['companies']
+                            });
+                        }}
+                        showFirst
+                        showLast
+                        rounded="large"
+                    />
+                </Paper>
+            )}
         </Layout>
     );
 };

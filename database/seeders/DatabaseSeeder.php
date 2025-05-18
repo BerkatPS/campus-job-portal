@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             // Level 3: Form builder
             FormSectionSeeder::class,
 //            FormFieldSeeder::class,
+            PortfolioItemSeeder::class,
 
             // Level 4: Job dan aplikasi lanjutan
             JobSeeder::class,
@@ -40,6 +41,9 @@ class DatabaseSeeder extends Seeder
             ForumTopicsSeeder::class,
             ForumPostsSeeder::class,
             ForumLikesSeeder::class,
+
+            // Level 6: Messaging System
+            ConversationSeeder::class,
 
             NotificationsTableSeeder::class
         ]);

@@ -18,12 +18,30 @@ import {
     IconButton,
     InputAdornment,
     alpha,
-    useTheme
+    useTheme,
+    Switch,
+    FormControlLabel
 } from '@mui/material';
 import { DeleteOutline as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
 import MDEditor from '@uiw/react-md-editor';
 
 import Layout from '@/Components/Layout/Layout';
+
+// Format angka menjadi format Rupiah (dengan titik sebagai pemisah ribuan)
+const formatRupiah = (angka) => {
+    if (!angka) return '';
+    // Hapus semua karakter non-digit
+    const numStr = angka.toString().replace(/\D/g, '');
+    // Format dengan pemisah ribuan
+    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+// Parse string angka berformat menjadi number
+const parseRupiah = (rupiahStr) => {
+    if (!rupiahStr) return '';
+    // Hapus semua titik
+    return rupiahStr.toString().replace(/\./g, '');
+};
 
 export default function Edit({ job, companies = [], hiringStages = [], selectedStages = [], categories = [] }) {
     const theme = useTheme();
@@ -41,6 +59,10 @@ export default function Edit({ job, companies = [], hiringStages = [], selectedS
             status = 'draft';
         }
 
+        // Format salary values for display
+        let salaryMin = job.salary_min ? formatRupiah(job.salary_min.toString()) : '';
+        let salaryMax = job.salary_max ? formatRupiah(job.salary_max.toString()) : '';
+
         return {
             title: job.title || '',
             company_id: job.company_id || '',
@@ -51,8 +73,8 @@ export default function Edit({ job, companies = [], hiringStages = [], selectedS
             location: job.location || '',
             job_type: job.job_type || 'full_time',
             experience_level: job.experience_level || 'entry',
-            salary_min: job.salary_min || '',
-            salary_max: job.salary_max || '',
+            salary_min: salaryMin,
+            salary_max: salaryMax,
             is_salary_visible: job.is_salary_visible || false,
             vacancies: job.vacancies || '1',
             submission_deadline: job.submission_deadline || '',
@@ -70,10 +92,17 @@ export default function Edit({ job, companies = [], hiringStages = [], selectedS
     const handleSubmit = (e) => {
         e.preventDefault();
 
+        // Convert formatted currency values to numbers before submission
+        const processedData = {
+            ...data,
+            salary_min: parseRupiah(data.salary_min),
+            salary_max: parseRupiah(data.salary_max),
+        };
+
         // Make sure is_active is synchronized with status before submitting
         const updatedData = {
-            ...data,
-            is_active: data.status === 'active',
+            ...processedData,
+            is_active: processedData.status === 'active',
         };
 
         put(route('manager.jobs.update', job.id), updatedData);
@@ -342,9 +371,12 @@ export default function Edit({ job, companies = [], hiringStages = [], selectedS
                             <TextField
                                 label="Gaji Minimum"
                                 fullWidth
-                                type="number"
                                 value={data.salary_min}
-                                onChange={e => setData('salary_min', e.target.value)}
+                                onChange={(e) => {
+                                    // Format angka saat input
+                                    const formatted = formatRupiah(e.target.value);
+                                    setData('salary_min', formatted);
+                                }}
                                 error={!!errors.salary_min}
                                 helperText={errors.salary_min}
                                 InputProps={{
@@ -360,9 +392,12 @@ export default function Edit({ job, companies = [], hiringStages = [], selectedS
                             <TextField
                                 label="Gaji Maksimum"
                                 fullWidth
-                                type="number"
                                 value={data.salary_max}
-                                onChange={e => setData('salary_max', e.target.value)}
+                                onChange={(e) => {
+                                    // Format angka saat input
+                                    const formatted = formatRupiah(e.target.value);
+                                    setData('salary_max', formatted);
+                                }}
                                 error={!!errors.salary_max}
                                 helperText={errors.salary_max || "Kosongkan jika tidak ingin menampilkan range gaji"}
                                 InputProps={{
@@ -373,6 +408,20 @@ export default function Edit({ job, companies = [], hiringStages = [], selectedS
                                         borderRadius: '0.75rem',
                                     }
                                 }}
+                            />
+                        </Box>
+
+                        {/* Salary Visibility Option */}
+                        <Box sx={{ pl: 1, mb: 2 }}>
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={data.is_salary_visible}
+                                        onChange={(e) => setData('is_salary_visible', e.target.checked)}
+                                        color="primary"
+                                    />
+                                }
+                                label="Tampilkan informasi gaji kepada kandidat"
                             />
                         </Box>
 

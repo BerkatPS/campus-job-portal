@@ -16,7 +16,9 @@ import {
     CardContent,
     useTheme,
     Badge,
-    Avatar
+    Avatar,
+    Pagination,
+    PaginationItem
 } from '@mui/material';
 import {
     Event,
@@ -44,7 +46,7 @@ import {
 // Custom Components
 import Table from '@/Components/Shared/Table';
 import Button from '@/Components/Shared/Button';
-import Pagination from '@/Components/Shared/Pagination';
+import CustomPagination from '@/Components/Shared/Pagination';
 import SearchBar from '@/Components/Shared/SearchBar';
 import Select from '@/Components/Shared/Select';
 import Dropdown from '@/Components/Shared/Dropdown';
@@ -119,15 +121,16 @@ const EventsIndex = () => {
             return '#9e9e9e'; // Grey for cancelled events
         }
 
+        // More subtle colors
         switch (type) {
             case 'interview':
-                return '#4caf50'; // Green for interviews
+                return '#4caf50'; // Green for interviews (kept for visual recognition)
             case 'test':
-                return '#ff9800'; // Orange for tests
+                return '#f59e0b'; // Amber for tests (slightly more muted)
             case 'meeting':
-                return '#2196f3'; // Blue for meetings
+                return '#3b82f6'; // Blue for meetings (slightly more muted)
             default:
-                return '#9c27b0'; // Purple for other events
+                return '#8b5cf6'; // Purple for other events (slightly more muted)
         }
     };
 
@@ -274,6 +277,7 @@ const EventsIndex = () => {
                                     value === 'rescheduled' ? 'Dijadwalkan Ulang' : value
                     }
                     size="small"
+                    variant="outlined"
                     color={
                         value === 'scheduled' ? 'primary' :
                             value === 'completed' ? 'success' :
@@ -283,7 +287,8 @@ const EventsIndex = () => {
                     sx={{
                         fontWeight: 500,
                         borderRadius: '12px',
-                        textTransform: 'capitalize'
+                        textTransform: 'capitalize',
+                        '& .MuiChip-label': { px: 1.5 }
                     }}
                 />
             )
@@ -520,20 +525,16 @@ const EventsIndex = () => {
                 />
             )}
 
-            {/* Header Section with Stats */}
-            <Box
-                sx={{
-                    background: 'linear-gradient(135deg, rgba(15, 118, 110, 0.08) 0%, rgba(20, 184, 166, 0.15) 100%)',
-                    py: 4,
-                    borderRadius: '1rem',
-                    px: 3,
-                    mb: 4,
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
-                    border: '1px solid',
-                    borderColor: 'divider',
-                }}
-            >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+            {/* Modern Header Section */}
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    mb: 3,
+                    flexWrap: { xs: 'wrap', sm: 'nowrap' },
+                    gap: 2
+                }}>
                     <Box>
                         <Typography variant="h5" fontWeight="600" gutterBottom>Acara & Wawancara</Typography>
                         <Typography variant="body2" color="text.secondary">
@@ -541,13 +542,25 @@ const EventsIndex = () => {
                         </Typography>
                     </Box>
 
-                    <Box sx={{ display: 'flex', gap: 2 }}>
-                        <ButtonGroup variant="outlined" size="small" sx={{
-                            bgcolor: 'background.paper',
-                            borderRadius: 2,
-                            overflow: 'hidden',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                        }}>
+                    <Box sx={{ 
+                        display: 'flex', 
+                        gap: 2,
+                        marginLeft: { xs: 0, sm: 'auto' }
+                    }}>
+                        {/* View toggles */}
+                        <ButtonGroup 
+                            variant="outlined" 
+                            size="small" 
+                            sx={{
+                                borderRadius: 2,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                bgcolor: 'background.paper',
+                                '& .MuiButtonGroup-grouped:not(:last-of-type)': {
+                                    borderColor: 'divider',
+                                },
+                            }}
+                        >
                             <Tooltip title="Tampilan Daftar">
                                 <IconButton
                                     color={view === 'list' ? 'primary' : 'default'}
@@ -572,165 +585,159 @@ const EventsIndex = () => {
                             variant="contained"
                             startIcon={<Add />}
                             onClick={() => router.visit(route('manager.events.create'))}
-                            sx={{ borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(15, 118, 110, 0.2)' }}
+                            sx={{ 
+                                borderRadius: '0.75rem',
+                                minWidth: '180px',
+                                boxShadow: 1,
+                                '&:hover': {
+                                    boxShadow: 2
+                                }
+                            }}
                         >
                             Jadwalkan Acara
                         </Button>
                     </Box>
                 </Box>
 
-                {/* Stats Cards */}
+                {/* Stats Cards - Modern, minimalist design */}
                 <Box
                     sx={{
-                        mt: 1,
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 2,
+                        display: 'grid',
+                        gridTemplateColumns: {
+                            xs: '1fr',
+                            sm: 'repeat(2, 1fr)',
+                            md: 'repeat(4, 1fr)'
+                        },
+                        gap: 2.5,
                     }}
                 >
                     {/* Card 1 - Total Events */}
-                    <Box sx={{
-                        flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(25% - 12px)' }
+                    <MuiCard sx={{
+                        borderRadius: '1rem',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: 'none',
+                        backgroundColor: 'background.paper',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: 1,
+                        }
                     }}>
-                        <MuiCard sx={{
-                            borderRadius: '1rem',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            boxShadow: 'none',
-                            overflow: 'hidden',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            height: '100%',
-                            '&:hover': {
-                                transform: 'translateY(-3px)',
-                                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
-                            }
-                        }}>
-                            <CardContent sx={{ p: 2.5 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography color="text.secondary" variant="body2">Total Acara</Typography>
-                                    <Box sx={{
-                                        p: 1,
-                                        borderRadius: '50%',
-                                        bgcolor: alpha(theme.palette.primary.main, 0.1)
-                                    }}>
-                                        <Event fontSize="small" color="primary" />
-                                    </Box>
+                        <CardContent sx={{ p: 2.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <Box sx={{
+                                    mr: 1.5,
+                                    p: 1,
+                                    borderRadius: '12px',
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                }}>
+                                    <Event fontSize="small" color="primary" />
                                 </Box>
-                                <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold' }}>
-                                    {eventTypeCounts.all}
-                                </Typography>
-                            </CardContent>
-                        </MuiCard>
-                    </Box>
+                                <Typography color="text.secondary" variant="body2">Total Acara</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: '500' }}>
+                                {eventTypeCounts.all}
+                            </Typography>
+                        </CardContent>
+                    </MuiCard>
 
                     {/* Card 2 - Scheduled Events */}
-                    <Box sx={{
-                        flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(25% - 12px)' }
+                    <MuiCard sx={{
+                        borderRadius: '1rem',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: 'none',
+                        backgroundColor: 'background.paper',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: 1,
+                        }
                     }}>
-                        <MuiCard sx={{
-                            borderRadius: '1rem',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            boxShadow: 'none',
-                            overflow: 'hidden',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            height: '100%',
-                            '&:hover': {
-                                transform: 'translateY(-3px)',
-                                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
-                            }
-                        }}>
-                            <CardContent sx={{ p: 2.5 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography color="text.secondary" variant="body2">Terjadwal</Typography>
-                                    <Box sx={{
-                                        p: 1,
-                                        borderRadius: '50%',
-                                        bgcolor: alpha(theme.palette.primary.main, 0.1)
-                                    }}>
-                                        <EventAvailable fontSize="small" color="primary" />
-                                    </Box>
+                        <CardContent sx={{ p: 2.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <Box sx={{
+                                    mr: 1.5,
+                                    p: 1,
+                                    borderRadius: '12px',
+                                    bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                }}>
+                                    <EventAvailable fontSize="small" color="primary" />
                                 </Box>
-                                <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold' }}>
-                                    {eventTypeCounts.scheduled}
-                                </Typography>
-                            </CardContent>
-                        </MuiCard>
-                    </Box>
+                                <Typography color="text.secondary" variant="body2">Terjadwal</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: '500' }}>
+                                {eventTypeCounts.scheduled}
+                            </Typography>
+                        </CardContent>
+                    </MuiCard>
 
                     {/* Card 3 - Completed Events */}
-                    <Box sx={{
-                        flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(25% - 12px)' }
+                    <MuiCard sx={{
+                        borderRadius: '1rem',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: 'none',
+                        backgroundColor: 'background.paper',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: 1,
+                        }
                     }}>
-                        <MuiCard sx={{
-                            borderRadius: '1rem',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            boxShadow: 'none',
-                            overflow: 'hidden',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            height: '100%',
-                            '&:hover': {
-                                transform: 'translateY(-3px)',
-                                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
-                            }
-                        }}>
-                            <CardContent sx={{ p: 2.5 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography color="text.secondary" variant="body2">Selesai</Typography>
-                                    <Box sx={{
-                                        p: 1,
-                                        borderRadius: '50%',
-                                        bgcolor: alpha(theme.palette.success.main, 0.1)
-                                    }}>
-                                        <CheckCircleOutline fontSize="small" color="success" />
-                                    </Box>
+                        <CardContent sx={{ p: 2.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <Box sx={{
+                                    mr: 1.5,
+                                    p: 1,
+                                    borderRadius: '12px',
+                                    bgcolor: alpha(theme.palette.success.main, 0.1)
+                                }}>
+                                    <CheckCircleOutline fontSize="small" color="success" />
                                 </Box>
-                                <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold', color: theme.palette.success.main }}>
-                                    {eventTypeCounts.completed}
-                                </Typography>
-                            </CardContent>
-                        </MuiCard>
-                    </Box>
+                                <Typography color="text.secondary" variant="body2">Selesai</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: '500', color: 'success.main' }}>
+                                {eventTypeCounts.completed}
+                            </Typography>
+                        </CardContent>
+                    </MuiCard>
 
                     {/* Card 4 - Cancelled Events */}
-                    <Box sx={{
-                        flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(25% - 12px)' }
+                    <MuiCard sx={{
+                        borderRadius: '1rem',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        boxShadow: 'none',
+                        backgroundColor: 'background.paper',
+                        transition: 'all 0.2s ease-in-out',
+                        '&:hover': {
+                            transform: 'translateY(-2px)',
+                            boxShadow: 1,
+                        }
                     }}>
-                        <MuiCard sx={{
-                            borderRadius: '1rem',
-                            border: '1px solid',
-                            borderColor: 'divider',
-                            boxShadow: 'none',
-                            overflow: 'hidden',
-                            transition: 'transform 0.2s, box-shadow 0.2s',
-                            height: '100%',
-                            '&:hover': {
-                                transform: 'translateY(-3px)',
-                                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
-                            }
-                        }}>
-                            <CardContent sx={{ p: 2.5 }}>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Typography color="text.secondary" variant="body2">Dibatalkan</Typography>
-                                    <Box sx={{
-                                        p: 1,
-                                        borderRadius: '50%',
-                                        bgcolor: alpha(theme.palette.error.main, 0.1)
-                                    }}>
-                                        <CancelIcon fontSize="small" color="error" />
-                                    </Box>
+                        <CardContent sx={{ p: 2.5 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                <Box sx={{
+                                    mr: 1.5,
+                                    p: 1,
+                                    borderRadius: '12px',
+                                    bgcolor: alpha(theme.palette.error.main, 0.1)
+                                }}>
+                                    <CancelIcon fontSize="small" color="error" />
                                 </Box>
-                                <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold', color: theme.palette.error.main }}>
-                                    {eventTypeCounts.cancelled}
-                                </Typography>
-                            </CardContent>
-                        </MuiCard>
-                    </Box>
+                                <Typography color="text.secondary" variant="body2">Dibatalkan</Typography>
+                            </Box>
+                            <Typography variant="h4" sx={{ fontWeight: '500', color: 'error.main' }}>
+                                {eventTypeCounts.cancelled}
+                            </Typography>
+                        </CardContent>
+                    </MuiCard>
                 </Box>
             </Box>
 
-            {/* Filter Bar */}
+            {/* Filter Bar - Modernized */}
             <Paper
                 elevation={0}
                 sx={{
@@ -739,7 +746,7 @@ const EventsIndex = () => {
                     borderRadius: '1rem',
                     border: '1px solid',
                     borderColor: 'divider',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+                    boxShadow: 'none'
                 }}
             >
                 <Box
@@ -758,7 +765,14 @@ const EventsIndex = () => {
                             onChange={(e) => handleFilterChange('search', e.target.value)}
                             size="small"
                             startIcon={<Search fontSize="small" />}
-                            sx={{ borderRadius: '0.75rem' }}
+                            sx={{ 
+                                borderRadius: '0.75rem',
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                        borderColor: 'divider',
+                                    },
+                                },
+                            }}
                         />
                     </Box>
 
@@ -775,7 +789,14 @@ const EventsIndex = () => {
                             onChange={(e) => handleFilterChange('type', e.target.value)}
                             placeholder="Tipe Acara"
                             size="small"
-                            sx={{ borderRadius: '0.75rem' }}
+                            sx={{ 
+                                borderRadius: '0.75rem',
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                        borderColor: 'divider',
+                                    },
+                                },
+                            }}
                         />
                     </Box>
 
@@ -793,11 +814,16 @@ const EventsIndex = () => {
                             onChange={(e) => handleFilterChange('status', e.target.value)}
                             placeholder="Status"
                             size="small"
-                            sx={{ borderRadius: '0.75rem' }}
+                            sx={{ 
+                                borderRadius: '0.75rem',
+                                '& .MuiOutlinedInput-root': {
+                                    '& fieldset': {
+                                        borderColor: 'divider',
+                                    },
+                                },
+                            }}
                         />
                     </Box>
-
-
                     {/* Filter buttons */}
                     <Box sx={{
                         display: 'flex',
@@ -1007,83 +1033,54 @@ const EventsIndex = () => {
                     <Paper
                         elevation={0}
                         sx={{
-                            overflow: 'hidden',
                             borderRadius: '1rem',
                             border: '1px solid',
                             borderColor: 'divider',
-                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+                            boxShadow: 'none',
+                            overflow: 'hidden',
+                            mb: 3
                         }}
                     >
                         <Table
                             columns={columns}
                             data={events.data || []}
-                            onRowClick={(row) => {
-                                setSelectedEvent(row);
-                                setOpenDetailsModal(true);
-                            }}
-                            actions={(row) => (
-                                <Dropdown
-                                    buttonType="icon"
-                                    icon={<MoreVert />}
-                                    items={getRowActions(row)}
-                                />
-                            )}
-                            borderRadius="large"
-                            variant="outlined"
-                            zebraPattern
-                            hoverEffect
-                            sx={{
-                                '& .MuiTableHead-root': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                                },
-                                '& .MuiTableCell-head': {
-                                    fontWeight: 600,
-                                    color: theme.palette.text.primary
-                                },
-                                '& .MuiTableCell-root': {
-                                    borderColor: theme.palette.divider
-                                },
-                                '& .MuiTableRow-root:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.04),
-                                }
-                            }}
+                            getRowActions={getRowActions}
+                            handleSort={handleSortChange}
+                            sort={searchParams.sort}
+                            direction={searchParams.direction}
+                            emptyMessage="Tidak ada acara yang tersedia"
                         />
-
-                        {/* Empty State */}
-                        {(!events.data || events.data.length === 0) && (
-                            <Box sx={{ py: 8, textAlign: 'center' }}>
-                                <Event sx={{ fontSize: 60, color: alpha(theme.palette.text.primary, 0.1), mb: 2 }} />
-                                <Typography variant="h6" gutterBottom>Tidak ada acara yang ditemukan</Typography>
-                                <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
-                                    Tidak ada acara yang sesuai dengan filter Anda. Coba ubah kriteria pencarian atau buat acara baru.
-                                </Typography>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<Add />}
-                                    onClick={() => router.visit(route('manager.events.create'))}
-                                    sx={{ borderRadius: '0.75rem', boxShadow: '0 4px 12px rgba(15, 118, 110, 0.2)' }}
-                                >
-                                    Buat Acara Baru
-                                </Button>
-                            </Box>
-                        )}
                     </Paper>
 
-                    {events.data && events.data.length > 0 && (
-                        <Box sx={{ mt: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="body2" color="text.secondary">
-                                Menampilkan {events.from}-{events.to} dari {events.total} acara
-                            </Typography>
-
-                            <Pagination
+                    {events?.last_page > 1 && (
+                        <Paper
+                            elevation={0}
+                            sx={{
+                                borderRadius: '1rem',
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                boxShadow: 'none',
+                                p: 2,
+                                mb: 3
+                            }}
+                        >
+                            <CustomPagination
                                 currentPage={events.current_page}
                                 totalPages={events.last_page}
-                                onPageChange={handlePageChange}
                                 totalItems={events.total}
                                 perPage={events.per_page}
-                                variant="rounded"
+                                onPageChange={(page) => {
+                                    handleFilterChange('page', page);
+                                }}
+                                onPerPageChange={(newPerPage) => {
+                                    handleFilterChange('per_page', newPerPage);
+                                    handleFilterChange('page', 1); // Reset to page 1 when changing per_page
+                                }}
+                                showFirst
+                                showLast
+                                rounded="large"
                             />
-                        </Box>
+                        </Paper>
                     )}
                 </>
             ) : (
@@ -1093,8 +1090,7 @@ const EventsIndex = () => {
                         overflow: 'hidden',
                         borderRadius: '1rem',
                         border: '1px solid',
-                        borderColor: 'divider',
-                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+                        borderColor: 'divider'
                     }}
                 >
                     <Calendar
@@ -1152,7 +1148,8 @@ const EventsIndex = () => {
                                                 bgcolor: getEventColor(selectedEvent.type, selectedEvent.status),
                                                 color: 'white',
                                                 fontWeight: 500,
-                                                borderRadius: '12px',
+                                                height: 24,
+                                                borderRadius: '12px'
                                             }}
                                         />
                                         <Chip
@@ -1340,11 +1337,11 @@ const EventsIndex = () => {
                                         elevation={0}
                                         sx={{
                                             p: 2.5,
+                                            mb: 3,
                                             borderRadius: '1rem',
                                             bgcolor: 'background.paper',
                                             border: '1px solid',
-                                            borderColor: 'divider',
-                                            mb: 3
+                                            borderColor: 'divider'
                                         }}
                                     >
                                         <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1412,11 +1409,11 @@ const EventsIndex = () => {
                                         elevation={0}
                                         sx={{
                                             p: 2.5,
+                                            mb: 3,
                                             borderRadius: '1rem',
                                             bgcolor: 'background.paper',
                                             border: '1px solid',
-                                            borderColor: 'divider',
-                                            mb: 3
+                                            borderColor: 'divider'
                                         }}
                                     >
                                         <Typography variant="subtitle2" fontWeight="bold" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>

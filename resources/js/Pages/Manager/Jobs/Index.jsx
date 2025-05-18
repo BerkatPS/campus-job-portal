@@ -10,7 +10,6 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    TablePagination,
     Button,
     TextField,
     Dialog,
@@ -30,7 +29,9 @@ import {
     Menu,
     MenuItem,
     ListItemIcon,
-    ListItemText
+    ListItemText,
+    Pagination,
+    PaginationItem
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -73,7 +74,7 @@ const formatDate = (date, format = 'DD MMM YYYY') => {
 export default function Index({ jobs, filters }) {
     const { auth } = usePage().props;
     const theme = useTheme();
-    const [page, setPage] = useState(0);
+    const [page, setPage] = useState(jobs?.current_page || 1);
     const [rowsPerPage, setRowsPerPage] = useState(10);
     const [selectedJob, setSelectedJob] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -90,11 +91,29 @@ export default function Index({ jobs, filters }) {
 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
+        router.get(route('manager.jobs.index', {
+            ...data,
+            page: newPage,
+        }), {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['jobs'],
+        });
     };
 
     const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
+        const newRowsPerPage = parseInt(event.target.value, 10);
+        setRowsPerPage(newRowsPerPage);
+        setPage(1);
+        router.get(route('manager.jobs.index', {
+            ...data,
+            page: 1,
+            per_page: newRowsPerPage,
+        }), {
+            preserveState: true,
+            preserveScroll: true,
+            only: ['jobs'],
+        });
     };
 
     const handleSearch = (e) => {
@@ -174,12 +193,14 @@ export default function Index({ jobs, filters }) {
             {/* Header Section */}
             <Box
                 sx={{
-                    background: 'linear-gradient(135deg, rgba(15, 118, 110, 0.08) 0%, rgba(20, 184, 166, 0.15) 100%)',
+                    background: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.primary.dark, 0.05)
+                        : alpha(theme.palette.primary.light, 0.05),
                     py: 4,
-                    borderRadius: '1rem',
+                    borderRadius: '0.75rem',
                     px: 3,
                     mb: 4,
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                    boxShadow: 'none',
                     border: '1px solid',
                     borderColor: 'divider',
                 }}
@@ -222,116 +243,116 @@ export default function Index({ jobs, filters }) {
                     }}
                 >
                     <MuiCard sx={{
-                        borderRadius: '1rem',
+                        borderRadius: '0.75rem',
                         border: '1px solid',
                         borderColor: 'divider',
                         boxShadow: 'none',
                         overflow: 'hidden',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        transition: 'all 0.15s ease-in-out',
                         '&:hover': {
-                            transform: 'translateY(-3px)',
-                            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)',
                         }
                     }}>
                         <CardContent sx={{ p: 2.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography color="text.secondary" variant="body2">Total Lowongan</Typography>
+                                <Typography color="text.secondary" variant="body2" fontWeight="500">Total Lowongan</Typography>
                                 <Box sx={{
                                     p: 1,
-                                    borderRadius: '50%',
-                                    bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                    borderRadius: '8px',
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08)
                                 }}>
                                     <BusinessIcon fontSize="small" color="primary" />
                                 </Box>
                             </Box>
-                            <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold' }}>
+                            <Typography variant="h4" sx={{ mt: 1, fontWeight: '600', color: theme.palette.text.primary }}>
                                 {totalJobs}
                             </Typography>
                         </CardContent>
                     </MuiCard>
 
                     <MuiCard sx={{
-                        borderRadius: '1rem',
+                        borderRadius: '0.75rem',
                         border: '1px solid',
                         borderColor: 'divider',
                         boxShadow: 'none',
                         overflow: 'hidden',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        transition: 'all 0.15s ease-in-out',
                         '&:hover': {
-                            transform: 'translateY(-3px)',
-                            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)',
                         }
                     }}>
                         <CardContent sx={{ p: 2.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography color="text.secondary" variant="body2">Lowongan Aktif</Typography>
+                                <Typography color="text.secondary" variant="body2" fontWeight="500">Lowongan Aktif</Typography>
                                 <Box sx={{
                                     p: 1,
-                                    borderRadius: '50%',
-                                    bgcolor: alpha(theme.palette.success.main, 0.1)
+                                    borderRadius: '8px',
+                                    bgcolor: alpha(theme.palette.success.main, 0.08)
                                 }}>
                                     <WorkIcon fontSize="small" color="success" />
                                 </Box>
                             </Box>
-                            <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold', color: theme.palette.success.main }}>
+                            <Typography variant="h4" sx={{ mt: 1, fontWeight: '600', color: theme.palette.text.primary }}>
                                 {activeJobs}
                             </Typography>
                         </CardContent>
                     </MuiCard>
 
                     <MuiCard sx={{
-                        borderRadius: '1rem',
+                        borderRadius: '0.75rem',
                         border: '1px solid',
                         borderColor: 'divider',
                         boxShadow: 'none',
                         overflow: 'hidden',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        transition: 'all 0.15s ease-in-out',
                         '&:hover': {
-                            transform: 'translateY(-3px)',
-                            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)',
                         }
                     }}>
                         <CardContent sx={{ p: 2.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography color="text.secondary" variant="body2">Draft</Typography>
+                                <Typography color="text.secondary" variant="body2" fontWeight="500">Draft</Typography>
                                 <Box sx={{
                                     p: 1,
-                                    borderRadius: '50%',
-                                    bgcolor: alpha(theme.palette.warning.main, 0.1)
+                                    borderRadius: '8px',
+                                    bgcolor: alpha(theme.palette.warning.main, 0.08)
                                 }}>
                                     <EditIcon fontSize="small" color="warning" />
                                 </Box>
                             </Box>
-                            <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold', color: theme.palette.warning.main }}>
+                            <Typography variant="h4" sx={{ mt: 1, fontWeight: '600', color: theme.palette.text.primary }}>
                                 {draftJobs}
                             </Typography>
                         </CardContent>
                     </MuiCard>
 
                     <MuiCard sx={{
-                        borderRadius: '1rem',
+                        borderRadius: '0.75rem',
                         border: '1px solid',
                         borderColor: 'divider',
                         boxShadow: 'none',
                         overflow: 'hidden',
-                        transition: 'transform 0.2s, box-shadow 0.2s',
+                        transition: 'all 0.15s ease-in-out',
                         '&:hover': {
-                            transform: 'translateY(-3px)',
-                            boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
+                            transform: 'translateY(-2px)',
+                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)',
                         }
                     }}>
                         <CardContent sx={{ p: 2.5 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Typography color="text.secondary" variant="body2">Ditutup</Typography>
+                                <Typography color="text.secondary" variant="body2" fontWeight="500">Ditutup</Typography>
                                 <Box sx={{
                                     p: 1,
-                                    borderRadius: '50%',
-                                    bgcolor: alpha(theme.palette.error.main, 0.1)
+                                    borderRadius: '8px',
+                                    bgcolor: alpha(theme.palette.error.main, 0.08)
                                 }}>
                                     <BusinessIcon fontSize="small" color="error" />
                                 </Box>
                             </Box>
-                            <Typography variant="h4" sx={{ mt: 1, fontWeight: 'bold', color: theme.palette.error.main }}>
+                            <Typography variant="h4" sx={{ mt: 1, fontWeight: '600', color: theme.palette.text.primary }}>
                                 {closedJobs}
                             </Typography>
                         </CardContent>
@@ -347,13 +368,14 @@ export default function Index({ jobs, filters }) {
                 sx={{
                     p: 2,
                     mb: 3,
-                    borderRadius: '1rem',
+                    borderRadius: '0.75rem',
                     display: 'flex',
                     flexDirection: { xs: 'column', md: 'row' },
                     alignItems: { xs: 'stretch', md: 'center' },
                     gap: 2,
                     border: '1px solid',
                     borderColor: 'divider',
+                    boxShadow: 'none'
                 }}
             >
                 <Box
@@ -464,9 +486,9 @@ export default function Index({ jobs, filters }) {
                                 get(route('manager.jobs.index'));
                             }}
                             sx={{
-                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                bgcolor: alpha(theme.palette.primary.main, 0.04),
                                 '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
                                 },
                             }}
                         >
@@ -479,9 +501,9 @@ export default function Index({ jobs, filters }) {
                             color="primary"
                             onClick={() => setFilterOpen(true)}
                             sx={{
-                                bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                bgcolor: alpha(theme.palette.primary.main, 0.04),
                                 '&:hover': {
-                                    bgcolor: alpha(theme.palette.primary.main, 0.15),
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
                                 },
                             }}
                         >
@@ -502,17 +524,19 @@ export default function Index({ jobs, filters }) {
                 elevation={0}
                 sx={{
                     overflow: 'hidden',
-                    borderRadius: '1rem',
+                    borderRadius: '0.75rem',
                     border: '1px solid',
                     borderColor: 'divider',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)',
+                    boxShadow: 'none',
                     mb: 3
                 }}
             >
                 <TableContainer>
                     <Table sx={{ minWidth: 650 }} aria-label="tabel lowongan pekerjaan">
                         <TableHead>
-                            <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.04) }}>
+                            <TableRow sx={{ bgcolor: theme.palette.mode === 'dark'
+                                ? alpha(theme.palette.background.paper, 0.5)
+                                : alpha(theme.palette.grey[50], 1) }}>
                                 <TableCell sx={{ fontWeight: 600 }}>Judul Pekerjaan</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Perusahaan</TableCell>
                                 <TableCell sx={{ fontWeight: 600 }}>Lokasi</TableCell>
@@ -524,87 +548,92 @@ export default function Index({ jobs, filters }) {
                         </TableHead>
                         <TableBody>
                             {jobs?.data?.length > 0 ? (
-                                jobs.data
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((job) => (
-                                        <TableRow
-                                            key={job.id}
-                                            hover
-                                            sx={{
-                                                '&:hover': {
-                                                    bgcolor: alpha(theme.palette.primary.main, 0.04)
-                                                }
-                                            }}
-                                        >
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <WorkIcon fontSize="small" color="primary" />
-                                                    <Link
-                                                        href={route('manager.jobs.show', job.id)}
-                                                        className="text-blue-600 hover:underline"
-                                                        style={{ fontWeight: 500 }}
-                                                    >
-                                                        {job.title}
-                                                    </Link>
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <BusinessIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
-                                                    {job.company?.name}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <LocationOnIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
-                                                    {job.location}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
+                                jobs.data.map((job) => (
+                                    <TableRow
+                                        key={job.id}
+                                        hover
+                                        sx={{
+                                            '&:hover': {
+                                                bgcolor: alpha(theme.palette.primary.main, 0.04)
+                                            }
+                                        }}
+                                    >
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <WorkIcon fontSize="small" color="primary" />
+                                                <Link
+                                                    href={route('manager.jobs.show', job.id)}
+                                                    className="text-blue-600 hover:underline"
+                                                    style={{ fontWeight: 500 }}
+                                                >
+                                                    {job.title}
+                                                </Link>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <BusinessIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
+                                                {job.company?.name}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <LocationOnIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
+                                                {job.location}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Chip
+                                                label={getStatusText(job)}
+                                                color={getStatusColor(job)}
+                                                size="small"
+                                                sx={{
+                                                    minWidth: 80,
+                                                    borderRadius: '6px',
+                                                    fontWeight: '500',
+                                                    '& .MuiChip-label': {
+                                                        px: 1
+                                                    }
+                                                }}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                <CalendarMonthIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
+                                                {formatDate(job.created_at)}
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Chip
-                                                    label={getStatusText(job)}
-                                                    color={getStatusColor(job)}
-                                                    size="small"
-                                                    sx={{ minWidth: 80 }}
-                                                />
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                    <CalendarMonthIcon fontSize="small" sx={{ mr: 1, color: theme.palette.text.secondary }} />
-                                                    {formatDate(job.created_at)}
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    <Chip
-                                                        icon={<PersonIcon fontSize="small" />}
-                                                        label={job.applications_count}
-                                                        size="small"
-                                                        sx={{
-                                                            fontWeight: 500,
-                                                            borderRadius: '12px',
-                                                            bgcolor: alpha(theme.palette.primary.main, 0.1),
-                                                            color: theme.palette.primary.main
-                                                        }}
-                                                    />
-                                                </Box>
-                                            </TableCell>
-                                            <TableCell align="center">
-                                                <IconButton
-                                                    onClick={(e) => openActionMenu(e, job)}
+                                                    icon={<PersonIcon fontSize="small" />}
+                                                    label={job.applications_count}
                                                     size="small"
                                                     sx={{
-                                                        color: theme.palette.primary.main,
-                                                        '&:hover': {
-                                                            bgcolor: alpha(theme.palette.primary.main, 0.1)
-                                                        },
+                                                        fontWeight: 500,
+                                                        borderRadius: '6px',
+                                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                                        color: theme.palette.primary.main
                                                     }}
-                                                >
-                                                    <MoreVertIcon fontSize="small" />
-                                                </IconButton>
-                                            </TableCell>
-                                        </TableRow>
-                                    ))
+                                                />
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell align="center">
+                                            <IconButton
+                                                onClick={(e) => openActionMenu(e, job)}
+                                                size="small"
+                                                sx={{
+                                                    color: theme.palette.primary.main,
+                                                    '&:hover': {
+                                                        bgcolor: alpha(theme.palette.primary.main, 0.1)
+                                                    },
+                                                }}
+                                            >
+                                                <MoreVertIcon fontSize="small" />
+                                            </IconButton>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
                             ) : (
                                 <TableRow>
                                     <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
@@ -642,23 +671,39 @@ export default function Index({ jobs, filters }) {
                     </Table>
                 </TableContainer>
 
-                <TablePagination
-                    rowsPerPageOptions={[5, 10, 25]}
-                    component="div"
-                    count={jobs?.total || 0}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleChangeRowsPerPage}
-                    labelRowsPerPage="Baris per halaman:"
-                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} dari ${count}`}
-                    sx={{
+                {/* Pagination - Using MUI Pagination like in Public/Jobs/Index */}
+                {jobs?.last_page > 1 && (
+                    <Box sx={{ 
+                        mt: 3, 
+                        mb: 3, 
+                        display: 'flex', 
+                        justifyContent: 'center',
                         borderTop: `1px solid ${theme.palette.divider}`,
-                        '.MuiTablePagination-selectLabel, .MuiTablePagination-displayedRows': {
-                            my: 1
-                        }
-                    }}
-                />
+                        pt: 3
+                    }}>
+                        <Pagination
+                            count={jobs.last_page}
+                            page={jobs.current_page}
+                            color="primary"
+                            shape="rounded"
+                            variant="outlined"
+                            renderItem={(item) => (
+                                <PaginationItem
+                                    component={Link}
+                                    href={route('manager.jobs.index', {
+                                        ...data,
+                                        page: item.page
+                                    })}
+                                    {...item}
+                                    sx={{
+                                        borderRadius: '8px',
+                                        fontWeight: item.selected ? 600 : 400,
+                                    }}
+                                />
+                            )}
+                        />
+                    </Box>
+                )}
             </Paper>
 
             {/* Menu Aksi */}

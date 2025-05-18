@@ -17,21 +17,17 @@ class CompanyController extends Controller
      */
     public function index(Request $request)
     {
+        // Build the company query
         $query = Company::query();
 
         // Apply search filter
         if ($request->has('search') && $request->search) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('industry', 'like', "%{$search}%");
+                  ->orWhere('industry', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%");
             });
-        }
-
-        // Apply active filter
-        if ($request->has('is_active') && $request->is_active !== null) {
-            $query->where('is_active', $request->is_active === 'true' || $request->is_active === '1');
         }
 
         // Apply industry filter
@@ -39,17 +35,30 @@ class CompanyController extends Controller
             $query->where('industry', $request->industry);
         }
 
-        // Sort
-        $sortBy = $request->sort_by ?? 'created_at';
+        // Apply status filter
+        if ($request->has('status')) {
+            if ($request->status === 'active') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'inactive') {
+                $query->where('is_active', false);
+            }
+        }
+
+        // Apply sorting
+        $sortBy = $request->sort ?? 'created_at';
         $sortOrder = $request->sort_order ?? 'desc';
         $query->orderBy($sortBy, $sortOrder);
 
-        $companies = $query->paginate(10)->through(function ($company) {
+        // Set per_page from request or use default
+        $perPage = $request->per_page ?? 15;
+        
+        // Paginate with the requested per_page value
+        $companies = $query->paginate($perPage)->through(function ($company) {
             return [
                 'id' => $company->id,
                 'name' => $company->name,
                 'description' => $company->description,
-                'logo' => $company->logo ? asset('storage/' . $company->logo) : null,
+                'logo' => $company->logo ? Storage::url($company->logo) : null,
                 'website' => $company->website,
                 'address' => $company->address,
                 'phone' => $company->phone,
@@ -66,7 +75,7 @@ class CompanyController extends Controller
 
         return Inertia::render('Admin/Companies/Index', [
             'companies' => $companies,
-            'filters' => $request->only(['search', 'is_active', 'industry']),
+            'filters' => $request->only(['search', 'industry', 'status']),
             'industries' => $industries,
             'sorting' => [
                 'sort_by' => $sortBy,
@@ -93,29 +102,24 @@ class CompanyController extends Controller
      */
     public function store(CompanyRequest $request)
     {
-        // Log request details for debugging
-        \Log::info('Company creation request', [
-            'hasFile' => $request->hasFile('logo'),
-            'allFiles' => $request->allFiles(),
-            'request_data' => $request->except(['logo'])
-        ]);
-
         try {
             $data = $request->validated();
 
             // Handle logo upload
-            if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
-                try {
+            if ($request->hasFile('logo')) {
+                $file = $request->file('logo');
+                
+                if ($file->isValid()) {
                     // Log file details for debugging
                     \Log::info('Logo upload details:', [
-                        'original_name' => $request->file('logo')->getClientOriginalName(),
-                        'size' => $request->file('logo')->getSize(),
-                        'mime' => $request->file('logo')->getMimeType()
+                        'original_name' => $file->getClientOriginalName(),
+                        'size' => $file->getSize(),
+                        'mime' => $file->getMimeType()
                     ]);
 
-                    // Store the logo file
-                    $logoPath = $request->file('logo')->store('company_logos', 'public');
-
+                    // Store the logo file with a unique name
+                    $logoPath = $file->store('company_logos', 'public');
+                    
                     // Verify file was stored successfully
                     if (!$logoPath) {
                         throw new \Exception('Failed to store logo file');
@@ -123,20 +127,15 @@ class CompanyController extends Controller
 
                     $data['logo'] = $logoPath;
                     \Log::info('Logo saved successfully at: ' . $logoPath);
-
-                } catch (\Exception $e) {
-                    \Log::error('Logo upload failed: ' . $e->getMessage());
-                    \Log::error($e->getTraceAsString());
-
+                    
+                    // Ensure the file is accessible via public storage
+                    \Log::info('Public URL: ' . Storage::disk('public')->url($logoPath));
+                } else {
+                    \Log::error('Invalid logo file uploaded');
                     return redirect()->back()
-                        ->with('error', 'Gagal mengupload logo: ' . $e->getMessage())
+                        ->with('error', 'File logo tidak valid')
                         ->withInput();
                 }
-            } else if ($request->hasFile('logo') && !$request->file('logo')->isValid()) {
-                \Log::error('Invalid logo file uploaded');
-                return redirect()->back()
-                    ->with('error', 'File logo tidak valid')
-                    ->withInput();
             }
 
             // Create the company
@@ -179,7 +178,7 @@ class CompanyController extends Controller
                         'id' => $manager->user->id,
                         'name' => $manager->user->name,
                         'email' => $manager->user->email,
-                        'avatar' => $manager->user->avatar ? asset('storage/' . $manager->user->avatar) : null,
+                        'avatar' => $manager->user->avatar ? Storage::url($manager->user->avatar) : null,
                         'is_active' => $manager->user->is_active,
                         'role' => $manager->user->role ? [
                             'id' => $manager->user->role->id,
@@ -242,22 +241,24 @@ class CompanyController extends Controller
             }])->get()->sum('job_applications_count'),
         ];
 
+        // Format company data
+        $companyData = [
+            'id' => $company->id,
+            'name' => $company->name,
+            'description' => $company->description,
+            'logo' => $company->logo ? Storage::url($company->logo) : null,
+            'website' => $company->website,
+            'address' => $company->address,
+            'phone' => $company->phone,
+            'email' => $company->email,
+            'industry' => $company->industry,
+            'is_active' => $company->is_active,
+            'created_at' => $company->created_at->format('Y-m-d'),
+            'updated_at' => $company->updated_at->format('Y-m-d'),
+        ];
+
         return Inertia::render('Admin/Companies/Show', [
-            'company' => [
-                'id' => $company->id,
-                'name' => $company->name,
-                'description' => $company->description,
-                'logo' => $company->logo ? asset('storage/' . $company->logo) : null,
-                'website' => $company->website,
-                'address' => $company->address,
-                'phone' => $company->phone,
-                'email' => $company->email,
-                'industry' => $company->industry,
-                'is_active' => $company->is_active,
-                'created_at' => $company->created_at->format('Y-m-d'),
-                'updated_at' => $company->updated_at->format('Y-m-d'),
-                'managers_count' => $managers->count(),
-            ],
+            'company' => $companyData,
             'managers' => $managers,
             'jobs' => $jobs,
             'stats' => [
@@ -275,21 +276,24 @@ class CompanyController extends Controller
         // Get unique industries for dropdown
         $industries = Company::distinct()->pluck('industry')->filter()->values();
 
+        // Format company data
+        $companyData = [
+            'id' => $company->id,
+            'name' => $company->name,
+            'description' => $company->description,
+            'logo' => $company->logo ? Storage::url($company->logo) : null,
+            'website' => $company->website,
+            'address' => $company->address,
+            'phone' => $company->phone,
+            'email' => $company->email,
+            'industry' => $company->industry,
+            'is_active' => $company->is_active,
+            'created_at' => $company->created_at->format('Y-m-d'),
+            'updated_at' => $company->updated_at->format('Y-m-d'),
+        ];
+
         return Inertia::render('Admin/Companies/Edit', [
-            'company' => [
-                'id' => $company->id,
-                'name' => $company->name,
-                'description' => $company->description,
-                'logo' => $company->logo ? asset('storage/' . $company->logo) : null,
-                'website' => $company->website,
-                'address' => $company->address,
-                'phone' => $company->phone,
-                'email' => $company->email,
-                'industry' => $company->industry,
-                'is_active' => $company->is_active,
-                'created_at' => $company->created_at->format('Y-m-d'),
-                'updated_at' => $company->updated_at->format('Y-m-d'),
-            ],
+            'company' => $companyData,
             'industries' => $industries
         ]);
     }
@@ -299,70 +303,48 @@ class CompanyController extends Controller
      */
     public function update(CompanyRequest $request, Company $company)
     {
-        // Log request details for debugging
-        \Log::info('Company update request', [
-            'company_id' => $company->id,
-            'hasFile' => $request->hasFile('logo'),
-            'allFiles' => $request->allFiles(),
-            'request_data' => $request->except(['logo'])
-        ]);
-
         try {
             $data = $request->validated();
 
             // Handle logo upload
-            if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
-                try {
-                    // Log file details for debugging
-                    \Log::info('Logo update details:', [
-                        'original_name' => $request->file('logo')->getClientOriginalName(),
-                        'size' => $request->file('logo')->getSize(),
-                        'mime' => $request->file('logo')->getMimeType()
-                    ]);
-
-                    // Delete old logo if it exists
-                    if ($company->logo) {
+            if ($request->hasFile('logo')) {
+                $file = $request->file('logo');
+                
+                if ($file->isValid()) {
+                    // Delete old logo if exists
+                    if ($company->logo && Storage::disk('public')->exists($company->logo)) {
                         Storage::disk('public')->delete($company->logo);
-                        \Log::info('Old logo deleted: ' . $company->logo);
                     }
 
                     // Store the new logo file
-                    $logoPath = $request->file('logo')->store('company_logos', 'public');
-
+                    $logoPath = $file->store('company_logos', 'public');
+                    
                     // Verify file was stored successfully
                     if (!$logoPath) {
                         throw new \Exception('Failed to store logo file');
                     }
 
                     $data['logo'] = $logoPath;
-                    \Log::info('New logo saved successfully at: ' . $logoPath);
 
-                } catch (\Exception $e) {
-                    \Log::error('Logo update failed: ' . $e->getMessage());
-                    \Log::error($e->getTraceAsString());
-
+                } else {
+                    \Log::error('Invalid logo file uploaded');
                     return redirect()->back()
-                        ->with('error', 'Gagal mengupload logo baru: ' . $e->getMessage())
+                        ->with('error', 'File logo tidak valid')
                         ->withInput();
                 }
-            } else if ($request->hasFile('logo') && !$request->file('logo')->isValid()) {
-                \Log::error('Invalid logo file uploaded for update');
-                return redirect()->back()
-                    ->with('error', 'File logo tidak valid')
-                    ->withInput();
+            } else {
+                // If no logo is uploaded, keep the existing one
+                unset($data['logo']);
             }
 
-            // Update the company
+            // Update company
             $company->update($data);
-            \Log::info('Company updated successfully: ' . $company->id);
 
-            return redirect()->route('admin.companies.index')
+            return redirect()->route('admin.companies.show', $company)
                 ->with('success', 'Perusahaan berhasil diperbarui.');
 
         } catch (\Exception $e) {
             \Log::error('Company update failed: ' . $e->getMessage());
-            \Log::error($e->getTraceAsString());
-
             return redirect()->back()
                 ->with('error', 'Gagal memperbarui perusahaan: ' . $e->getMessage())
                 ->withInput();
@@ -438,14 +420,14 @@ class CompanyController extends Controller
             'company' => [
                 'id' => $company->id,
                 'name' => $company->name,
-                'logo' => $company->logo ? asset('storage/' . $company->logo) : null,
+                'logo' => $company->logo ? Storage::url($company->logo) : null,
             ],
             'managers' => $managers->map(function($manager) {
                 return [
                     'id' => $manager->id,
                     'name' => $manager->name,
                     'email' => $manager->email,
-                    'avatar' => $manager->avatar ? asset('storage/' . $manager->avatar) : null,
+                    'avatar' => $manager->avatar ? Storage::url($manager->avatar) : null,
                 ];
             }),
             'company_managers' => $company->managers->pluck('id'),

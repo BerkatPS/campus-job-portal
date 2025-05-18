@@ -1,7 +1,8 @@
 <?php
 
-
+use App\Http\Controllers\Candidate\PortfolioController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -17,23 +18,30 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\FormBuilderController;
 use App\Http\Controllers\Admin\HiringStageController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\NotificationController;
 
 use App\Http\Controllers\Manager\DashboardController as ManagerDashboardController;
 use App\Http\Controllers\Manager\JobController as ManagerJobController;
 use App\Http\Controllers\Manager\ApplicationController as ManagerApplicationController;
 use App\Http\Controllers\Manager\EventController;
 use App\Http\Controllers\Manager\NotificationController as ManagerNotificationController;
+use App\Http\Controllers\Manager\ProfileController;
+use App\Http\Controllers\Manager\TeamController;
+use App\Http\Controllers\Manager\CompanyProfileController;
+use App\Http\Controllers\Manager\AnalyticsController;
 
 // Candidate Controllers
 use App\Http\Controllers\Candidate\DashboardController as CandidateDashboardController;
 use App\Http\Controllers\Candidate\JobController as CandidateJobController;
 use App\Http\Controllers\Candidate\ApplicationController as CandidateApplicationController;
-use App\Http\Controllers\Candidate\ProfileController;
 use App\Http\Controllers\Candidate\NotificationController as CandidateNotificationController;
+use App\Http\Controllers\Candidate\ProfileController as CandidateProfileController;
+use App\Http\Controllers\Candidate\CompanyReviewController;
 
 // Public Controllers
 use App\Http\Controllers\Public\JobController as PublicJobController;
 use App\Http\Controllers\Public\ForumController;
+use App\Http\Controllers\Public\CompanyController as PublicCompanyController;
 
 // Home page
 Route::get('/', function () {
@@ -44,6 +52,9 @@ Route::get('/', function () {
 Route::get('/about', function () {
     return Inertia::render('Public/About');
 })->name('public.about');
+
+// Make sure broadcasting auth route is properly registered with web middleware
+Broadcast::routes(['middleware' => ['web', 'auth']]);
 
 Route::fallback(function () {
     return Inertia::render('Errors/404');
@@ -70,13 +81,15 @@ Route::middleware('auth')->group(function () {
         ->name('notifications.mark-all-read');
     Route::get('/notifications/unread-count', [App\Http\Controllers\NotificationController::class, 'getUnreadCount'])
         ->name('notifications.unread-count');
-
-
 });
 
 // Public job listings
 Route::get('/jobs', [PublicJobController::class, 'index'])->name('public.jobs.index');
 Route::get('/jobs/{job}', [PublicJobController::class, 'show'])->name('public.jobs.show');
+
+// Companies pages
+Route::get('/companies', [PublicCompanyController::class, 'index'])->name('public.companies.index');
+Route::get('/companies/{company}', [PublicCompanyController::class, 'show'])->name('public.companies.show');
 
 // Authentication routes
 Route::middleware('guest')->group(function () {
@@ -160,6 +173,13 @@ Route::middleware('auth')->group(function () {
         Route::resource('hiring-stages', HiringStageController::class);
         Route::put('/hiring-stages/reorder', [HiringStageController::class, 'reorder'])->name('hiring-stages.reorder');
 
+        // Notifications
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('/notifications/{id}/mark-as-read', [NotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
+        Route::post('/notifications/mark-all-as-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+        Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+        Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+        Route::get('/notifications/latest', [NotificationController::class, 'getLatest'])->name('notifications.latest');
     });
 
     // Manager routes
@@ -190,8 +210,52 @@ Route::middleware('auth')->group(function () {
             Route::get('/calendar', [EventController::class, 'calendar'])->name('calendar');
 
             // Profile management
-            Route::get('/profile', [ManagerDashboardController::class, 'profile'])->name('profile');
-            Route::put('/profile', [ManagerDashboardController::class, 'updateProfile'])->name('profile.update');
+            Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
+            Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+            Route::get('/profile/security', [ProfileController::class, 'security'])->name('profile.security');
+            Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+            Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->name('profile.update-password');
+            Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.update-avatar');
+
+            // Team management
+            Route::get('/team', [TeamController::class, 'index'])->name('team.index');
+            Route::get('/team/{id}', [TeamController::class, 'show'])->name('team.show');
+            Route::get('/team/{id}/edit', [TeamController::class, 'edit'])->name('team.edit');
+            Route::put('/team/{id}', [TeamController::class, 'update'])->name('team.update');
+
+            // Company Profile management
+            Route::get('/company-profile', [CompanyProfileController::class, 'index'])->name('company-profile.index');
+            Route::get('/company-profile/edit', [CompanyProfileController::class, 'edit'])->name('company-profile.edit');
+            Route::post('/company-profile', [CompanyProfileController::class, 'update'])->name('company-profile.update');
+
+            // Analytics
+            Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+            Route::get('/analytics/data', [AnalyticsController::class, 'getAnalyticsData'])->name('analytics.data');
+            Route::get('/analytics/export', [AnalyticsController::class, 'export'])->name('analytics.export');
+
+            // Messages system for manager
+            Route::prefix('messages')->name('messages.')->group(function () {
+                Route::get('/', [App\Http\Controllers\Manager\MessageController::class, 'index'])->name('index');
+                Route::get('create', [App\Http\Controllers\Manager\MessageController::class, 'create'])->name('create');
+                Route::post('/', [App\Http\Controllers\Manager\MessageController::class, 'store'])->name('store');
+                Route::get('{message}', [App\Http\Controllers\Manager\MessageController::class, 'show'])->name('show');
+                Route::delete('{message}', [App\Http\Controllers\Manager\MessageController::class, 'destroy'])->name('destroy');
+                Route::post('upload-attachment', [App\Http\Controllers\Manager\MessageController::class, 'uploadAttachment'])->name('upload-attachment');
+                Route::post('reply/{message}', [App\Http\Controllers\Manager\MessageController::class, 'reply'])->name('reply');
+
+                // Navbar indicator routes
+                Route::get('recent', [App\Http\Controllers\Manager\MessageController::class, 'recent'])->name('recent');
+                Route::post('mark-read/{message}', [App\Http\Controllers\Manager\MessageController::class, 'markAsRead'])->name('mark-read');
+
+                // Messages from application panel
+                Route::get('create-from-application/{application}', [App\Http\Controllers\Manager\MessageController::class, 'createFromApplication'])->name('create-from-application');
+                Route::post('store-from-application', [App\Http\Controllers\Manager\MessageController::class, 'storeFromApplication'])->name('store-from-application');
+
+                // Message analytics and metrics
+                Route::get('analytics', [App\Http\Controllers\Manager\MessageAnalyticsController::class, 'index'])->name('analytics');
+                Route::get('response-times', [App\Http\Controllers\Manager\MessageAnalyticsController::class, 'responseTimeMetrics'])->name('response-times');
+                Route::get('application-analytics/{application}', [App\Http\Controllers\Manager\MessageAnalyticsController::class, 'applicationAnalytics'])->name('application-analytics');
+            });
 
             // Notifications
             Route::get('/notifications', [ManagerNotificationController::class, 'index'])->name('notifications.index');
@@ -206,6 +270,15 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['auth', \App\Http\Middleware\CandidateMiddleware::class])->prefix('candidate')->name('candidate.')->group(function () {
         Route::get('/dashboard', [CandidateDashboardController::class, 'index'])->name('dashboard');
 
+        // Company Review routes
+        Route::get('/applications/{jobApplication}/review/create', [CompanyReviewController::class, 'create'])->name('reviews.create');
+        Route::post('/reviews', [CompanyReviewController::class, 'store'])->name('reviews.store');
+        Route::get('/reviews/{review}/edit', [CompanyReviewController::class, 'edit'])->name('reviews.edit');
+        Route::put('/reviews/{review}', [CompanyReviewController::class, 'update'])->name('reviews.update');
+        Route::get('/reviews/{review}', [CompanyReviewController::class, 'show'])->name('reviews.show');
+        Route::delete('/reviews/{review}', [CompanyReviewController::class, 'destroy'])->name('reviews.destroy');
+
+        // Other candidate routes
         // Jobs
         Route::get('/jobs', [CandidateJobController::class, 'index'])->name('jobs.index');
         Route::get('/jobs/{job}', [CandidateJobController::class, 'show'])->name('jobs.show');
@@ -214,11 +287,20 @@ Route::middleware('auth')->group(function () {
 
         // Notifications
         Route::get('/notifications', [CandidateNotificationController::class, 'index'])->name('notifications.index');
-        Route::post('/notifications/{notification}/mark-as-read', [CandidateNotificationController::class, 'markAsRead'])->name('notifications.mark-as-read');
-        Route::post('/notifications/mark-all-as-read', [CandidateNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
-        Route::delete('/notifications/{notification}', [CandidateNotificationController::class, 'destroy'])->name('notifications.destroy');
         Route::get('/notifications/unread-count', [CandidateNotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
         Route::get('/notifications/latest', [CandidateNotificationController::class, 'getLatest'])->name('notifications.latest');
+        Route::post('/notifications/{id}/read', [CandidateNotificationController::class, 'markAsRead'])->name('notifications.read');
+        Route::post('/notifications/mark-all-as-read', [CandidateNotificationController::class, 'markAllAsRead'])->name('notifications.mark-all-as-read');
+
+        // Messages system for candidate
+        Route::get('/messages', [App\Http\Controllers\Candidate\MessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/create', [App\Http\Controllers\Candidate\MessageController::class, 'create'])->name('messages.create');
+        Route::post('/messages', [App\Http\Controllers\Candidate\MessageController::class, 'store'])->name('messages.store');
+        Route::get('/messages/{conversation}', [App\Http\Controllers\Candidate\MessageController::class, 'show'])->name('messages.show');
+        Route::post('/messages/{conversation}/reply', [App\Http\Controllers\Candidate\MessageController::class, 'reply'])->name('messages.reply');
+        Route::put('/messages/{conversation}/archive', [App\Http\Controllers\Candidate\MessageController::class, 'toggleArchive'])->name('messages.toggle-archive');
+        Route::get('/messages/attachment/{message}', [App\Http\Controllers\Candidate\MessageController::class, 'downloadAttachment'])->name('messages.download-attachment');
+        Route::get('/messages/managers-for-job', [App\Http\Controllers\Candidate\MessageController::class, 'getManagersForJob'])->name('messages.managers-for-job');
 
         // Applications
         Route::get('/applications', [CandidateApplicationController::class, 'index'])->name('applications.index');
@@ -233,10 +315,39 @@ Route::middleware('auth')->group(function () {
         Route::post('/events/{eventId}/add-note', [CandidateApplicationController::class, 'addEventNote'])->name('events.add-note');
 
         // Profile
-        Route::get('/profile', [ProfileController::class, 'index'])->name('profile.index');
-        Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::post('/profile/resume', [ProfileController::class, 'uploadResume'])->name('profile.upload-resume');
+        Route::get('/profile', [CandidateProfileController::class, 'index'])->name('profile.index');
+        Route::get('/profile/edit', [CandidateProfileController::class, 'edit'])->name('profile.edit');
+        Route::put('/profile', [CandidateProfileController::class, 'update'])->name('profile.update');
+        Route::post('/profile/resume', [CandidateProfileController::class, 'uploadResume'])->name('profile.upload-resume');
+
+        // Portfolio routes
+        Route::prefix('portfolio')->name('portfolio.')->group(function () {
+            Route::get('/', [PortfolioController::class, 'index'])->name('index');
+            Route::get('/create', [PortfolioController::class, 'create'])->name('create');
+            Route::post('/', [PortfolioController::class, 'store'])->name('store');
+            Route::get('/{portfolioItem}', [PortfolioController::class, 'show'])->name('show');
+            Route::get('/{portfolioItem}/edit', [PortfolioController::class, 'edit'])->name('edit');
+            Route::put('/{portfolioItem}', [PortfolioController::class, 'update'])->name('update');
+            Route::delete('/{portfolioItem}', [PortfolioController::class, 'destroy'])->name('destroy');
+            Route::post('/update-order', [PortfolioController::class, 'updateOrder'])->name('update-order');
+            Route::post('/{portfolioItem}/toggle-featured', [PortfolioController::class, 'toggleFeatured'])->name('toggle-featured');
+        });
+
+        // Resume Enhancer routes
+        Route::prefix('resume-enhancer')->name('resume-enhancer.')->group(function () {
+            Route::get('/', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'index'])->name('index');
+            Route::get('/create', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'create'])->name('create');
+            Route::post('/', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'store'])->name('store');
+            Route::get('/{resumeVersion}', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'show'])->name('show');
+            Route::get('/{resumeVersion}/edit', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'edit'])->name('edit');
+            Route::put('/{resumeVersion}', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'update'])->name('update');
+            Route::delete('/{resumeVersion}', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'destroy'])->name('destroy');
+            Route::post('/{resumeVersion}/enhance', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'enhance'])->name('enhance');
+            Route::get('/enhancement/{enhancement}', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'showEnhancement'])->name('enhancement');
+            Route::post('/enhancement/{enhancement}/apply', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'applyEnhancement'])->name('apply-enhancement');
+            Route::post('/import-from-profile', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'importFromProfile'])->name('import-from-profile');
+            Route::post('/{resumeVersion}/set-as-current', [App\Http\Controllers\Candidate\ResumeEnhancerController::class, 'setAsCurrent'])->name('set-as-current');
+        });
 
         // Add this to routes/web.php for testing
         Route::post('/debug-resume', function (Request $request) {
@@ -252,17 +363,5 @@ Route::middleware('auth')->group(function () {
 Route::get('/test-notification', function () {
     $user = auth()->user();
 
-    // Create a test notification
-    $user->notify(new \App\Notifications\ApplicationStatusUpdated(
-        \App\Models\JobApplication::first() ?? new \App\Models\JobApplication([
-        'id' => 1,
-        'job' => new \App\Models\Job(['title' => 'Test Job']),
-    ]),
-        [
-            'old_status' => 'pending',
-            'new_status' => 'approved'
-        ]
-    ));
-
-    return response()->json(['message' => 'Test notification sent']);
-})->middleware('auth');
+    return 'Notification sent!';
+});

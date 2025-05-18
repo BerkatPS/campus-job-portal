@@ -14,8 +14,8 @@ class NIMVerificationService
         // Log untuk debugging
         Log::info("Verifying NIM: {$nim}");
 
-        // Pattern yang lebih ketat untuk format NIM: YYCC.NNNN
-        $pattern = '/^\d{2}\d{2}\.\d{4}$/';
+        // Pattern baru tanpa titik: 7 digit total - 2025 (tahun) + 01 (kode negara) + 3 digit (nomor registrasi)
+        $pattern = '/^2025013\d{2}$/';
 
         // Validasi pola
         if (!preg_match($pattern, $nim)) {
@@ -24,15 +24,15 @@ class NIMVerificationService
         }
 
         // Ekstrak komponen NIM
-        $yearCode = substr($nim, 0, 2); // Tahun registrasi
-        $countryCode = substr($nim, 2, 2); // Kode negara
-        $registrationNumber = substr($nim, 5, 4); // Nomor registrasi
+        $yearCode = substr($nim, 0, 4);    // Tahun registrasi (2025)
+        $countryCode = substr($nim, 4, 2); // Kode negara (01)
+        $registrationNumber = substr($nim, 6); // Nomor registrasi (3 digit)
 
         Log::info("NIM components - Year: {$yearCode}, Country: {$countryCode}, RegNum: {$registrationNumber}");
 
-        // Pastikan nomor registrasi bukan '0000' (Nomor registrasi yang tidak valid)
+        // Pastikan nomor registrasi bukan '000' (Nomor registrasi yang tidak valid)
         if ((int)$registrationNumber === 0) {
-            Log::info("Registration number is invalid: 0000");
+            Log::info("Registration number is invalid: 000");
             return false;
         }
 
@@ -42,9 +42,9 @@ class NIMVerificationService
             return false;
         }
 
-        // Cek jika tahun registrasi valid
-        if (!$this->isValidYear($yearCode)) {
-            Log::info("Year code {$yearCode} is not valid");
+        // Cek jika tahun registrasi valid (harus 2025)
+        if ($yearCode !== '2025') {
+            Log::info("Year code {$yearCode} is not valid (should be 2025)");
             return false;
         }
 
@@ -58,63 +58,48 @@ class NIMVerificationService
     public function belongsToUniversity(string $nim): bool
     {
         // Validasi format NIM terlebih dahulu
-        $pattern = '/^\d{2}\d{2}\.\d{4}$/';
+        $pattern = '/^2025013\d{2}$/';
         if (!preg_match($pattern, $nim)) {
             Log::info("NIM {$nim} - belongsToUniversity: format invalid");
             return false;
         }
 
-        // Ekstrak kode negara (digit ketiga dan keempat)
-        $countryCode = substr($nim, 2, 2);
+        // Ekstrak kode negara (digit kelima dan keenam)
+        $countryCode = substr($nim, 4, 2);
         Log::info("NIM {$nim} - belongsToUniversity: country code is {$countryCode}");
 
-        // Cek jika kode negara sesuai dengan kode universitas (misalnya '01' untuk Indonesia)
+        // Cek jika kode negara sesuai dengan kode universitas ('01' untuk Indonesia)
         $result = $countryCode === '01';
         Log::info("NIM {$nim} - belongsToUniversity: result is " . ($result ? 'true' : 'false'));
         return $result;
     }
 
     /**
-     * Cek jika tahun registrasi valid (misalnya, hanya mahasiswa dari tahun 2020 dan ke atas)
+     * Metode ini tidak lagi diperlukan karena tahun sudah dipastikan 2025,
+     * tetapi tetap dipertahankan untuk kompatibilitas
      */
     public function isValidYear(string $yearCode): bool
     {
-        $currentYear = (int)date('y'); // Ambil dua digit tahun sekarang
-        $minYear = 20; // Tahun minimal untuk registrasi yang valid (misalnya '20' untuk tahun 2020)
-
-        // Log for debugging
-        Log::info("Year validation - Input: {$yearCode}, Current: {$currentYear}, Min: {$minYear}");
-
-        // Jika tahun registrasi lebih kecil dari tahun minimal, tolak registrasi
-        $result = (int)$yearCode >= $minYear;
-        Log::info("Year validation result: " . ($result ? 'valid' : 'invalid'));
-        return $result;
+        // Hanya tahun 2025 yang valid
+        return $yearCode === '2025';
     }
 
     /**
      * Cek apakah mahasiswa dengan NIM ini adalah seorang lulusan
+     * Selalu mengembalikan true karena semua mahasiswa dengan tahun 2025 dianggap lulusan
      */
     public function isGraduate(string $nim): bool
     {
         // Validasi format NIM terlebih dahulu
-        $pattern = '/^\d{2}\d{2}\.\d{4}$/';
+        $pattern = '/^2025013\d{2}$/';
         if (!preg_match($pattern, $nim)) {
             Log::info("NIM {$nim} - isGraduate: format invalid");
             return false;
         }
 
-        // Ekstrak tahun dari NIM (bagian YY)
-        $yearCode = substr($nim, 0, 2);
-        $currentYear = (int)date('y');
-
-        Log::info("Graduate check - NIM year: {$yearCode}, Current year: {$currentYear}");
-
-        // Anggap lulusan adalah mahasiswa yang tahun registrasinya lebih kecil atau sama dengan tahun sekarang
-        $result = (int)$yearCode <= $currentYear;
-        Log::info("Graduate check result: " . ($result ? 'is graduate' : 'not graduate'));
-        return $result;
+        // Semua mahasiswa dengan tahun 2025 dianggap lulusan
+        return true;
     }
-
 
     /**
      * Ambil kode negara dari NIM
@@ -122,12 +107,12 @@ class NIMVerificationService
     public function getCountryCode(string $nim): ?string
     {
         // Validasi format NIM terlebih dahulu
-        $pattern = '/^\d{2}\d{2}\.\d{4}$/';
+        $pattern = '/^2025013\d{2}$/';
         if (!preg_match($pattern, $nim)) {
             return null;
         }
 
-        return substr($nim, 2, 2);
+        return substr($nim, 4, 2);
     }
 
     /**
@@ -136,13 +121,12 @@ class NIMVerificationService
     public function getRegistrationYear(string $nim): ?string
     {
         // Validasi format NIM terlebih dahulu
-        $pattern = '/^\d{2}\d{2}\.\d{4}$/';
+        $pattern = '/^2025013\d{2}$/';
         if (!preg_match($pattern, $nim)) {
             return null;
         }
 
-        $yearCode = substr($nim, 0, 2);
-        return '20' . $yearCode;
+        return substr($nim, 0, 4);
     }
 
     /**
@@ -151,18 +135,18 @@ class NIMVerificationService
     public function getStudentDetails(string $nim): ?array
     {
         // Validasi format NIM terlebih dahulu
-        $pattern = '/^\d{2}\d{2}\.\d{4}$/';
+        $pattern = '/^2025013\d{2}$/';
         if (!preg_match($pattern, $nim)) {
             return null;
         }
 
         // Parse komponen NIM
-        $yearCode = substr($nim, 0, 2);
-        $countryCode = substr($nim, 2, 2);
-        $registrationNumber = substr($nim, 5, 4);
+        $yearCode = substr($nim, 0, 4);
+        $countryCode = substr($nim, 4, 2);
+        $registrationNumber = substr($nim, 6);
 
         return [
-            'registrationYear' => '20' . $yearCode,
+            'registrationYear' => $yearCode,
             'countryCode' => $countryCode,
             'registrationNumber' => $registrationNumber,
             'fullNIM' => $nim

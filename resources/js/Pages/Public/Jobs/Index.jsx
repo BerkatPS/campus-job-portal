@@ -4,9 +4,8 @@ import {
     Box, Typography, Container, Card, CardContent,
     TextField, Button, Chip, Divider, InputAdornment,
     FormControl, InputLabel, Select, MenuItem,
-    Stack, IconButton, CardActions, CardHeader, Avatar,
-    Collapse, Skeleton, Alert, Badge, Tooltip,
-    Paper, useTheme, useMediaQuery
+    Stack, IconButton, Grid, Paper, Avatar,
+    useTheme, useMediaQuery, Collapse, Pagination, PaginationItem
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -20,18 +19,32 @@ import {
     BookmarkBorder as BookmarkBorderIcon,
     Category as CategoryIcon,
     CalendarMonth as CalendarIcon,
-    Bolt as BoltIcon,
-    PersonSearch as PersonSearchIcon,
+    Close as CloseIcon,
     ArrowForward as ArrowForwardIcon,
-    Close as CloseIcon
+    FilterList,
+    BusinessCenter,
+    Favorite,
+    LocationOn,
+    WorkOutline,
+    AttachMoney,
+    CalendarToday,
+    ArrowForward,
+    Verified as VerifiedIcon,
+    BuildCircle as BuildCircleIcon
 } from '@mui/icons-material';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import moment from 'moment';
 import 'moment/locale/id';
 
 import PublicLayout from '@/Components/Layout/PublicLayout';
 import MuiThemeProvider from '@/Theme/MuiThemeProvider';
 import CustomPagination from '@/Components/Shared/Pagination';
+import CompanyLogo from '@/Components/Shared/CompanyLogo';
+
+// Function to create alpha version of color
+const alpha = (color, value) => {
+    return color + value.toString(16).padStart(2, '0');
+};
 
 // Fungsi format yang sama seperti sebelumnya
 const formatCurrency = (amount) => {
@@ -63,12 +76,11 @@ const formatExperienceLevel = (level) => {
     return levels[level] || level;
 };
 
-// Custom Chip component sama seperti sebelumnya
+// Custom Chip component
 const CustomChip = ({ icon, label, color = "default", onDelete, variant = "outlined", size = "small" }) => {
     const theme = useTheme();
 
     const getChipStyle = () => {
-        // Logika styling sama seperti sebelumnya
         if (color === "primary") {
             return {
                 color: theme.palette.primary.main,
@@ -79,7 +91,7 @@ const CustomChip = ({ icon, label, color = "default", onDelete, variant = "outli
                 },
             };
         }
-        // ...kode lain tetap sama
+        return {};
     };
 
     return (
@@ -98,830 +110,719 @@ const CustomChip = ({ icon, label, color = "default", onDelete, variant = "outli
     );
 };
 
-export default function Index({ jobs, filters, categories = [], total = 0 }) {
+// Job Card Component
+const JobCard = ({ job }) => {
     const theme = useTheme();
-    const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
 
-    // State yang sama seperti sebelumnya
-    const [filterOpen, setFilterOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState(filters?.search || '');
-    const [locationQuery, setLocationQuery] = useState(filters?.location || '');
-    const [selectedCategory, setSelectedCategory] = useState(filters?.category_id || '');
-    const [selectedType, setSelectedType] = useState(filters?.type || '');
-    const [selectedExperience, setSelectedExperience] = useState(filters?.experience_level || '');
-    const [page, setPage] = useState(parseInt(filters?.page || 1));
-    const [isLoading, setIsLoading] = useState(false);
-    const [savedJobs, setSavedJobs] = useState([]);
-
-    // Handler functions sama seperti sebelumnya
-    const handlePageChange = (newPage) => {
-        setPage(newPage);
-        applyFilters({ page: newPage });
+    // Function to determine if the job deadline has passed
+    const isJobClosed = () => {
+        return moment().isAfter(moment(job.deadline));
     };
 
-    const handlePerPageChange = (newPerPage) => {
-        setPage(1);
-        applyFilters({ page: 1, per_page: newPerPage });
+    // Function to check if job is recently posted (within last 48 hours)
+    const isNewJob = () => {
+        const jobDate = moment(job.created_at);
+        const now = moment();
+        const hoursDiff = now.diff(jobDate, 'hours');
+        return hoursDiff <= 48;
     };
 
-    const applyFilters = (additionalFilters = {}) => {
-        setIsLoading(true);
+    return (
+        <Card
+            component={motion.div}
+            whileHover={{
+                y: -5,
+                boxShadow: '0 10px 20px rgba(0,0,0,0.08)'
+            }}
+            transition={{ duration: 0.3 }}
+            sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                bgcolor: 'white',
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 3,
+                boxShadow: '0 2px 12px rgba(0,0,0,0.03)',
+                overflow: 'hidden',
+                position: 'relative',
+            }}
+        >
+            {/* Job Card Header with subtle gradient background */}
+            <Box
+                sx={{
+                    height: 8,
+                    width: '100%',
+                    background: `linear-gradient(90deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
+                }}
+            />
 
-        const currentFilters = {
-            search: searchQuery,
-            location: locationQuery,
-            category_id: selectedCategory,
-            type: selectedType,
-            experience_level: selectedExperience,
-            page: page,
-            ...additionalFilters
-        };
 
-        Object.keys(currentFilters).forEach(key =>
-            !currentFilters[key] && delete currentFilters[key]
-        );
+            <CardContent sx={{ p: 3, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2.5 }}>
+                    <CompanyLogo company={job.company} size={56} />
 
-        router.get(route('public.jobs.index'), currentFilters, {
-            preserveState: true,
-            onFinish: () => setIsLoading(false)
-        });
-    };
+                    <Box sx={{ flex: 1, ml: 2 }}>
+                        <Link
+                            href={route('public.jobs.show', job.id)}
+                            className="no-underline"
+                        >
+                            <Typography
+                                variant="h6"
+                                fontWeight={700}
+                                sx={{
+                                    color: 'text.primary',
+                                    fontSize: '1.1rem',
+                                    lineHeight: 1.3,
+                                    mb: 0.5,
+                                    transition: 'color 0.2s',
+                                    '&:hover': {
+                                        color: theme.palette.primary.main,
+                                    }
+                                }}
+                            >
+                                {job.title}
+                            </Typography>
+                        </Link>
 
-    const resetFilters = () => {
-        setSearchQuery('');
-        setLocationQuery('');
-        setSelectedCategory('');
-        setSelectedType('');
-        setSelectedExperience('');
-        setPage(1);
-        router.get(route('public.jobs.index'), {}, { preserveState: true });
-    };
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5
+                            }}
+                        >
+                            <BusinessCenter fontSize="small" sx={{ fontSize: 16 }} />
+                            {job.company?.name}
+                        </Typography>
+                    </Box>
 
-    const toggleSaveJob = (jobId) => {
-        if (savedJobs.includes(jobId)) {
-            setSavedJobs(savedJobs.filter(id => id !== jobId));
-        } else {
-            setSavedJobs([...savedJobs, jobId]);
-        }
+                    <IconButton
+                        size="small"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Add to favorites logic here
+                        }}
+                        sx={{
+                            color: 'action.disabled',
+                            '&:hover': { color: 'error.main' }
+                        }}
+                    >
+                        <Favorite fontSize="small" />
+                    </IconButton>
+                </Box>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                <Box sx={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    mb: 2.5
+                }}>
+                    <Chip
+                        icon={<LocationOn fontSize="small" />}
+                        label={job.location || 'Remote'}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            borderRadius: '6px',
+                            bgcolor: alpha(theme.palette.grey[500], 0.08),
+                            color: theme.palette.text.primary,
+                            fontWeight: 500,
+                            border: 'none',
+                        }}
+                    />
+                    <Chip
+                        icon={<WorkOutline fontSize="small" />}
+                        label={formatJobType(job.job_type)}
+                        size="small"
+                        variant="outlined"
+                        sx={{
+                            borderRadius: '6px',
+                            bgcolor: alpha(theme.palette.primary.main, 0.08),
+                            color: theme.palette.primary.dark,
+                            fontWeight: 500,
+                            border: 'none',
+                        }}
+                    />
+                    {job.is_salary_visible && (job.salary_min || job.salary_max) && (
+                        <Chip
+                            icon={<AttachMoney fontSize="small" />}
+                            label={job.salary_min && job.salary_max
+                                ? `${formatCurrency(job.salary_min)} - ${formatCurrency(job.salary_max)}`
+                                : job.salary_min
+                                    ? `Mulai dari ${formatCurrency(job.salary_min)}`
+                                    : `Hingga ${formatCurrency(job.salary_max)}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{
+                                borderRadius: '6px',
+                                bgcolor: alpha(theme.palette.success.main, 0.08),
+                                color: theme.palette.success.dark,
+                                fontWeight: 500,
+                                border: 'none',
+                            }}
+                        />
+                    )}
+                </Box>
+
+                <Box sx={{ mt: 'auto', pt: 1 }}>
+                    <Box sx={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 0.5,
+                                color: 'text.secondary'
+                            }}
+                        >
+                            <CalendarToday fontSize="small" sx={{ fontSize: 14 }} />
+                            {moment(job.created_at).fromNow()}
+                        </Typography>
+
+                        <Typography
+                            variant="caption"
+                            color={isJobClosed() ? "error.main" : "success.main"}
+                            sx={{
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                py: 0.5,
+                                px: 1,
+                                borderRadius: 1,
+                                bgcolor: isJobClosed()
+                                    ? alpha(theme.palette.error.main, 0.08)
+                                    : alpha(theme.palette.success.main, 0.08)
+                            }}
+                        >
+                            {isJobClosed()
+                                ? 'Ditutup'
+                                : `${moment(job.deadline).diff(moment(), 'days')} hari tersisa`}
+                        </Typography>
+                    </Box>
+
+                    <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            size="small"
+                            endIcon={<ArrowForward fontSize="small" />}
+                            component={Link}
+                            href={route('public.jobs.show', job.id)}
+                            sx={{
+                                textTransform: 'none',
+                                fontWeight: 600,
+                                borderRadius: '6px',
+                                px: 2,
+                                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                '&:hover': {
+                                    boxShadow: '0 6px 15px rgba(0,0,0,0.15)',
+                                }
+                            }}
+                        >
+                            Detail
+                        </Button>
+                    </Box>
+                </Box>
+            </CardContent>
+        </Card>
+    );
+};
+
+export default function Index({ jobs, filters, categories }) {
+    const theme = useTheme();
+    const [filterValues, setFilterValues] = useState({
+        search: filters.search || '',
+        category: filters.category || '',
+        location: filters.location || '',
+        type: filters.type || '',
+        sort: isValidSortOption(filters.sort) ? filters.sort : 'latest'
+    });
+    const [openFilters, setOpenFilters] = useState(false);
+
+    // Validate sort option
+    function isValidSortOption(option) {
+        const validOptions = ['latest', 'oldest', 'relevant', 'salary_high', 'salary_low'];
+        return validOptions.includes(option);
+    }
+
+    const handleFilterChange = (e) => {
+        const { name, value } = e.target;
+        setFilterValues(prev => ({ ...prev, [name]: value }));
     };
 
     const handleSearch = (e) => {
         e.preventDefault();
-        applyFilters({ page: 1 });
+        router.get(route('public.jobs.index'), filterValues, {
+            preserveState: true,
+            replace: true
+        });
     };
 
-    // Animation variants
-    const containerVariants = {
-        hidden: { opacity: 0 },
-        visible: {
-            opacity: 1,
-            transition: { staggerChildren: 0.1 }
-        }
-    };
+    const clearFilters = () => {
+        setFilterValues({
+            search: '',
+            category: '',
+            location: '',
+            type: '',
+            sort: 'latest'
+        });
 
-    const itemVariants = {
-        hidden: { y: 20, opacity: 0 },
-        visible: {
-            y: 0,
-            opacity: 1,
-            transition: { type: 'spring', stiffness: 100 }
-        }
+        router.get(route('public.jobs.index'), {
+            preserveState: true,
+            replace: true
+        });
     };
 
     return (
-        <MuiThemeProvider>
-            <PublicLayout>
-                <Head title="Cari Lowongan Pekerjaan" />
-
-                {/* Hero Section dengan gradient dan efek blur */}
+        <PublicLayout title="Job Listings">
+            <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
+                {/* Hero/Search Section */}
                 <Box
                     sx={{
                         bgcolor: 'primary.main',
-                        color: 'white',
-                        py: { xs: 8, md: 12 },
+                        py: { xs: 6, md: 10 },
                         position: 'relative',
                         overflow: 'hidden'
                     }}
-                    className="bg-gradient-to-br from-primary-700 to-primary-900"
                 >
-                    {/* Background Elements */}
-                    <div className="absolute inset-0 overflow-hidden">
-                        <div className="absolute top-20 right-20 w-64 h-64 bg-primary-500 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
-                        <div className="absolute bottom-20 left-20 w-72 h-72 bg-secondary-500 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
-                        <div className="absolute top-40 left-40 w-48 h-48 bg-primary-300 rounded-full mix-blend-overlay filter blur-3xl opacity-30"></div>
-                    </div>
-
-                    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
-                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <Box sx={{ width: '100%', maxWidth: { xs: '100%', md: '83.33%' }, textAlign: 'center' }}>
-                                <motion.div
-                                    initial={{ opacity: 0, y: -20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5 }}
-                                >
-                                    <Typography variant="h3" component="h1" gutterBottom fontWeight="bold">
-                                        Temukan Karir Impian Anda
-                                    </Typography>
-                                    <Typography variant="h6" gutterBottom sx={{ mb: 5, maxWidth: '700px', mx: 'auto', color: 'primary.100', fontWeight: 'normal' }}>
-                                        Jelajahi ribuan lowongan pekerjaan dari perusahaan ternama untuk mahasiswa dan fresh graduate
-                                    </Typography>
-                                </motion.div>
-
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ duration: 0.5, delay: 0.2 }}
-                                >
-                                    <Card
-                                        elevation={4}
-                                        sx={{
-                                            p: { xs: 2, md: 3 },
-                                            borderRadius: '1.5rem',
-                                            background: 'rgba(255, 255, 255, 0.95)',
-                                            backdropFilter: 'blur(10px)',
-                                            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                                            border: '1px solid rgba(255, 255, 255, 0.2)',
-                                        }}
-                                        className="hover:shadow-xl transition-shadow duration-300"
-                                    >
-                                        <form onSubmit={handleSearch}>
-                                            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, alignItems: 'center' }}>
-                                                <Box sx={{ width: { xs: '100%', md: '41.67%' } }}>
-                                                    <TextField
-                                                        placeholder="Posisi, perusahaan, atau kata kunci"
-                                                        fullWidth
-                                                        value={searchQuery}
-                                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                                        variant="outlined"
-                                                        InputProps={{
-                                                            startAdornment: (
-                                                                <InputAdornment position="start">
-                                                                    <SearchIcon className="text-primary-500" />
-                                                                </InputAdornment>
-                                                            ),
-                                                            sx: {
-                                                                borderRadius: '0.75rem',
-                                                                '&:hover': {
-                                                                    boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
-                                                                },
-                                                                '&.Mui-focused': {
-                                                                    borderColor: 'primary.main',
-                                                                    boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                                                                }
-                                                            }
-                                                        }}
-                                                    />
-                                                </Box>
-                                                <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
-                                                    <TextField
-                                                        placeholder="Lokasi"
-                                                        fullWidth
-                                                        value={locationQuery}
-                                                        onChange={(e) => setLocationQuery(e.target.value)}
-                                                        variant="outlined"
-                                                        InputProps={{
-                                                            startAdornment: (
-                                                                <InputAdornment position="start">
-                                                                    <LocationIcon className="text-primary-500" />
-                                                                </InputAdornment>
-                                                            ),
-                                                            sx: {
-                                                                borderRadius: '0.75rem',
-                                                                '&:hover': {
-                                                                    boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
-                                                                },
-                                                                '&.Mui-focused': {
-                                                                    borderColor: 'primary.main',
-                                                                    boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                                                                }
-                                                            }
-                                                        }}
-                                                    />
-                                                </Box>
-                                                <Box sx={{ width: { xs: '100%', md: '25%' } }}>
-                                                    <Button
-                                                        type="submit"
-                                                        variant="contained"
-                                                        fullWidth
-                                                        size="large"
-                                                        className="py-3 rounded-xl transition-all hover:shadow-lg hover:shadow-primary-500/20 hover:-translate-y-1"
-                                                        endIcon={<SearchIcon />}
-                                                        sx={{
-                                                            height: '56px',
-                                                            fontWeight: 600,
-                                                            boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.3)',
-                                                        }}
-                                                    >
-                                                        Cari Pekerjaan
-                                                    </Button>
-                                                </Box>
-
-                                                <Box sx={{ width: '100%', textAlign: 'right' }}>
-                                                    <Button
-                                                        variant="text"
-                                                        color="primary"
-                                                        onClick={() => setFilterOpen(!filterOpen)}
-                                                        startIcon={<FilterIcon />}
-                                                        className="font-medium"
-                                                        endIcon={filterOpen ? <CloseIcon /> : null}
-                                                    >
-                                                        {filterOpen ? 'Sembunyikan Filter' : 'Filter Lanjutan'}
-                                                    </Button>
-                                                </Box>
-                                            </Box>
-                                        </form>
-
-                                        <AnimatePresence>
-                                            {filterOpen && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: 'auto' }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    transition={{ duration: 0.3 }}
-                                                >
-                                                    <Box sx={{ pt: 3 }}>
-                                                        <Divider sx={{ mb: 3 }}>
-                                                            <Typography variant="body2" color="text.secondary" className="font-medium px-2">
-                                                                Filter Lowongan
-                                                            </Typography>
-                                                        </Divider>
-
-                                                        <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-                                                            <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
-                                                                <FormControl fullWidth variant="outlined">
-                                                                    <InputLabel id="category-label">Kategori</InputLabel>
-                                                                    <Select
-                                                                        labelId="category-label"
-                                                                        value={selectedCategory}
-                                                                        onChange={(e) => setSelectedCategory(e.target.value)}
-                                                                        label="Kategori"
-                                                                        startAdornment={
-                                                                            <InputAdornment position="start">
-                                                                                <CategoryIcon className="text-primary-400" />
-                                                                            </InputAdornment>
-                                                                        }
-                                                                        sx={{
-                                                                            borderRadius: '0.75rem',
-                                                                            '&:hover': {
-                                                                                boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
-                                                                            },
-                                                                            '&.Mui-focused': {
-                                                                                boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <MenuItem value="">Semua Kategori</MenuItem>
-                                                                        {categories && Array.isArray(categories) && categories.map((category) => (
-                                                                            <MenuItem value={category.id} key={category.id}>
-                                                                                {category.name}
-                                                                            </MenuItem>
-                                                                        ))}
-                                                                    </Select>
-                                                                </FormControl>
-                                                            </Box>
-                                                            <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
-                                                                <FormControl fullWidth variant="outlined">
-                                                                    <InputLabel id="type-label">Tipe Pekerjaan</InputLabel>
-                                                                    <Select
-                                                                        labelId="type-label"
-                                                                        value={selectedType}
-                                                                        onChange={(e) => setSelectedType(e.target.value)}
-                                                                        label="Tipe Pekerjaan"
-                                                                        startAdornment={
-                                                                            <InputAdornment position="start">
-                                                                                <WorkIcon className="text-primary-400" />
-                                                                            </InputAdornment>
-                                                                        }
-                                                                        sx={{
-                                                                            borderRadius: '0.75rem',
-                                                                            '&:hover': {
-                                                                                boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
-                                                                            },
-                                                                            '&.Mui-focused': {
-                                                                                boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <MenuItem value="">Semua Tipe</MenuItem>
-                                                                        <MenuItem value="full_time">Full Time</MenuItem>
-                                                                        <MenuItem value="part_time">Part Time</MenuItem>
-                                                                        <MenuItem value="contract">Kontrak</MenuItem>
-                                                                        <MenuItem value="internship">Magang</MenuItem>
-                                                                        <MenuItem value="freelance">Freelance</MenuItem>
-                                                                    </Select>
-                                                                </FormControl>
-                                                            </Box>
-                                                            <Box sx={{ width: { xs: '100%', md: '33.33%' } }}>
-                                                                <FormControl fullWidth variant="outlined">
-                                                                    <InputLabel id="experience-label">Level Pengalaman</InputLabel>
-                                                                    <Select
-                                                                        labelId="experience-label"
-                                                                        value={selectedExperience}
-                                                                        onChange={(e) => setSelectedExperience(e.target.value)}
-                                                                        label="Level Pengalaman"
-                                                                        startAdornment={
-                                                                            <InputAdornment position="start">
-                                                                                <PersonSearchIcon className="text-primary-400" />
-                                                                            </InputAdornment>
-                                                                        }
-                                                                        sx={{
-                                                                            borderRadius: '0.75rem',
-                                                                            '&:hover': {
-                                                                                boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
-                                                                            },
-                                                                            '&.Mui-focused': {
-                                                                                boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <MenuItem value="">Semua Level</MenuItem>
-                                                                        <MenuItem value="entry">Entry Level (0-2 tahun)</MenuItem>
-                                                                        <MenuItem value="mid">Mid Level (2-5 tahun)</MenuItem>
-                                                                        <MenuItem value="senior">Senior Level (5+ tahun)</MenuItem>
-                                                                        <MenuItem value="executive">Executive (10+ tahun)</MenuItem>
-                                                                    </Select>
-                                                                </FormControl>
-                                                            </Box>
-
-                                                            <Box sx={{ width: '100%', mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                                                                <Button
-                                                                    variant="outlined"
-                                                                    color="secondary"
-                                                                    onClick={resetFilters}
-                                                                    className="rounded-xl border-gray-300 text-gray-700"
-                                                                >
-                                                                    Reset Filter
-                                                                </Button>
-                                                                <Button
-                                                                    variant="contained"
-                                                                    color="primary"
-                                                                    onClick={() => applyFilters({ page: 1 })}
-                                                                    className="rounded-xl"
-                                                                >
-                                                                    Terapkan Filter
-                                                                </Button>
-                                                            </Box>
-                                                        </Box>
-                                                    </Box>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </Card>
-                                </motion.div>
-                            </Box>
-                        </Box>
-                    </Container>
-                </Box>
-
-                {/* Active Filters Bar */}
-                {Object.keys(filters).some(key => filters[key] && key !== 'page') && (
+                    {/* Decorative Elements */}
                     <Box
                         sx={{
-                            py: 2,
-                            backdropFilter: 'blur(10px)',
-                            borderBottom: '1px solid',
-                            borderColor: 'divider',
-                            backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            opacity: 0.1,
+                            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 10%, transparent 10.5%)',
+                            backgroundSize: '20px 20px',
+                            backgroundPosition: '0 0',
+                            zIndex: 1
                         }}
-                        className="sticky top-0 z-10"
-                    >
-                        <Container maxWidth="lg">
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
-                                <Stack direction="row" spacing={1} sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-                                        <FilterIcon fontSize="small" sx={{ mr: 0.5 }} /> Filter Aktif:
-                                    </Typography>
+                    />
 
-                                    {filters.search && (
-                                        <CustomChip
-                                            icon={<SearchIcon fontSize="small" />}
-                                            label={filters.search}
-                                            color="primary"
-                                            onDelete={() => {
-                                                setSearchQuery('');
-                                                applyFilters({ search: '', page: 1 });
-                                            }}
-                                        />
-                                    )}
-
-                                    {filters.location && (
-                                        <CustomChip
-                                            icon={<LocationIcon fontSize="small" />}
-                                            label={filters.location}
-                                            color="info"
-                                            onDelete={() => {
-                                                setLocationQuery('');
-                                                applyFilters({ location: '', page: 1 });
-                                            }}
-                                        />
-                                    )}
-
-                                    {filters.type && (
-                                        <CustomChip
-                                            icon={<WorkIcon fontSize="small" />}
-                                            label={formatJobType(filters.type)}
-                                            color="secondary"
-                                            onDelete={() => {
-                                                setSelectedType('');
-                                                applyFilters({ type: '', page: 1 });
-                                            }}
-                                        />
-                                    )}
-
-                                    {filters.category_id && categories && (
-                                        <CustomChip
-                                            icon={<CategoryIcon fontSize="small" />}
-                                            label={categories.find(c => c.id === parseInt(filters.category_id))?.name || 'Kategori'}
-                                            color="warning"
-                                            onDelete={() => {
-                                                setSelectedCategory('');
-                                                applyFilters({ category_id: '', page: 1 });
-                                            }}
-                                        />
-                                    )}
-
-                                    {filters.experience_level && (
-                                        <CustomChip
-                                            icon={<PersonSearchIcon fontSize="small" />}
-                                            label={formatExperienceLevel(filters.experience_level)}
-                                            color="success"
-                                            onDelete={() => {
-                                                setSelectedExperience('');
-                                                applyFilters({ experience_level: '', page: 1 });
-                                            }}
-                                        />
-                                    )}
-                                </Stack>
-
-                                <Button
-                                    variant="text"
-                                    size="small"
-                                    color="error"
-                                    onClick={resetFilters}
-                                    startIcon={<CloseIcon fontSize="small" />}
-                                    sx={{ fontSize: '0.875rem' }}
+                    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 2 }}>
+                        <Box sx={{ textAlign: 'center', mb: 5 }}>
+                            <motion.div
+                                initial={{ opacity: 0, y: -20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.5 }}
+                            >
+                                <Typography
+                                    variant="h3"
+                                    component="h1"
+                                    fontWeight={700}
+                                    color="white"
+                                    sx={{ mb: 1 }}
                                 >
-                                    Reset Semua
-                                </Button>
-                            </Box>
-                        </Container>
-                    </Box>
-                )}
+                                    Temukan Lowongan Kerja Impianmu
+                                </Typography>
+                            </motion.div>
 
-                {/* Results Section */}
-                <Box sx={{ py: 6, backgroundColor: 'gray.50' }} className="bg-gray-50">
-                    <Container maxWidth="lg">
-                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            {/* Main content */}
-                            <Box sx={{ width: '100%' }}>
-                                <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <Typography variant="h5" component="h2" fontWeight="bold" className="text-gray-800">
-                                        {!isLoading && (
-                                            <div className="flex items-center">
-                                                <span className="bg-primary-100 text-primary-600 px-3 py-1 rounded-lg mr-2 font-bold">{total}</span>
-                                                Lowongan Pekerjaan Ditemukan
-                                            </div>
-                                        )}
-                                        {isLoading && (
-                                            <Skeleton width={300} />
-                                        )}
-                                    </Typography>
-                                </Box>
-
-                                {jobs?.data && jobs.data.length === 0 && !isLoading && (
-                                    <Alert
-                                        severity="info"
-                                        sx={{
-                                            mb: 4,
-                                            borderRadius: '1rem',
-                                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                            border: '1px solid rgba(59, 130, 246, 0.2)',
-                                            '& .MuiAlert-icon': {
-                                                color: '#3b82f6'
-                                            }
-                                        }}
-                                    >
-                                        <Typography variant="body1" fontWeight={500}>
-                                            Tidak ada lowongan pekerjaan yang ditemukan. Silakan coba dengan filter berbeda.
-                                        </Typography>
-                                    </Alert>
-                                )}
-
-                                {/* Job Listings */}
-                                <motion.div
-                                    variants={containerVariants}
-                                    initial="hidden"
-                                    animate="visible"
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                            >
+                                <Typography
+                                    variant="h6"
+                                    color="white"
+                                    sx={{ mb: 4, opacity: 0.9, maxWidth: '700px', mx: 'auto' }}
                                 >
-                                    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                                        {isLoading ? (
-                                            // Skeleton loader
-                                            Array.from(new Array(6)).map((_, index) => (
-                                                <Box key={index} sx={{ width: '100%' }}>
-                                                    <Card
-                                                        sx={{
-                                                            borderRadius: '1rem',
-                                                            overflow: 'hidden',
-                                                            border: '1px solid',
-                                                            borderColor: 'divider'
-                                                        }}
-                                                    >
-                                                        <CardContent>
-                                                            <Skeleton variant="text" width="60%" height={40} />
-                                                            <Skeleton variant="text" width="40%" />
-                                                            <Box sx={{ my: 2 }}>
-                                                                <Skeleton variant="text" width="100%" height={60} />
-                                                            </Box>
-                                                            <Box sx={{ display: 'flex', mt: 2, gap: 1 }}>
-                                                                <Skeleton variant="rounded" width={90} height={30} sx={{ borderRadius: '0.75rem' }} />
-                                                                <Skeleton variant="rounded" width={90} height={30} sx={{ borderRadius: '0.75rem' }} />
-                                                                <Skeleton variant="rounded" width={90} height={30} sx={{ borderRadius: '0.75rem' }} />
-                                                            </Box>
-                                                        </CardContent>
-                                                    </Card>
-                                                </Box>
-                                            ))
-                                        ) : (
-                                            jobs?.data && jobs.data.length > 0 ? jobs.data.map((job) => (
-                                                <Box key={job.id} sx={{ width: '100%' }}>
-                                                    <motion.div variants={itemVariants}>
-                                                        <Card
-                                                            sx={{
-                                                                borderRadius: '1rem',
-                                                                overflow: 'hidden',
-                                                                border: '1px solid',
-                                                                borderColor: 'divider',
-                                                                transition: 'all 0.3s ease',
-                                                                '&:hover': {
-                                                                    transform: 'translateY(-4px)',
-                                                                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                                                                    borderColor: 'primary.100',
-                                                                }
-                                                            }}
-                                                            className="hover:border-primary-200"
-                                                        >
-                                                            <CardContent sx={{ p: { xs: 2, md: 3 } }}>
-                                                                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-                                                                    <Box sx={{ width: { xs: '100%', md: '75%' } }}>
-                                                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1, flexWrap: 'wrap', gap: 1 }}>
-                                                                            <Typography variant="body2" color="text.secondary" sx={{ display: 'flex', alignItems: 'center', mr: 1 }}>
-                                                                                <CalendarIcon fontSize="small" sx={{ mr: 0.5 }} />
-                                                                                {job.created_at ? moment(job.created_at).fromNow() : 'Tidak ada tanggal'}
-                                                                            </Typography>
-
-                                                                            {job.deadline && moment(job.deadline).isBefore(moment()) ? (
-                                                                                <CustomChip
-                                                                                    label="Ditutup"
-                                                                                    size="small"
-                                                                                    color="error"
-                                                                                />
-                                                                            ) : (
-                                                                                job.created_at && moment().diff(moment(job.created_at), 'days') <= 3 && (
-                                                                                    <CustomChip
-                                                                                        label="Baru"
-                                                                                        size="small"
-                                                                                        color="success"
-                                                                                        icon={<BoltIcon fontSize="small" />}
-                                                                                    />
-                                                                                )
-                                                                            )}
-                                                                        </Box>
-
-                                                                        <Link
-                                                                            href={route('public.jobs.show', job.id)}
-                                                                            className="no-underline hover:text-primary-600 transition-colors group">
-                                                                            <Typography
-                                                                                variant="h6"
-                                                                                component="h3"
-                                                                                fontWeight="bold"
-                                                                                gutterBottom
-                                                                                className="group-hover:text-primary-600 transition-colors"
-                                                                            >
-                                                                                {job.title}
-                                                                            </Typography>
-                                                                        </Link>
-
-                                                                        <Box
-                                                                            sx={{
-                                                                                display: 'flex',
-                                                                                alignItems: 'center',
-                                                                                mb: 2
-                                                                            }}
-                                                                            className="text-gray-600"
-                                                                        >
-                                                                            <Box
-                                                                                sx={{
-                                                                                    display: 'flex',
-                                                                                    alignItems: 'center',
-                                                                                    mr: 2.5,
-                                                                                    color: 'text.secondary'
-                                                                                }}
-                                                                            >
-                                                                                <BusinessIcon fontSize="small" sx={{ mr: 0.75 }} />
-                                                                                <Typography variant="body2">
-                                                                                    {job.company?.name || 'Nama perusahaan tidak tersedia'}
-                                                                                </Typography>
-                                                                            </Box>
-
-                                                                            {job.location && (
-                                                                                <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
-                                                                                    <LocationIcon fontSize="small" sx={{ mr: 0.75 }} />
-                                                                                    <Typography variant="body2">
-                                                                                        {job.location}
-                                                                                    </Typography>
-                                                                                </Box>
-                                                                            )}
-                                                                        </Box>
-
-                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 3 }}>
-                                                                            {job.type && (
-                                                                                <CustomChip
-                                                                                    icon={<WorkIcon fontSize="small" />}
-                                                                                    label={formatJobType(job.type)}
-                                                                                    color={job.type === 'full_time' ? 'primary' :
-                                                                                        job.type === 'part_time' ? 'secondary' :
-                                                                                            job.type === 'contract' ? 'info' :
-                                                                                                job.type === 'internship' ? 'success' : 'warning'}
-                                                                                />
-                                                                            )}
-
-                                                                            {job.salary_min && (
-                                                                                <CustomChip
-                                                                                    icon={<SalaryIcon fontSize="small" />}
-                                                                                    label={job.salary_max ? `${formatCurrency(job.salary_min)} - ${formatCurrency(job.salary_max)}` : `${formatCurrency(job.salary_min)}`}
-                                                                                    color="info"
-                                                                                />
-                                                                            )}
-
-                                                                            {job.experience_level && (
-                                                                                <CustomChip
-                                                                                    icon={<PersonSearchIcon fontSize="small" />}
-                                                                                    label={formatExperienceLevel(job.experience_level)}
-                                                                                    color="default"
-                                                                                />
-                                                                            )}
-                                                                        </Box>
-
-                                                                        <Divider sx={{ mb: 2 }} />
-
-                                                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                                                                            {job.skills && Array.isArray(job.skills) && job.skills.length > 0 ? (
-                                                                                <>
-                                                                                    {job.skills.slice(0, 3).map((skill, index) => (
-                                                                                        <CustomChip
-                                                                                            key={index}
-                                                                                            label={skill}
-                                                                                            size="small"
-                                                                                            color="primary"
-                                                                                            variant="outlined"
-                                                                                        />
-                                                                                    ))}
-
-                                                                                    {job.skills.length > 3 && (
-                                                                                        <Tooltip title={job.skills.slice(3).join(', ')}>
-                                                                                            <Box component="span" className="cursor-pointer">
-                                                                                                <CustomChip
-                                                                                                    label={`+${job.skills.length - 3}`}
-                                                                                                    size="small"
-                                                                                                    color="primary"
-                                                                                                    variant="outlined"
-                                                                                                />
-                                                                                            </Box>
-                                                                                        </Tooltip>
-                                                                                    )}
-                                                                                </>
-                                                                            ) : null}
-                                                                        </Box>
-                                                                    </Box>
-
-                                                                    <Box
-                                                                        sx={{
-                                                                            width: { xs: '100%', md: '25%' },
-                                                                            display: 'flex',
-                                                                            flexDirection: 'column',
-                                                                            alignItems: { xs: 'flex-start', md: 'flex-end' },
-                                                                            justifyContent: 'space-between',
-                                                                            borderLeft: { xs: 'none', md: '1px solid' },
-                                                                            borderColor: 'divider',
-                                                                            pl: { xs: 0, md: 3 },
-                                                                            pt: { xs: 2, md: 0 },
-                                                                            mt: { xs: 2, md: 0 },
-                                                                            borderTop: { xs: '1px solid', md: 'none' },
-                                                                        }}
-                                                                    >
-                                                                        <Box
-                                                                            sx={{
-                                                                                display: 'flex',
-                                                                                flexDirection: { xs: 'row', md: 'column' },
-                                                                                alignItems: { xs: 'center', md: 'flex-end' },
-                                                                                justifyContent: 'space-between',
-                                                                                width: '100%',
-                                                                                mb: { xs: 2, md: 'auto' }
-                                                                            }}
-                                                                        >
-                                                                            <IconButton
-                                                                                color="primary"
-                                                                                onClick={() => toggleSaveJob(job.id)}
-                                                                                sx={{
-                                                                                    ml: { xs: 0, md: 'auto' },
-                                                                                    mb: { xs: 0, md: 2 },
-                                                                                    color: savedJobs.includes(job.id) ? 'primary.main' : 'gray.400'
-                                                                                }}
-                                                                                className={`rounded-xl transition-colors hover:bg-primary-50 ${savedJobs.includes(job.id) ? 'text-primary-500' : 'text-gray-400'}`}
-                                                                            >
-                                                                                {savedJobs.includes(job.id) ? (
-                                                                                    <BookmarkIcon className="text-primary-500" />
-                                                                                ) : (
-                                                                                    <BookmarkBorderIcon />
-                                                                                )}
-                                                                            </IconButton>
-
-                                                                            {/* Job deadline */}
-                                                                            {job.deadline && (
-                                                                                <Typography
-                                                                                    variant="body2"
-                                                                                    color="text.secondary"
-                                                                                    className="text-right text-gray-500"
-                                                                                >
-                                                                                    <TimeIcon fontSize="small" sx={{ mr: 0.5, verticalAlign: 'middle' }} />
-                                                                                    {moment().diff(moment(job.deadline), 'days') > 0
-                                                                                        ? 'Ditutup'
-                                                                                        : `Ditutup ${moment(job.deadline).fromNow()}`
-                                                                                    }
-                                                                                </Typography>
-                                                                            )}
-                                                                        </Box>
-
-                                                                        <Button
-                                                                            variant="contained"
-                                                                            color="primary"
-                                                                            component={Link}
-                                                                            href={route('public.jobs.show', job.id)}
-                                                                            sx={{
-                                                                                mt: { xs: 2, md: 0 },
-                                                                                width: { xs: '100%', md: '100%' },
-                                                                                borderRadius: '0.75rem',
-                                                                                py: 1,
-                                                                                fontWeight: 600,
-                                                                                boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.25)',
-                                                                                '&:hover': {
-                                                                                    boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
-                                                                                    transform: 'translateY(-2px)'
-                                                                                },
-                                                                            }}
-                                                                            className="transition-all duration-300 hover:shadow-lg"
-                                                                            endIcon={<ArrowForwardIcon />}
-                                                                        >
-                                                                            Lihat Detail
-                                                                        </Button>
-                                                                    </Box>
-                                                                </Box>
-                                                            </CardContent>
-                                                        </Card>
-                                                    </motion.div>
-                                                </Box>
-                                            )) : (
-                                                <Box sx={{ width: '100%' }}>
-                                                    <Alert severity="info" sx={{
-                                                        p: 3,
-                                                        borderRadius: '1rem',
-                                                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                                        border: '1px solid rgba(59, 130, 246, 0.2)',
-                                                    }}>
-                                                        <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                                            Tidak ada lowongan tersedia
-                                                        </Typography>
-                                                    </Alert>
-                                                </Box>
-                                            )
-                                        )}
-                                    </Box>
-                                </motion.div>
-
-                                {/* Pagination */}
-                                {jobs?.data && jobs.data.length > 0 && (
-                                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 5 }}>
-                                        <CustomPagination
-                                            currentPage={page}
-                                            totalPages={jobs?.last_page || 1}
-                                            totalItems={total || 0}
-                                            perPage={jobs?.per_page || 10}
-                                            onPageChange={handlePageChange}
-                                            variant="compact"
-                                            showFirst={true}
-                                            showLast={true}
-                                            rounded="large"
-                                            size="medium"
-                                            className="bg-white shadow-sm"
-                                        />
-                                    </Box>
-                                )}
-                            </Box>
+                                    Berbagai lowongan dari perusahaan terbaik di Indonesia
+                                </Typography>
+                            </motion.div>
                         </Box>
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                        >
+                            <Paper
+                                elevation={3}
+                                sx={{
+                                    borderRadius: '12px',
+                                    p: { xs: 2, md: 3 },
+                                    boxShadow: '0 8px 20px rgba(0,0,0,0.1)'
+                                }}
+                            >
+                                <form onSubmit={handleSearch}>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexDirection: { xs: 'column', md: 'row' },
+                                        gap: 2
+                                    }}>
+                                        <TextField
+                                            name="search"
+                                            value={filterValues.search}
+                                            onChange={handleFilterChange}
+                                            placeholder="Cari lowongan kerja"
+                                            fullWidth
+                                            InputProps={{
+                                                startAdornment: (
+                                                    <InputAdornment position="start">
+                                                        <SearchIcon color="action" />
+                                                    </InputAdornment>
+                                                ),
+                                            }}
+                                            sx={{
+                                                '& .MuiOutlinedInput-root': {
+                                                    borderRadius: 2,
+                                                }
+                                            }}
+                                        />
+
+                                        <Button
+                                            variant="contained"
+                                            color="secondary"
+                                            onClick={() => setOpenFilters(!openFilters)}
+                                            startIcon={<FilterIcon />}
+                                            sx={{
+                                                minWidth: { xs: '100%', md: '180px' },
+                                                borderRadius: 2,
+                                                fontWeight: 600,
+                                                textTransform: 'none',
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                            }}
+                                        >
+                                            Filter Lanjutan
+                                        </Button>
+
+                                        <Button
+                                            type="submit"
+                                            variant="contained"
+                                            color="primary"
+                                            sx={{
+                                                minWidth: { xs: '100%', md: '180px' },
+                                                borderRadius: 2,
+                                                fontWeight: 600,
+                                                textTransform: 'none',
+                                                boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                                            }}
+                                        >
+                                            Cari Lowongan
+                                        </Button>
+                                    </Box>
+
+                                    <Collapse in={openFilters}>
+                                        <Box sx={{ mt: 3, display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                                            <TextField
+                                                select
+                                                name="category"
+                                                label="Kategori"
+                                                value={filterValues.category}
+                                                onChange={handleFilterChange}
+                                                sx={{ minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' } }}
+                                                SelectProps={{
+                                                    MenuProps: {
+                                                        PaperProps: {
+                                                            sx: { maxHeight: 300 }
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                <MenuItem value="">Semua Kategori</MenuItem>
+                                                {categories
+                                                    .filter(category => category && typeof category === 'string')
+                                                    .map(category => (
+                                                    <MenuItem key={category} value={category}>
+                                                        {category}
+                                                    </MenuItem>
+                                                ))}
+                                            </TextField>
+
+                                            <TextField
+                                                name="location"
+                                                label="Lokasi"
+                                                value={filterValues.location}
+                                                onChange={handleFilterChange}
+                                                placeholder="Contoh: Jakarta, Remote, dll"
+                                                sx={{ minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' } }}
+                                            />
+
+                                            <TextField
+                                                select
+                                                name="type"
+                                                label="Jenis Pekerjaan"
+                                                value={filterValues.type}
+                                                onChange={handleFilterChange}
+                                                sx={{ minWidth: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 11px)' } }}
+                                            >
+                                                <MenuItem value="">Semua Jenis</MenuItem>
+                                                <MenuItem value="full_time">Full Time</MenuItem>
+                                                <MenuItem value="part_time">Part Time</MenuItem>
+                                                <MenuItem value="contract">Kontrak</MenuItem>
+                                                <MenuItem value="internship">Magang</MenuItem>
+                                                <MenuItem value="freelance">Freelance</MenuItem>
+                                            </TextField>
+                                        </Box>
+                                    </Collapse>
+                                </form>
+                            </Paper>
+                        </motion.div>
                     </Container>
                 </Box>
-            </PublicLayout>
-        </MuiThemeProvider>
+
+                {/* Job List Section */}
+                <Container maxWidth="lg" sx={{ py: 5 }}>
+                    {/* Filters and sorting */}
+                    <Box sx={{ mb: 3 }}>
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: { xs: 'flex-start', md: 'center' },
+                            flexDirection: { xs: 'column', md: 'row' },
+                            gap: { xs: 2, md: 0 }
+                        }}>
+                            <Typography variant="h5" component="h2" fontWeight={700} color="text.primary">
+                                {jobs.data.length > 0
+                                    ? `${jobs.total} Lowongan Tersedia`
+                                    : 'Tidak ada lowongan yang sesuai dengan kriteria Anda'
+                                }
+                            </Typography>
+
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                                {(filterValues.search || filterValues.category || filterValues.location || filterValues.type) && (
+                                    <Button
+                                        size="small"
+                                        onClick={clearFilters}
+                                        variant="outlined"
+                                        color="primary"
+                                        startIcon={<CloseIcon fontSize="small" />}
+                                        sx={{
+                                            borderRadius: '8px',
+                                            textTransform: 'none',
+                                            fontWeight: 600,
+                                        }}
+                                    >
+                                        Reset Filter
+                                    </Button>
+                                )}
+
+                                <TextField
+                                    select
+                                    name="sort"
+                                    label="Urutan"
+                                    size="small"
+                                    value={filterValues.sort}
+                                    onChange={(e) => {
+                                        handleFilterChange(e);
+                                        router.get(route('public.jobs.index'), {
+                                            ...filterValues,
+                                            sort: e.target.value
+                                        }, {
+                                            preserveState: true,
+                                            replace: true
+                                        });
+                                    }}
+                                    sx={{
+                                        minWidth: 150,
+                                        '& .MuiOutlinedInput-root': {
+                                            borderRadius: '8px',
+                                        }
+                                    }}
+                                >
+                                    <MenuItem value="latest">Terbaru</MenuItem>
+                                    <MenuItem value="oldest">Terlama</MenuItem>
+                                    <MenuItem value="relevant">Paling Relevan</MenuItem>
+                                    <MenuItem value="salary_high">Gaji Tertinggi</MenuItem>
+                                    <MenuItem value="salary_low">Gaji Terendah</MenuItem>
+                                </TextField>
+                            </Box>
+                        </Box>
+
+                        {/* Active filters */}
+                        {(filterValues.search || filterValues.category || filterValues.location || filterValues.type) && (
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    p: 2,
+                                    mt: 2,
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.05),
+                                    borderRadius: 2,
+                                    border: '1px dashed',
+                                    borderColor: alpha(theme.palette.primary.main, 0.3),
+                                }}
+                            >
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                    {filterValues.search && (
+                                        <Chip
+                                            label={`Kata kunci: "${filterValues.search}"`}
+                                            color="primary"
+                                            variant="outlined"
+                                            onDelete={() => {
+                                                setFilterValues(prev => ({ ...prev, search: '' }));
+                                                router.get(route('public.jobs.index'), {
+                                                    ...filterValues,
+                                                    search: ''
+                                                }, {
+                                                    preserveState: true,
+                                                    replace: true
+                                                });
+                                            }}
+                                            sx={{ borderRadius: '8px' }}
+                                        />
+                                    )}
+                                    {filterValues.category && (
+                                        <Chip
+                                            label={`Kategori: ${filterValues.category}`}
+                                            color="primary"
+                                            variant="outlined"
+                                            onDelete={() => {
+                                                setFilterValues(prev => ({ ...prev, category: '' }));
+                                                router.get(route('public.jobs.index'), {
+                                                    ...filterValues,
+                                                    category: ''
+                                                }, {
+                                                    preserveState: true,
+                                                    replace: true
+                                                });
+                                            }}
+                                            sx={{ borderRadius: '8px' }}
+                                        />
+                                    )}
+                                    {filterValues.location && (
+                                        <Chip
+                                            label={`Lokasi: ${filterValues.location}`}
+                                            color="primary"
+                                            variant="outlined"
+                                            onDelete={() => {
+                                                setFilterValues(prev => ({ ...prev, location: '' }));
+                                                router.get(route('public.jobs.index'), {
+                                                    ...filterValues,
+                                                    location: ''
+                                                }, {
+                                                    preserveState: true,
+                                                    replace: true
+                                                });
+                                            }}
+                                            sx={{ borderRadius: '8px' }}
+                                        />
+                                    )}
+                                    {filterValues.type && (
+                                        <Chip
+                                            label={`Tipe: ${formatJobType(filterValues.type)}`}
+                                            color="primary"
+                                            variant="outlined"
+                                            onDelete={() => {
+                                                setFilterValues(prev => ({ ...prev, type: '' }));
+                                                router.get(route('public.jobs.index'), {
+                                                    ...filterValues,
+                                                    type: ''
+                                                }, {
+                                                    preserveState: true,
+                                                    replace: true
+                                                });
+                                            }}
+                                            sx={{ borderRadius: '8px' }}
+                                        />
+                                    )}
+                                </Box>
+                            </Paper>
+                        )}
+                    </Box>
+
+                    {/* Job Cards */}
+                    {jobs.data.length > 0 ? (
+                        <>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', mx: -1.5 }}>
+                                {jobs.data.map(job => (
+                                    <Box
+                                        key={job.id}
+                                        sx={{
+                                            width: {
+                                                xs: '100%',
+                                                sm: '50%',
+                                                lg: '33.333%'
+                                            },
+                                            p: 1.5,  // Padding on all sides for card spacing
+                                        }}
+                                    >
+                                        <JobCard job={job} />
+                                    </Box>
+                                ))}
+                            </Box>
+
+                            {/* Pagination */}
+                            {jobs.last_page > 1 && (
+                                <Box sx={{ mt: 5, display: 'flex', justifyContent: 'center' }}>
+                                    <Pagination
+                                        count={jobs.last_page}
+                                        page={jobs.current_page}
+                                        color="primary"
+                                        shape="rounded"
+                                        variant="outlined"
+                                        renderItem={(item) => (
+                                            <PaginationItem
+                                                component={Link}
+                                                href={route('public.jobs.index', {
+                                                    ...filterValues,
+                                                    page: item.page
+                                                })}
+                                                {...item}
+                                                sx={{
+                                                    borderRadius: '8px',
+                                                    fontWeight: item.selected ? 600 : 400,
+                                                }}
+                                            />
+                                        )}
+                                    />
+                                </Box>
+                            )}
+                        </>
+                    ) : (
+                        <Box
+                            sx={{
+                                textAlign: 'center',
+                                py: 10
+                            }}
+                        >
+                            <BuildCircleIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                            <Typography
+                                variant="h5"
+                                gutterBottom
+                                sx={{
+                                    color: 'text.secondary',
+                                    fontWeight: 500
+                                }}
+                            >
+                                Tidak ada lowongan yang ditemukan
+                            </Typography>
+                            <Typography
+                                variant="body1"
+                                color="text.secondary"
+                                sx={{ mb: 3, maxWidth: '500px', mx: 'auto' }}
+                            >
+                                Coba ubah filter pencarian Anda untuk menemukan lebih banyak hasil.
+                            </Typography>
+                            <Button
+                                variant="outlined"
+                                color="primary"
+                                onClick={clearFilters}
+                                sx={{
+                                    borderRadius: '8px',
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    px: 3
+                                }}
+                            >
+                                Reset Filter
+                            </Button>
+                        </Box>
+                    )}
+                </Container>
+            </Box>
+        </PublicLayout>
     );
 }

@@ -78,4 +78,28 @@ class Company extends Model
     {
         return $this->jobs()->where('is_active', true);
     }
+
+    /**
+     * Get the reviews for the company.
+     */
+    public function reviews()
+    {
+        return $this->hasMany(CompanyReview::class);
+    }
+
+    /**
+     * Get the average rating for the company.
+     */
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->where('is_approved', true)->avg('rating') ?? 0;
+    }
+
+    /**
+     * Get the count of reviews for the company.
+     */
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->where('is_approved', true)->count();
+    }
 }

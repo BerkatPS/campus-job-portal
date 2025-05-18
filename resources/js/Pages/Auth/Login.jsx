@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     Container,
     Box,
@@ -23,6 +23,7 @@ import SweetAlert from "@/Components/Shared/SweetAlert.jsx";
 import {useTheme} from "@mui/material/styles";
 
 export default function Login({ status, canResetPassword }) {
+    const { csrf_token } = usePage().props;
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [showPassword, setShowPassword] = useState(false);
@@ -31,6 +32,7 @@ export default function Login({ status, canResetPassword }) {
         email: '',
         password: '',
         remember: false,
+        _token: csrf_token,
     });
 
     const [alertProps, setAlertProps] = useState({
@@ -42,6 +44,7 @@ export default function Login({ status, canResetPassword }) {
     const submit = (e) => {
         e.preventDefault();
         post(route('login'), {
+            preserveScroll: true,
             onSuccess: () => {
                 // Reset password field on success
                 reset('password');
@@ -96,9 +99,9 @@ export default function Login({ status, canResetPassword }) {
                 />
             )}
             <Box
-                className="min-h-screen flex flex-col bg-gradient-to-br from-primary-50 to-secondary-50"
+                className="min-h-screen flex flex-col"
                 sx={{
-                    backgroundImage: 'url(/images/auth-bg.svg)',
+                    backgroundImage: 'url(/images/background-login.jpg)',
                     backgroundSize: 'cover',
                     backgroundPosition: 'center',
                     position: 'relative',
@@ -109,31 +112,60 @@ export default function Login({ status, canResetPassword }) {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        background: 'linear-gradient(135deg, rgba(20, 184, 166, 0.07) 0%, rgba(20, 184, 166, 0.03) 100%)',
-                        backdropFilter: 'blur(8px)',
+                        background: 'linear-gradient(75deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.4) 100%)',
                         zIndex: 0
                     }
                 }}
             >
                 <Head title="Masuk" />
 
-                {/* Animated shapes - Tailwind classes for decorative elements */}
-                <div className="absolute top-20 right-20 w-64 h-64 bg-primary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-                <div className="absolute bottom-40 left-20 w-72 h-72 bg-secondary-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style={{animationDelay: '1s'}}></div>
-                <div className="absolute top-1/2 left-1/3 w-48 h-48 bg-primary-300/30 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-pulse" style={{animationDelay: '2s'}}></div>
-
                 <Container maxWidth="lg" sx={{ mt: { xs: 4, md: 8 }, mb: 4, flex: 1, position: 'relative', zIndex: 1 }}>
                     <Box
                         sx={{
                             display: 'flex',
-                            justifyContent: 'center',
+                            flexDirection: { xs: 'column', md: 'row' },
+                            justifyContent: { xs: 'center', md: 'space-between' },
                             alignItems: 'center',
-                            height: '100%',
-                            gap: 4
+                            height: '100%'
                         }}
                     >
-                        {/* Left side - Login form */}
-                        <Box sx={{ width: { xs: '100%', md: '500px' } }}>
+                        {/* Left side - Branding and welcome message */}
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="hidden md:block"
+                            sx={{ color: 'white', maxWidth: '500px', mr: 4 }}
+                        >
+                            <Box sx={{ mb: 6 }}>
+                                <Typography
+                                    variant="h3"
+                                    component="h1"
+                                    fontWeight="800"
+                                    sx={{
+                                        color: 'white',
+                                        textShadow: '0 2px 10px rgba(0,0,0,0.3)',
+                                        mb: 2
+                                    }}
+                                >
+                                    Portal Karir Kampus
+                                </Typography>
+                                <Typography
+                                    variant="h5"
+                                    sx={{
+                                        color: 'white',
+                                        opacity: 0.9,
+                                        textShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                                        mb: 3
+                                    }}
+                                >
+                                    Temukan peluang karir terbaik untuk masa depanmu
+                                </Typography>
+                            </Box>
+                        </motion.div>
+
+                        {/* Right side - Login form */}
+                        <Box sx={{ width: { xs: '100%', sm: '450px', md: '400px' } }}>
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -141,44 +173,60 @@ export default function Login({ status, canResetPassword }) {
                             >
                                 <Card
                                     elevation={3}
-                                    className="backdrop-blur-md border border-white/50"
                                     sx={{
-                                        p: { xs: 3, md: 5 },
-                                        borderRadius: '1.5rem', // Theme.borderRadius['3xl']
-                                        background: 'rgba(255, 255, 255, 0.85)',
-                                        backdropFilter: 'blur(12px)',
-                                        boxShadow: theme.shadows[4], // Using the custom shadows from Theme
-                                        transition: 'all 0.3s ease',
-                                        '&:hover': {
-                                            boxShadow: theme.shadows[5],
-                                            transform: 'translateY(-4px)'
-                                        }
+                                        p: { xs: 3, sm: 4 },
+                                        borderRadius: '0.75rem',
+                                        background: 'rgba(255, 255, 255, 0.9)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                                        boxShadow: '0 15px 35px rgba(0, 0, 0, 0.2)',
                                     }}
                                 >
-                                    <Box sx={{ mb: 3 }} className="flex items-center">
-                                        <Box className="bg-primary-500 text-white p-3 rounded-xl shadow-lg shadow-primary-500/30">
-                                            <LoginIcon sx={{ fontSize: 28 }} />
+                                    <Box
+                                        sx={{
+                                            mb: 4,
+                                            textAlign: 'center'
+                                        }}
+                                    >
+                                        <Box
+                                            sx={{
+                                                width: '60px',
+                                                height: '60px',
+                                                borderRadius: '0.75rem',
+                                                background: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                margin: '0 auto 16px',
+                                                boxShadow: '0 10px 15px -3px rgba(20, 184, 166, 0.3)'
+                                            }}
+                                        >
+                                            <LoginIcon sx={{ fontSize: 30, color: 'white' }} />
                                         </Box>
                                         <Typography
-                                            variant="h4"
-                                            component="h1"
-                                            fontWeight="bold"
-                                            sx={{ ml: 2 }}
-                                            className="text-gray-900"
+                                            variant="h5"
+                                            component="h2"
+                                            fontWeight={700}
+                                            sx={{
+                                                background: 'linear-gradient(90deg, #14b8a6, #0d9488)',
+                                                WebkitBackgroundClip: 'text',
+                                                WebkitTextFillColor: 'transparent',
+                                                mb: 1
+                                            }}
                                         >
-                                            Masuk
+                                            Masuk ke Akun
+                                        </Typography>
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{ mb: 2 }}
+                                        >
+                                            Masukkan kredensial untuk melanjutkan
                                         </Typography>
                                     </Box>
 
-                                    <Typography
-                                        variant="body1"
-                                        className="text-gray-600 mb-6"
-                                    >
-                                        Selamat datang kembali! Silakan masuk untuk mengakses akun Anda.
-                                    </Typography>
-
                                     {/* Login form */}
-                                    <Box component="form" onSubmit={submit} className="space-y-4">
+                                    <Box component="form" onSubmit={submit}>
                                         <Box sx={{ mb: 3 }}>
                                             <TextField
                                                 fullWidth
@@ -195,24 +243,24 @@ export default function Login({ status, canResetPassword }) {
                                                 InputProps={{
                                                     startAdornment: (
                                                         <InputAdornment position="start">
-                                                            <EmailIcon color="action" />
+                                                            <EmailIcon sx={{ color: '#14b8a6' }} />
                                                         </InputAdornment>
                                                     )
                                                 }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
-                                                        borderRadius: '0.75rem', // Theme.borderRadius.xl
+                                                        borderRadius: '0.75rem',
+                                                        bgcolor: 'rgba(255, 255, 255, 0.8)',
                                                         transition: 'all 0.3s ease',
                                                         '&:hover': {
                                                             boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
                                                         },
                                                         '&.Mui-focused': {
-                                                            borderColor: 'primary.main',
+                                                            borderColor: '#14b8a6',
                                                             boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
                                                         }
                                                     }
                                                 }}
-                                                className="bg-white/60"
                                             />
                                         </Box>
 
@@ -231,7 +279,7 @@ export default function Login({ status, canResetPassword }) {
                                                 InputProps={{
                                                     startAdornment: (
                                                         <InputAdornment position="start">
-                                                            <LockIcon color="action" />
+                                                            <LockIcon sx={{ color: '#14b8a6' }} />
                                                         </InputAdornment>
                                                     ),
                                                     endAdornment: (
@@ -240,42 +288,48 @@ export default function Login({ status, canResetPassword }) {
                                                                 onClick={() => setShowPassword(!showPassword)}
                                                                 edge="end"
                                                             >
-                                                                {showPassword ? <VisibilityOff /> : <Visibility />}
+                                                                {showPassword ? (
+                                                                    <VisibilityOff sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
+                                                                ) : (
+                                                                    <Visibility sx={{ color: 'rgba(0, 0, 0, 0.54)' }} />
+                                                                )}
                                                             </IconButton>
                                                         </InputAdornment>
                                                     )
                                                 }}
                                                 sx={{
                                                     '& .MuiOutlinedInput-root': {
-                                                        borderRadius: '0.75rem', // Theme.borderRadius.xl
+                                                        borderRadius: '0.75rem',
+                                                        bgcolor: 'rgba(255, 255, 255, 0.8)',
                                                         transition: 'all 0.3s ease',
                                                         '&:hover': {
                                                             boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.1)'
                                                         },
                                                         '&.Mui-focused': {
-                                                            borderColor: 'primary.main',
+                                                            borderColor: '#14b8a6',
                                                             boxShadow: '0 0 0 2px rgba(20, 184, 166, 0.2)'
                                                         }
                                                     }
                                                 }}
-                                                className="bg-white/60"
                                             />
                                         </Box>
 
                                         <Button
                                             type="submit"
                                             variant="contained"
-                                            color="primary"
                                             fullWidth
                                             size="large"
                                             disabled={processing}
-                                            className="py-3 rounded-xl"
                                             sx={{
                                                 mb: 3,
                                                 py: 1.5,
                                                 fontWeight: 600,
+                                                borderRadius: '0.75rem',
+                                                backgroundColor: '#14b8a6',
+                                                background: 'linear-gradient(90deg, #14b8a6, #0d9488)',
                                                 boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.25)',
                                                 '&:hover': {
+                                                    backgroundColor: '#0d9488',
                                                     boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
                                                     transform: 'translateY(-2px)'
                                                 },
@@ -286,22 +340,22 @@ export default function Login({ status, canResetPassword }) {
                                             {processing ? 'Memproses...' : 'Masuk'}
                                         </Button>
 
-                                        <Box sx={{ textAlign: 'center', mb: 3 }}>
-                                            <Typography variant="body2" className="text-gray-600">
+                                        <Box sx={{ textAlign: 'center', mb: 2 }}>
+                                            <Typography variant="body2" color="text.secondary">
                                                 Belum punya akun?{' '}
                                                 <Link
                                                     href={route('register')}
-                                                    className="text-primary-600 hover:text-primary-700 transition-colors font-medium"
+                                                    className="text-teal-600 hover:text-teal-700 transition-colors font-medium"
                                                 >
                                                     Daftar sekarang
                                                 </Link>
                                             </Typography>
                                         </Box>
-                                        <Box sx={{ textAlign: 'center', mb: 5 }}>
-                                            <Typography variant="body2" className="text-gray-600">
+                                        <Box sx={{ textAlign: 'center' }}>
+                                            <Typography variant="body2" color="text.secondary">
                                                 <Link
                                                     href={route('public.home')}
-                                                    className="text-gray-600 font-medium"
+                                                    className="text-gray-600 hover:text-teal-600 transition-colors font-medium"
                                                 >
                                                     Kembali ke Beranda
                                                 </Link>
@@ -316,10 +370,17 @@ export default function Login({ status, canResetPassword }) {
 
                 <Box
                     component="footer"
-                    className="py-4 text-center bg-white/80 backdrop-blur-md relative z-10 border-t border-gray-100"
+                    sx={{
+                        py: 2,
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 10,
+                        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                        bgcolor: 'rgba(0, 0, 0, 0.5)'
+                    }}
                 >
-                    <Typography variant="body2" className="text-gray-500">
-                        &copy; {new Date().getFullYear()} CampusJob. All rights reserved.
+                    <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+                        &copy; {new Date().getFullYear()} STIA Bayu Angga . All rights reserved.
                     </Typography>
                 </Box>
             </Box>

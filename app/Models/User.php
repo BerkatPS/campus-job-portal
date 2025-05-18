@@ -173,4 +173,36 @@ class   User extends Authenticatable
     {
         return $this->hasMany(ForumLike::class);
     }
+
+    /**
+     * Get the resume versions for the user.
+     */
+    public function resumeVersions()
+    {
+        return $this->hasMany(ResumeVersion::class);
+    }
+
+    /**
+     * Get the current resume version for the user.
+     */
+    public function currentResumeVersion()
+    {
+        return $this->hasOne(ResumeVersion::class)->where('is_current', true);
+    }
+
+    /**
+     * Get the resume enhancements for the user.
+     */
+    public function resumeEnhancements()
+    {
+        return $this->hasMany(ResumeEnhancement::class);
+    }
+
+    /**
+     * Get the portfolio items for the user.
+     */
+    public function portfolioItems()
+    {
+        return $this->hasMany(PortfolioItem::class);
+    }
 }

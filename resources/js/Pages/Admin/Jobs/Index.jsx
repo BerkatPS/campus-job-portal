@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     Box,
@@ -27,7 +27,13 @@ import {
     DialogContentText,
     DialogActions,
     Card,
-    Divider
+    Divider,
+    useTheme,
+    alpha,
+    Tabs,
+    Tab,
+    ListItemIcon,
+    ListItemText
 } from '@mui/material';
 import {
     Search as SearchIcon,
@@ -44,27 +50,116 @@ import {
     Download as DownloadIcon,
     LocationOn as LocationOnIcon,
     CalendarToday as CalendarTodayIcon,
-    MonetizationOn as MonetizationOnIcon
+    MonetizationOn as MonetizationOnIcon,
+    FilterAlt as FilterIcon,
+    Print as PrintIcon,
+    CloudDownload as CloudDownloadIcon,
+    CheckCircleOutline as CheckCircleOutlineIcon,
+    DoDisturbOn as DoDisturbOnIcon
 } from '@mui/icons-material';
 import moment from 'moment';
 import 'moment/locale/id';
 import { motion } from 'framer-motion';
 import Layout from '@/Components/Layout/Layout';
+import Pagination from '@/Components/Shared/Pagination';
 
 moment.locale('id');
 
 const JobsIndex = ({ jobs, filters, categories }) => {
     const { auth } = usePage().props;
+    const theme = useTheme();
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedJob, setSelectedJob] = useState(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
     const [viewMode, setViewMode] = useState('list');
-    const [page, setPage] = useState(0);
-    const [rowsPerPage, setRowsPerPage] = useState(10);
-    const [filterOpen, setFilterOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState(filters.category || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
+    const [tabValue, setTabValue] = useState(statusFilter === 'active' ? 1 : (statusFilter === 'closed' ? 2 : 0));
+    const [actionsAnchorEl, setActionsAnchorEl] = useState(null);
+
+    // Calculate stats
+    const totalJobs = useMemo(() => jobs?.total || jobs?.data?.length || 0, [jobs]);
+    const activeJobs = useMemo(() => 
+        jobs?.data?.filter(job => job.status === 'active')?.length || 0,
+        [jobs]
+    );
+    const closedJobs = useMemo(() => 
+        jobs?.data?.filter(job => job.status === 'closed')?.length || 0,
+        [jobs]
+    );
+
+    // Apply filters to jobs (for local filtering)
+    const filteredJobs = useMemo(() => {
+        // Ensure jobs.data exists and is an array
+        if (!jobs?.data || !Array.isArray(jobs.data)) {
+            return [];
+        }
+
+        let filtered = [...jobs.data];
+        
+        // Since backend already applies filters, this is mainly for UI sync
+        return filtered;
+    }, [jobs?.data]);
+
+    // Handle tab change for status filter
+    const handleTabChange = (event, newValue) => {
+        setTabValue(newValue);
+        if (newValue === 0) {
+            // All
+            setStatusFilter('');
+        } else if (newValue === 1) {
+            // Active
+            setStatusFilter('active');
+        } else if (newValue === 2) {
+            // Closed
+            setStatusFilter('closed');
+        }
+    };
+
+    // When search, filter or tab changes, update the URL to maintain state
+    useEffect(() => {
+        if (jobs?.data) {
+            // Only update URL if user explicitly changed filters (not on initial load)
+            if (searchTerm || categoryFilter || statusFilter) {
+                const params = { ...route().params };
+                
+                // Add filters to URL params
+                if (searchTerm) params.search = searchTerm;
+                else delete params.search;
+                
+                if (categoryFilter) params.category = categoryFilter;
+                else delete params.category;
+                
+                if (statusFilter) params.status = statusFilter;
+                else delete params.status;
+                
+                // Reset to page 1 when filters change
+                params.page = 1;
+                
+                router.get(route('admin.jobs.index', params), {}, {
+                    preserveState: true,
+                    replace: true,
+                    only: ['jobs']
+                });
+            }
+        }
+    }, [searchTerm, categoryFilter, statusFilter]);
+
+    // Reset all filters
+    const resetFilters = () => {
+        setSearchTerm('');
+        setCategoryFilter('');
+        setStatusFilter('');
+        setTabValue(0);
+        
+        // Reset URL query params and reload jobs data
+        router.get(route('admin.jobs.index'), {}, {
+            preserveState: false, // Don't preserve state to ensure complete refresh
+            only: ['jobs']
+        });
+    };
 
     // Dialog handlers
     const handleDeleteDialogOpen = (job) => {
@@ -88,35 +183,25 @@ const JobsIndex = ({ jobs, filters, categories }) => {
         setSelectedJob(null);
     };
 
-    // Table pagination handlers
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
+    const handleOpenActionsMenu = (event) => {
+        setActionsAnchorEl(event.currentTarget);
     };
 
-    const handleChangeRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    // Search handler
-    const handleSearch = (e) => {
-        e.preventDefault();
-        router.get(route('admin.jobs.index'), {
-            search: searchTerm,
-            category: categoryFilter,
-            status: statusFilter
-        }, {
-            preserveState: true,
-            replace: true
-        });
+    const handleCloseActionsMenu = () => {
+        setActionsAnchorEl(null);
     };
 
     // Delete job
     const handleDeleteJob = () => {
         if (selectedJob) {
+            setLoading(true);
             router.delete(route('admin.jobs.destroy', selectedJob.id), {
                 onSuccess: () => {
                     handleDeleteDialogClose();
+                    setLoading(false);
+                },
+                onError: () => {
+                    setLoading(false);
                 }
             });
         }
@@ -243,17 +328,224 @@ const JobsIndex = ({ jobs, filters, categories }) => {
         </motion.div>
     );
 
+    // Job Logo Component 
+    const JobLogo = ({ job, size = 48 }) => {
+        const [hasError, setHasError] = useState(false);
+        const theme = useTheme();
+
+        // Generate colors based on job company name
+        const generateColorFromName = (name) => {
+            if (!name) return theme.palette.primary.main;
+
+            const colors = [
+                theme.palette.primary.main,
+                theme.palette.secondary.main,
+                theme.palette.success.main,
+                theme.palette.warning.main,
+                theme.palette.info.main,
+            ];
+
+            const hash = name.split('').reduce((acc, char) => {
+                return char.charCodeAt(0) + acc;
+            }, 0);
+
+            return colors[hash % colors.length];
+        };
+
+        // Default logo content - job initial with background color
+        const renderDefaultLogo = () => {
+            const company = job.company?.name || 'Job';
+            const bgColor = generateColorFromName(company);
+            const initial = company.charAt(0).toUpperCase();
+
+            return (
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '100%',
+                        height: '100%',
+                        bgcolor: bgColor,
+                        color: 'white',
+                        fontSize: size * 0.5,
+                        fontWeight: 700,
+                        borderRadius: 1,
+                    }}
+                >
+                    {initial}
+                </Box>
+            );
+        };
+
+        if (!job.company?.logo || hasError) {
+            return (
+                <Box
+                    sx={{
+                        width: size,
+                        height: size,
+                        borderRadius: 1,
+                        overflow: 'hidden',
+                    }}
+                >
+                    {renderDefaultLogo()}
+                </Box>
+            );
+        }
+
+        return (
+            <Box
+                component="img"
+                src={job.company.logo}
+                alt={job.company.name}
+                onError={() => setHasError(true)}
+                sx={{
+                    width: size,
+                    height: size,
+                    objectFit: 'contain',
+                    borderRadius: 1,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    p: 0.5,
+                    bgcolor: 'white',
+                }}
+            />
+        );
+    };
+
+    // Stats Card component to reduce duplication
+    const StatsCard = ({ icon, count, label, color = "primary", delay = 0 }) => {
+        const theme = useTheme();
+
+        // Handle special case for grey which may not have .main property
+        const getColorValue = (colorName) => {
+            if (colorName === "grey") {
+                return {
+                    bgColor: alpha(theme.palette.grey[500], 0.03),
+                    avatarBgColor: alpha(theme.palette.grey[500], 0.1),
+                    avatarColor: theme.palette.grey[600]
+                };
+            } else {
+                return {
+                    bgColor: alpha(theme.palette[colorName].main, 0.03),
+                    avatarBgColor: alpha(theme.palette[colorName].main, 0.1),
+                    avatarColor: theme.palette[colorName].main
+                };
+            }
+        };
+
+        const colorValues = getColorValue(color);
+
+        return (
+            <Box sx={{ flex: 1, minWidth: '220px', maxWidth: '270px' }}>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: delay * 0.1 }}
+                >
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            p: 2,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 2,
+                            height: '100%',
+                            borderRadius: 3,
+                            bgcolor: colorValues.bgColor,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                        }}
+                    >
+                        <Avatar
+                            sx={{
+                                bgcolor: colorValues.avatarBgColor,
+                                color: colorValues.avatarColor,
+                                width: 52,
+                                height: 52,
+                            }}
+                        >
+                            {icon}
+                        </Avatar>
+                        <Box>
+                            <Typography variant="h4" component="div" fontWeight="bold">
+                                {count}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {label}
+                            </Typography>
+                        </Box>
+                    </Paper>
+                </motion.div>
+            </Box>
+        );
+    };
+
+    // Actions Menu Component
+    const ActionsMenu = ({ anchorEl, onClose }) => {
+        return (
+            <Menu
+                anchorEl={anchorEl}
+                open={Boolean(anchorEl)}
+                onClose={onClose}
+                PaperProps={{
+                    elevation: 0,
+                    sx: {
+                        overflow: 'visible',
+                        filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
+                        mt: 1.5,
+                        borderRadius: 2,
+                        minWidth: 180,
+                        '& .MuiMenuItem-root': {
+                            px: 2,
+                            py: 1.5,
+                        }
+                    },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            >
+                <MenuItem onClick={onClose}>
+                    <ListItemIcon>
+                        <CloudDownloadIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Ekspor CSV</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={onClose}>
+                    <ListItemIcon>
+                        <PrintIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Cetak Daftar</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={onClose}>
+                    <ListItemIcon>
+                        <RefreshIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Segarkan Data</ListItemText>
+                </MenuItem>
+            </Menu>
+        );
+    };
+
     return (
         <Layout>
             <Head title="Daftar Lowongan Pekerjaan" />
 
             <Container maxWidth="xl" sx={{ py: 3 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                     <Typography variant="h4" component="h1" fontWeight="bold">
                         Lowongan Pekerjaan
                     </Typography>
 
                     <Box sx={{ display: 'flex', gap: 1 }}>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<FilterListIcon />}
+                            onClick={handleOpenActionsMenu}
+                        >
+                            Aksi
+                        </Button>
                         <Link href={route('admin.jobs.create')}>
                             <Button
                                 variant="contained"
@@ -266,261 +558,247 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                     </Box>
                 </Box>
 
-                <Paper sx={{ p: 3, mb: 3, borderRadius: 3 }}>
-                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2 }}>
-                        <Box sx={{ flex: 1 }}>
-                            <form onSubmit={handleSearch}>
+                {/* Stats Cards */}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, mb: 3 }}>
+                    <StatsCard icon={<WorkIcon />} count={totalJobs} label="Total Lowongan" />
+                    <StatsCard icon={<CheckCircleOutlineIcon />} count={activeJobs} label="Lowongan Aktif" color="success" delay={1} />
+                    <StatsCard icon={<DoDisturbOnIcon />} count={closedJobs} label="Lowongan Ditutup" color="error" delay={2} />
+                </Box>
+
+                {/* Main Content Paper */}
+                <Paper 
+                    elevation={0}
+                    sx={{ 
+                        borderRadius: '1rem',
+                        overflow: 'hidden',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        mb: 3
+                    }}
+                >
+                    {/* Tabs */}
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <Tabs
+                            value={tabValue}
+                            onChange={handleTabChange}
+                            aria-label="status lowongan tabs"
+                            sx={{
+                                '.MuiTabs-indicator': {
+                                    height: 3,
+                                    borderTopLeftRadius: 3,
+                                    borderTopRightRadius: 3,
+                                },
+                                '.MuiTab-root': {
+                                    textTransform: 'none',
+                                    fontWeight: 600,
+                                    px: 3,
+                                    py: 1.5,
+                                }
+                            }}
+                        >
+                            <Tab label="Semua Lowongan" />
+                            <Tab label="Aktif" />
+                            <Tab label="Ditutup" />
+                        </Tabs>
+                    </Box>
+
+                    {/* Filters */}
+                    <Box sx={{ p: 2, borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}` }}>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
+                            <Box sx={{ flex: '1 1 260px' }}>
                                 <TextField
                                     fullWidth
-                                    placeholder="Cari lowongan pekerjaan..."
+                                    placeholder="Cari lowongan berdasarkan judul, perusahaan, atau lokasi..."
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     InputProps={{
                                         startAdornment: (
                                             <InputAdornment position="start">
-                                                <SearchIcon />
+                                                <SearchIcon fontSize="small" />
                                             </InputAdornment>
                                         ),
-                                        endAdornment: (
-                                            <InputAdornment position="end">
-                                                <IconButton
-                                                    edge="end"
-                                                    type="submit"
-                                                    size="small"
-                                                >
-                                                    <SearchIcon fontSize="small" />
-                                                </IconButton>
-                                            </InputAdornment>
-                                        )
+                                        sx: {
+                                            borderRadius: 2,
+                                            bgcolor: alpha(theme.palette.common.black, 0.02),
+                                        }
                                     }}
-                                    sx={{ bgcolor: 'background.paper' }}
+                                    variant="outlined"
+                                    size="small"
                                 />
-                            </form>
-                        </Box>
-
-                        <Box sx={{ display: 'flex', gap: 1, justifyContent: { xs: 'flex-start', md: 'flex-end' } }}>
-                            <Tooltip title="Filter">
-                                <IconButton onClick={() => setFilterOpen(!filterOpen)}>
-                                    <FilterListIcon />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Refresh">
-                                <IconButton onClick={() => router.reload()}>
-                                    <RefreshIcon />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Export">
-                                <IconButton>
-                                    <DownloadIcon />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="List View">
-                                <IconButton
-                                    color={viewMode === 'list' ? 'primary' : 'default'}
-                                    onClick={() => setViewMode('list')}
+                            </Box>
+                            <Box sx={{ flex: '1 1 220px' }}>
+                                <TextField
+                                    select
+                                    fullWidth
+                                    size="small"
+                                    label="Kategori"
+                                    value={categoryFilter}
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                    InputProps={{
+                                        startAdornment: (
+                                            <InputAdornment position="start">
+                                                <BusinessIcon fontSize="small" color="action" />
+                                            </InputAdornment>
+                                        ),
+                                        sx: {
+                                            borderRadius: 2,
+                                        }
+                                    }}
                                 >
-                                    <ViewListIcon />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Grid View">
-                                <IconButton
-                                    color={viewMode === 'grid' ? 'primary' : 'default'}
-                                    onClick={() => setViewMode('grid')}
-                                >
-                                    <ViewModuleIcon />
-                                </IconButton>
-                            </Tooltip>
+                                    <MenuItem value="">Semua Kategori</MenuItem>
+                                    {categories.map((category) => (
+                                        <MenuItem key={category.id} value={category.id}>
+                                            {category.name}
+                                        </MenuItem>
+                                    ))}
+                                </TextField>
+                            </Box>
+                            <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                                <Tooltip title="Reset Semua Filter">
+                                    <span>
+                                        <IconButton
+                                            color="primary"
+                                            onClick={resetFilters}
+                                            disabled={!searchTerm && !categoryFilter && tabValue === 0}
+                                            size="small"
+                                            sx={{
+                                                border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                                                borderRadius: 2,
+                                            }}
+                                        >
+                                            <FilterIcon fontSize="small" />
+                                        </IconButton>
+                                    </span>
+                                </Tooltip>
+                            </Box>
                         </Box>
                     </Box>
 
-                    {filterOpen && (
-                        <Box sx={{ mt: 2, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-                            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, gap: 2, mb: 2 }}>
-                                <Box sx={{ flex: 1 }}>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        label="Kategori"
-                                        value={categoryFilter}
-                                        onChange={(e) => setCategoryFilter(e.target.value)}
-                                        size="small"
-                                    >
-                                        <MenuItem value="">Semua Kategori</MenuItem>
-                                        {categories.map((category) => (
-                                            <MenuItem key={category.id} value={category.id}>
-                                                {category.name}
-                                            </MenuItem>
-                                        ))}
-                                    </TextField>
-                                </Box>
-                                <Box sx={{ flex: 1 }}>
-                                    <TextField
-                                        select
-                                        fullWidth
-                                        label="Status"
-                                        value={statusFilter}
-                                        onChange={(e) => setStatusFilter(e.target.value)}
-                                        size="small"
-                                    >
-                                        <MenuItem value="">Semua Status</MenuItem>
-                                        <MenuItem value="active">Aktif</MenuItem>
-                                        <MenuItem value="draft">Draft</MenuItem>
-                                        <MenuItem value="closed">Ditutup</MenuItem>
-                                    </TextField>
-                                </Box>
-                            </Box>
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <Button
-                                    variant="outlined"
-                                    sx={{ mr: 1 }}
-                                    onClick={() => {
-                                        setCategoryFilter('');
-                                        setStatusFilter('');
-                                    }}
-                                >
-                                    Reset
-                                </Button>
-                                <Button
-                                    variant="contained"
-                                    onClick={handleSearch}
-                                >
-                                    Terapkan Filter
-                                </Button>
-                            </Box>
+                    {/* Filtered Results Stats */}
+                    <Box sx={{ px: 3, py: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <Box>
+                            <Typography variant="body2" color="text.secondary">
+                                {jobs.total} {jobs.total === 1 ? 'lowongan' : 'lowongan'} ditemukan
+                                {(searchTerm || categoryFilter || statusFilter) ? ' dengan filter saat ini' : ''}
+                            </Typography>
                         </Box>
-                    )}
-                </Paper>
+                        {(searchTerm || categoryFilter || tabValue > 0) && (
+                            <Button
+                                variant="text"
+                                size="small"
+                                startIcon={<FilterIcon fontSize="small" />}
+                                onClick={resetFilters}
+                            >
+                                Hapus Filter
+                            </Button>
+                        )}
+                    </Box>
 
-                {viewMode === 'list' ? (
-                    <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-                        <TableContainer>
-                            <Table sx={{ minWidth: 650 }}>
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Lowongan</TableCell>
-                                        <TableCell>Perusahaan</TableCell>
-                                        <TableCell>Lokasi</TableCell>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell>Tanggal Posting</TableCell>
-                                        <TableCell>Pelamar</TableCell>
-                                        <TableCell>Aksi</TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {jobs.data.length > 0 ? (
-                                        jobs.data
-                                            .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                            .map((job) => (
-                                                <TableRow key={job.id} hover>
-                                                    <TableCell>
-                                                        <Box>
-                                                            <Typography variant="body2" fontWeight="medium">
-                                                                {job.title}
-                                                            </Typography>
-                                                            <Typography variant="caption" color="text.secondary">
-                                                                {job.type === 'full_time' ? 'Full Time' :
-                                                                    job.type === 'part_time' ? 'Part Time' :
-                                                                        job.type === 'contract' ? 'Kontrak' :
-                                                                            job.type === 'internship' ? 'Magang' : job.type}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                            <Avatar
-                                                                src={job.company?.logo || ''}
-                                                                alt={job.company?.name}
-                                                                sx={{
-                                                                    mr: 2,
-                                                                    width: 30,
-                                                                    height: 30,
-                                                                    bgcolor: (theme) => `${theme.palette.primary.main}20`,
-                                                                    color: 'primary.main'
-                                                                }}
-                                                            >
-                                                                {job.company?.name?.charAt(0) || <BusinessIcon />}
-                                                            </Avatar>
-                                                            <Typography variant="body2">
-                                                                {job.company?.name}
-                                                            </Typography>
-                                                        </Box>
-                                                    </TableCell>
-                                                    <TableCell>{job.location}</TableCell>
-                                                    <TableCell>
-                                                        <Chip
-                                                            label={getStatusText(job.status)}
-                                                            color={getStatusColor(job.status)}
-                                                            size="small"
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell>{moment(job.created_at).format('DD MMM YYYY')}</TableCell>
-                                                    <TableCell align="center">
-                                                        {job.applications_count || 0}
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                                            <Link href={route('admin.jobs.edit', job.id)}>
-                                                                <IconButton size="small" color="primary">
-                                                                    <Tooltip title="Edit">
-                                                                        <EditIcon fontSize="small" />
+                    {/* Job List */}
+                    {viewMode === 'list' ? (
+                        <Box sx={{ px: 2, pb: 2 }}>
+                            <Paper
+                                elevation={0}
+                                sx={{
+                                    borderRadius: 2,
+                                    border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                <TableContainer>
+                                    <Table sx={{ minWidth: 650 }}>
+                                        <TableHead sx={{ bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+                                            <TableRow>
+                                                <TableCell>Lowongan</TableCell>
+                                                <TableCell>Perusahaan</TableCell>
+                                                <TableCell>Kategori</TableCell>
+                                                <TableCell>Status</TableCell>
+                                                <TableCell>Tanggal Dibuat</TableCell>
+                                                <TableCell align="center">Pelamar</TableCell>
+                                                <TableCell>Aksi</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {jobs.data.length > 0 ? (
+                                                jobs.data.map((job) => (
+                                                    <TableRow key={job.id} hover>
+                                                        <TableCell>
+                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                                <JobLogo job={job} size={40} />
+                                                                <Box sx={{ ml: 2 }}>
+                                                                    <Typography variant="body1" fontWeight="medium">
+                                                                        {job.title}
+                                                                    </Typography>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        {job.location}
+                                                                    </Typography>
+                                                                </Box>
+                                                            </Box>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {job.company ? job.company.name : '-'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            {job.category ? job.category.name : '-'}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Chip
+                                                                label={getStatusText(job.status)}
+                                                                color={getStatusColor(job.status)}
+                                                                size="small"
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell>{moment(job.created_at).format('DD MMM YYYY')}</TableCell>
+                                                        <TableCell align="center">
+                                                            {job.applications_count || 0}
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Box sx={{ display: 'flex', gap: 1 }}>
+                                                                <Link href={route('admin.jobs.edit', job.id)}>
+                                                                    <IconButton size="small" color="primary">
+                                                                        <Tooltip title="Edit">
+                                                                            <EditIcon fontSize="small" />
+                                                                        </Tooltip>
+                                                                    </IconButton>
+                                                                </Link>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    color="error"
+                                                                    onClick={() => handleDeleteDialogOpen(job)}
+                                                                >
+                                                                    <Tooltip title="Hapus">
+                                                                        <DeleteIcon fontSize="small" />
                                                                     </Tooltip>
                                                                 </IconButton>
-                                                            </Link>
-                                                            <IconButton
-                                                                size="small"
-                                                                color="error"
-                                                                onClick={() => handleDeleteDialogOpen(job)}
-                                                            >
-                                                                <Tooltip title="Hapus">
-                                                                    <DeleteIcon fontSize="small" />
-                                                                </Tooltip>
-                                                            </IconButton>
-                                                            <IconButton
-                                                                size="small"
-                                                                onClick={(e) => handleMenuOpen(e, job)}
-                                                            >
-                                                                <MoreVertIcon fontSize="small" />
-                                                            </IconButton>
-                                                        </Box>
+                                                                <IconButton
+                                                                    size="small"
+                                                                    onClick={(e) => handleMenuOpen(e, job)}
+                                                                >
+                                                                    <MoreVertIcon fontSize="small" />
+                                                                </IconButton>
+                                                            </Box>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            ) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            Tidak ada data lowongan pekerjaan
+                                                        </Typography>
                                                     </TableCell>
                                                 </TableRow>
-                                            ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Tidak ada data lowongan pekerjaan
-                                                </Typography>
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </TableContainer>
-                        <TablePagination
-                            rowsPerPageOptions={[5, 10, 25]}
-                            component="div"
-                            count={jobs.total || jobs.data.length}
-                            rowsPerPage={rowsPerPage}
-                            page={page}
-                            onPageChange={handleChangePage}
-                            onRowsPerPageChange={handleChangeRowsPerPage}
-                            labelRowsPerPage="Data per halaman:"
-                            labelDisplayedRows={({ from, to, count }) => `${from}-${to} dari ${count}`}
-                        />
-                    </Paper>
-                ) : (
-                    <Box>
-                        <Box sx={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: 3,
-                            mb: 3
-                        }}>
-                            {jobs.data.length > 0 ? (
-                                jobs.data
-                                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                                    .map((job) => (
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </Paper>
+                        </Box>
+                    ) : (
+                        <Box sx={{ p: 2 }}>
+                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+                                {jobs.data.length > 0 ? (
+                                    jobs.data.map((job) => (
                                         <Box
                                             key={job.id}
                                             sx={{
@@ -535,33 +813,80 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                                             <JobCard job={job} />
                                         </Box>
                                     ))
-                            ) : (
-                                <Box sx={{ width: '100%' }}>
-                                    <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 3 }}>
-                                        <Typography variant="body2" color="text.secondary">
-                                            Tidak ada data lowongan pekerjaan
-                                        </Typography>
-                                    </Paper>
-                                </Box>
-                            )}
+                                ) : (
+                                    <Box sx={{ width: '100%' }}>
+                                        <Paper sx={{ p: 3, textAlign: 'center', borderRadius: 3 }}>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Tidak ada data lowongan pekerjaan
+                                            </Typography>
+                                        </Paper>
+                                    </Box>
+                                )}
+                            </Box>
                         </Box>
+                    )}
+                </Paper>
 
-                        <Box>
-                            <Paper sx={{ borderRadius: 3, overflow: 'hidden' }}>
-                                <TablePagination
-                                    rowsPerPageOptions={[8, 16, 24, 32]}
-                                    component="div"
-                                    count={jobs.total || jobs.data.length}
-                                    rowsPerPage={rowsPerPage}
-                                    page={page}
-                                    onPageChange={handleChangePage}
-                                    onRowsPerPageChange={handleChangeRowsPerPage}
-                                    labelRowsPerPage="Data per halaman:"
-                                    labelDisplayedRows={({ from, to, count }) => `${from}-${to} dari ${count}`}
-                                />
-                            </Paper>
-                        </Box>
-                    </Box>
+                {/* Pagination */}
+                {jobs?.meta?.last_page > 1 && (
+                    <Paper
+                        elevation={0}
+                        sx={{
+                            borderRadius: '1rem',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            boxShadow: 'none',
+                            p: 2,
+                            mb: 4
+                        }}
+                    >
+                        <Pagination
+                            currentPage={jobs.meta.current_page}
+                            totalPages={jobs.meta.last_page}
+                            totalItems={jobs.meta.total}
+                            perPage={jobs.meta.per_page}
+                            onPageChange={(page) => {
+                                // Store current filters in URL
+                                const params = {
+                                    ...route().params,
+                                    page: page
+                                };
+                                
+                                // Add current filters to URL if they exist
+                                if (searchTerm) params.search = searchTerm;
+                                if (categoryFilter) params.category = categoryFilter;
+                                if (statusFilter) params.status = statusFilter;
+                                
+                                router.get(route('admin.jobs.index', params), {}, {
+                                    preserveState: true,
+                                    replace: true,
+                                    only: ['jobs']
+                                });
+                            }}
+                            onPerPageChange={(newPerPage) => {
+                                // Store current filters in URL
+                                const params = {
+                                    ...route().params,
+                                    per_page: newPerPage,
+                                    page: 1
+                                };
+                                
+                                // Add current filters to URL if they exist
+                                if (searchTerm) params.search = searchTerm;
+                                if (categoryFilter) params.category = categoryFilter;
+                                if (statusFilter) params.status = statusFilter;
+                                
+                                router.get(route('admin.jobs.index', params), {}, {
+                                    preserveState: true,
+                                    replace: true,
+                                    only: ['jobs']
+                                });
+                            }}
+                            showFirst
+                            showLast
+                            rounded="large"
+                        />
+                    </Paper>
                 )}
             </Container>
 
@@ -604,6 +929,9 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Actions menu */}
+            <ActionsMenu anchorEl={actionsAnchorEl} onClose={handleCloseActionsMenu} />
         </Layout>
     );
 };

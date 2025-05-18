@@ -12,6 +12,14 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        // Test scheduler (runs every 5 seconds)
+        $schedule->command('notifications:test-scheduler')
+            ->everyFiveSeconds();
+
+        // Scheduler heartbeat (runs every 5 seconds)
+        $schedule->command('scheduler:heartbeat')
+            ->everyFiveSeconds();
+
         // Clean up expired job posts
         $schedule->command('jobs:cleanup-expired')->daily();
 
@@ -26,7 +34,7 @@ class Kernel extends ConsoleKernel
 
         // Kirim pengingat kelengkapan profil sekali seminggu (Selasa)
         $schedule->command('notifications:profile-completion-reminders')
-            ->weekly()->tuesdays()->at('10:00');
+            ->everyFiveSeconds();
 
         // Kirim pengingat interview setiap jam
         $schedule->command('notifications:interview-reminders')
@@ -43,6 +51,14 @@ class Kernel extends ConsoleKernel
         // Update status lowongan yang sudah melewati batas waktu (daily)
         $schedule->command('jobs:update-expired-status')
             ->dailyAt('00:01');
+
+        // Kirim notifikasi lowongan akan berakhir (setiap hari jam 8 pagi)
+        $schedule->command('notifications:job-expiry')
+            ->dailyAt('08:00');
+
+        // Kirim pengingat tenggat waktu aplikasi (setiap 12 jam)
+        $schedule->command('notifications:application-deadlines')
+            ->twiceDaily(9, 21);
     }
 
     /**

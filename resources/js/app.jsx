@@ -34,10 +34,11 @@ createInertiaApp({
     resolveErrors: (error) => {
         if (error.response && error.response.status === 404) {
             return {
-                __component: 'Errors/404',
+                __component: 'Errors/404',  // Pastikan ini adalah jalur komponen yang benar
                 title: 'Halaman Tidak Ditemukan'
             };
         }
         return error;
     },
+
 });

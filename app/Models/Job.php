@@ -77,6 +77,16 @@ class Job extends Model
     }
 
     /**
+     * Alias for jobApplications() - used in controllers
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function applications()
+    {
+        return $this->jobApplications();
+    }
+
+    /**
      * Get the hiring stages for the job.
      */
     public function hiringStages()

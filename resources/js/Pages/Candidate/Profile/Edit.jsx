@@ -17,7 +17,8 @@ import {
     CardContent,
     CardHeader,
     Tabs as MuiTabs,
-    Tab as MuiTab
+    Tab as MuiTab,
+    LinearProgress
 } from '@mui/material';
 import {
     Save as SaveIcon,
@@ -45,7 +46,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import id from 'date-fns/locale/id';
 import Layout from "@/Components/Layout/Layout.jsx";
 import SweetAlert from "@/Components/Shared/SweetAlert.jsx";
-import {ToastContainerWrapper} from "@/Components/Shared/Toast.jsx";
+import { ToastContainerWrapper } from "@/Components/Shared/Toast.jsx";
+import {toast} from "react-toastify";
 
 // Custom Tab Panel Component
 function TabPanel(props) {
@@ -156,8 +158,23 @@ export default function Edit({ user, profile }) {
     const [showPassword, setShowPassword] = useState(false);
     const [avatarPreview, setAvatarPreview] = useState(user.avatar || null);
     const [resumeFile, setResumeFile] = useState(null);
+    const [resumeFileName, setResumeFileName] = useState(profile?.resume_name || null);
+    const [resumeUploadProgress, setResumeUploadProgress] = useState(0);
+    const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle', 'uploading', 'success', 'error'
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Toast notification helper
+    const showToast = (message, type = 'info') => {
+        toast[type](message, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true
+        });
+    };
 
     // Initialize form with Inertia's useForm
     const { data, setData, errors, setError, clearErrors, post, processing } = useForm({
@@ -195,7 +212,6 @@ export default function Edit({ user, profile }) {
         cancelButtonText: '',
         onConfirm: null
     });
-
 
     // Client-side validation
     const validateForm = () => {
@@ -309,7 +325,8 @@ export default function Edit({ user, profile }) {
             }
 
             setResumeFile(file);
-            showToast('File resume dipilih dan siap diupload.', 'info');
+            setResumeFileName(file.name);
+            showToast(`File resume "${file.name}" dipilih dan siap diupload.`, 'info');
         }
     };
 
@@ -317,52 +334,15 @@ export default function Edit({ user, profile }) {
         e.preventDefault();
 
         if (!resumeFile) {
-            window.showToast({
-                message: 'Pilih file resume terlebih dahulu',
-                type: 'warning',
-                duration: 3000
-            })
+            showToast('Pilih file resume terlebih dahulu', 'warning');
             return;
         }
 
-        // Create form data with the file
-        const formData = new FormData();
-        formData.append('resume', resumeFile);
-
-        console.log('Uploading file:', resumeFile.name, resumeFile.type, resumeFile.size);
-
-        // Use Axios directly for file upload
-        axios.post(route('candidate.profile.upload-resume'), formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            }
-        })
-            .then(response => {
-                console.log('Upload successful:', response.data);
-                setResumeFile(null);
-                window.showToast({
-                    message: 'Gagal menandai notifikasi sebagai dibaca',
-                    type: 'error'
-                })
-
-                // Reload page after a delay
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            })
-            .catch(error => {
-                console.error('Upload error:', error.response?.data);
-
-                window.showToast({
-                    message: 'Gagal menandai notifikasi sebagai dibaca',
-                    type: 'error'
-                })
-            });
-
+        // Show confirmation dialog first
         setSweetAlert({
             show: true,
             title: 'Upload Resume',
-            text: 'Anda yakin ingin mengupload resume ini?',
+            text: `Anda yakin ingin mengupload resume "${resumeFileName}"?`,
             icon: 'question',
             confirmButtonText: 'Ya, Upload',
             showCancelButton: true,
@@ -370,28 +350,53 @@ export default function Edit({ user, profile }) {
             onConfirm: () => performResumeUpload()
         });
     };
+
     const performResumeUpload = () => {
+        // Show loading state
+        setIsSubmitting(true);
+        setUploadStatus('uploading');
+        setResumeUploadProgress(0);
+
         // Create form data with the file
         const formData = new FormData();
         formData.append('resume', resumeFile);
 
-        console.log('Uploading file:', resumeFile.name, resumeFile.type, resumeFile.size);
+        // Get CSRF token from meta tag or page props
+        const csrf_token = document.querySelector('meta[name="csrf-token"]')?.content || window.page.props.csrf_token;
 
-        // Use Axios directly for file upload
+        console.log('Uploading file:', resumeFile.name, resumeFile.type, resumeFile.size);
+        showToast(`Mulai mengupload resume "${resumeFileName}"...`, 'info');
+
+        // Use Axios directly for file upload with proper CSRF token
         axios.post(route('candidate.profile.upload-resume'), formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
+                'X-CSRF-TOKEN': csrf_token,
+                'Accept': 'application/json'
+            },
+            // Set timeout longer for large file uploads
+            timeout: 120000, // 120 seconds
+            onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setResumeUploadProgress(percentCompleted);
+
+                if (percentCompleted === 100) {
+                    showToast('Upload selesai, menunggu respons server...', 'info');
+                }
             }
         })
             .then(response => {
                 console.log('Upload successful:', response.data);
                 setResumeFile(null);
+                setIsSubmitting(false);
+                setUploadStatus('success');
+                setResumeUploadProgress(100);
 
-                // Show success SweetAlert
+                // Show success alert
                 setSweetAlert({
                     show: true,
                     title: 'Berhasil!',
-                    text: 'Resume berhasil diupload!',
+                    text: response.data.message || 'Resume berhasil diupload! Sekarang Anda dapat melamar pekerjaan.',
                     icon: 'success',
                     confirmButtonText: 'OK',
                     onConfirm: () => {
@@ -400,17 +405,60 @@ export default function Edit({ user, profile }) {
                 });
             })
             .catch(error => {
-                console.error('Upload error:', error.response?.data);
+                console.error('Upload error:', error);
+                setIsSubmitting(false);
+                setUploadStatus('error');
 
                 let errorMessage = 'Terjadi kesalahan saat mengupload resume.';
-                if (error.response?.data?.errors?.resume) {
-                    errorMessage = error.response.data.errors.resume;
+
+                // Handle different error scenarios
+                if (error.response) {
+                    // Server responded with an error status
+                    console.error('Error status:', error.response.status);
+                    console.error('Error data:', error.response.data);
+
+                    if (error.response.status === 413) {
+                        errorMessage = 'File terlalu besar untuk server. Maksimal 2MB.';
+                    } else if (error.response.status === 419) {
+                        errorMessage = 'Sesi telah berakhir. Halaman akan dimuat ulang dalam beberapa detik.';
+                        // Auto reload for CSRF issues
+                        setTimeout(() => window.location.reload(), 3000);
+                    } else if (error.response.status === 422) {
+                        // Get detailed validation errors
+                        if (error.response.data.errors?.resume) {
+                            errorMessage = `Error validasi: ${error.response.data.errors.resume}`;
+                        } else if (error.response.data.message) {
+                            errorMessage = `Error validasi: ${error.response.data.message}`;
+                        }
+                    } else if (error.response.status === 409) {
+                        errorMessage = error.response.data.message || 'Konflik saat mengupload file. Mungkin nama file sudah digunakan.';
+                    } else if (error.response.status >= 500) {
+                        errorMessage = 'Server error. Silakan coba lagi nanti atau hubungi administrator.';
+                    }
+                } else if (error.request) {
+                    // Request made but no response received
+                    errorMessage = 'Tidak ada respons dari server. Periksa koneksi internet Anda dan coba lagi.';
+                } else if (error.code === 'ECONNABORTED') {
+                    errorMessage = 'Waktu upload habis. Periksa koneksi internet Anda atau coba file yang lebih kecil.';
+                } else {
+                    // Error setting up request
+                    errorMessage = `Gagal membuat permintaan: ${error.message}`;
                 }
 
+                // Show error toast
                 showToast(errorMessage, 'error');
+
+                // Show detailed error in Sweet Alert for persistent error message
+                setSweetAlert({
+                    show: true,
+                    title: 'Gagal Upload Resume',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'Coba Lagi',
+                    showCancelButton: false
+                });
             });
     };
-
 
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
@@ -806,71 +854,111 @@ export default function Edit({ user, profile }) {
                             </TabPanel>
 
                             <TabPanel value={activeTab} index={4}>
-                                <Box>
-                                    <Paper variant="outlined" sx={{ p: 3, mb: 3, borderRadius: 2 }}>
-                                        <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                                            Resume Saat Ini
-                                        </Typography>
-                                        {profile.resume ? (
-                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                <UploadFileIcon sx={{ mr: 1, color: 'primary.main' }} />
-                                                <Typography variant="body2" sx={{ mr: 2 }}>
-                                                    {profile.resume.split('/').pop()}
-                                                </Typography>
-                                                <Button
-                                                    component="a"
-                                                    href={profile.resume}
-                                                    target="_blank"
-                                                    variant="outlined"
-                                                    size="small"
-                                                    sx={{ borderRadius: 2 }}
-                                                >
-                                                    Lihat
-                                                </Button>
-                                            </Box>
-                                        ) : (
-                                            <Typography variant="body2" color="text.secondary">
-                                                Belum ada resume tersimpan
+                                <Paper elevation={0} variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+                                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <UploadFileIcon sx={{ mr: 1 }} /> Upload Resume
+                                    </Typography>
+                                    <Typography variant="body2" color="text.secondary" paragraph>
+                                        Upload resume/CV Anda dalam format PDF, DOC, atau DOCX. Maksimal ukuran file 2MB.
+                                    </Typography>
+                                    <Divider sx={{ my: 2 }} />
+
+                                    {/* Current resume status */}
+                                    {profile?.resume_url && (
+                                        <Box sx={{ mb: 3, p: 2, bgcolor: 'success.lighter', borderRadius: 1 }}>
+                                            <Typography variant="subtitle2" sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                <CheckCircleOutlineIcon sx={{ mr: 1, color: 'success.main' }} />
+                                                Resume tersedia
+                                            </Typography>
+                                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                                {profile.resume_name || 'resume.pdf'}
+                                            </Typography>
+                                            <Button
+                                                variant="outlined"
+                                                size="small"
+                                                href={profile.resume_url}
+                                                target="_blank"
+                                                startIcon={<VisibilityIcon />}
+                                                sx={{ mr: 1 }}
+                                            >
+                                                Lihat Resume
+                                            </Button>
+                                        </Box>
+                                    )}
+
+                                    {/* Upload progress indicator */}
+                                    {uploadStatus === 'uploading' && (
+                                        <Box sx={{ mt: 2, mb: 3 }}>
+                                            <Typography variant="body2" sx={{ mb: 1 }}>
+                                                Mengupload resume... {resumeUploadProgress}%
+                                            </Typography>
+                                            <LinearProgress
+                                                variant="determinate"
+                                                value={resumeUploadProgress}
+                                                sx={{ height: 10, borderRadius: 5 }}
+                                            />
+                                        </Box>
+                                    )}
+
+                                    {/* File input field */}
+                                    <Box sx={{ mb: 3 }}>
+                                        <input
+                                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                            id="resume-upload"
+                                            type="file"
+                                            name="resume"
+                                            hidden
+                                            onChange={(e) => handleResumeChange(e.target.files[0])}
+                                        />
+                                        <label htmlFor="resume-upload">
+                                            <Button
+                                                variant="contained"
+                                                component="span"
+                                                startIcon={<UploadFileIcon />}
+                                                sx={{ mb: 2, borderRadius: '8px' }}
+                                                disabled={isSubmitting}
+                                            >
+                                                Pilih File Resume
+                                            </Button>
+                                        </label>
+
+                                        {resumeFileName && (
+                                            <Typography variant="body2" sx={{ ml: 1, display: 'inline-flex', alignItems: 'center' }}>
+                                                <CheckCircleOutlineIcon fontSize="small" sx={{ mr: 0.5, color: 'success.main' }} />
+                                                {resumeFileName}
                                             </Typography>
                                         )}
-                                    </Paper>
 
-                                    <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
-                                        <Typography variant="h6" gutterBottom sx={{ color: 'primary.main', fontWeight: 'bold' }}>
-                                            Upload Resume Baru
+                                        <Typography variant="caption" color="text.secondary" display="block">
+                                            Format yang didukung: PDF, DOC, DOCX. Maksimal ukuran file: 2MB
                                         </Typography>
-                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                            Upload resume dalam format PDF, DOC, atau DOCX (maks. 2MB)
+                                    </Box>
+
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        disabled={!resumeFile || isSubmitting}
+                                        onClick={handleResumeUpload}
+                                        startIcon={<UploadFileIcon />}
+                                        sx={{ borderRadius: '8px' }}
+                                    >
+                                        {isSubmitting ? 'Mengupload...' : 'Upload Resume'}
+                                    </Button>
+
+                                    {/* Resume tips */}
+                                    <Box sx={{ mt: 3, bgcolor: 'info.lighter', p: 2, borderRadius: 2 }}>
+                                        <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 600 }}>
+                                            Tips Resume Efektif:
                                         </Typography>
-
-                                        {/* File selection and upload button */}
-                                        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                                            <CustomFileUpload
-                                                accept=".pdf,.doc,.docx"
-                                                label="Pilih File Resume"
-                                                onChange={handleResumeChange}
-                                                error={errors.resume}
-                                                maxSize={2}
-                                                icon={<UploadFileIcon />}
-                                            />
-
-                                            {resumeFile && (
-                                                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
-                                                    <Button
-                                                        type="button"
-                                                        variant="contained"
-                                                        startIcon={<UploadFileIcon />}
-                                                        disabled={processing}
-                                                        sx={{ borderRadius: 2 }}
-                                                        onClick={handleResumeUpload}
-                                                    >
-                                                        Upload Resume
-                                                    </Button>
-                                                </Box>
-                                            )}
-                                        </Box>
-                                    </Paper>
-                                </Box>
+                                        <Typography variant="body2" component="ul" sx={{ pl: 2 }}>
+                                            <li>Gunakan format yang jelas dan mudah dibaca</li>
+                                            <li>Sesuaikan resume dengan posisi yang dilamar</li>
+                                            <li>Tonjolkan pencapaian dan keterampilan relevan</li>
+                                            <li>Pastikan tidak ada kesalahan penulisan</li>
+                                            <li>Jangan melebihi 2 halaman</li>
+                                        </Typography>
+                                    </Box>
+                                </Paper>
                             </TabPanel>
 
                             <Divider sx={{ my: 3 }} />

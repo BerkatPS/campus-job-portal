@@ -310,11 +310,30 @@ const CompanyDetails = ({ company, stats }) => {
                     >
                         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
                             <Avatar
-                                src={company.logo || '/images/company-placeholder.png'}
+                                src={company.logo}
                                 alt={company.name}
                                 variant="rounded"
-                                sx={{ width: 120, height: 120, mb: 2 }}
-                            />
+                                sx={{ 
+                                    width: 120, 
+                                    height: 120, 
+                                    mb: 2,
+                                    bgcolor: company.logo ? 'transparent' : '#f5f5f5',
+                                    objectFit: 'contain' 
+                                }}
+                                imgProps={{
+                                    style: {
+                                        objectFit: 'contain',
+                                        maxWidth: '100%',
+                                        maxHeight: '100%'
+                                    },
+                                    onError: (e) => {
+                                        console.log('Image load error, using fallback');
+                                        e.target.src = '/default-logo.png';
+                                    }
+                                }}
+                            >
+                                {!company.logo && <BusinessIcon sx={{ fontSize: 40 }} color="primary" />}
+                            </Avatar>
 
                             <Typography variant="h6" fontWeight={600} align="center">
                                 {company.name}

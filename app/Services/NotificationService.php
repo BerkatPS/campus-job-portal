@@ -152,6 +152,7 @@ class NotificationService
      */
     public function sendProfileCompletionReminders()
     {
+        Log::info('Starting profile completion reminders process');
         $candidates = User::whereHas('role', function($query) {
             $query->where('slug', 'candidate');
         })
@@ -159,7 +160,26 @@ class NotificationService
             ->with('candidateProfile')
             ->get();
 
+        Log::info('Found ' . $candidates->count() . ' active candidates');
+        $notificationsSent = 0;
+
         foreach ($candidates as $candidate) {
+            // Check if candidate profile exists
+            if (!$candidate->candidateProfile) {
+                // Create profile completion reminder for users without any profile
+                $this->sendNotification(
+                    $candidate,
+                    ProfileCompletionReminder::class,
+                    $candidate,
+                    [
+                        'percentage' => 0,
+                        'missing_items' => ['Profil belum dibuat']
+                    ]
+                );
+                $notificationsSent++;
+                continue;
+            }
+
             // Calculate profile completeness
             $profileFields = [
                 $candidate->avatar,
@@ -180,8 +200,8 @@ class NotificationService
 
             $percentage = count($filledFields) / count($profileFields) * 100;
 
-            // Only send reminder if profile is less than 70% complete
-            if ($percentage < 70) {
+            // Send reminder if profile is less than 100% complete (changed from 70%)
+            if ($percentage < 100) {
                 $missingItems = [];
                 if (!$candidate->avatar) $missingItems[] = 'Foto Profil';
                 if (!($candidate->candidateProfile->phone ?? null)) $missingItems[] = 'Nomor Telepon';
@@ -194,6 +214,8 @@ class NotificationService
                 if (!($candidate->candidateProfile->linkedin ?? null)) $missingItems[] = 'LinkedIn';
                 if (!($candidate->candidateProfile->website ?? null)) $missingItems[] = 'Website';
 
+                Log::info('Sending profile completion reminder to user #' . $candidate->id . ' - Profile completion: ' . round($percentage) . '%');
+
                 $this->sendNotification(
                     $candidate,
                     ProfileCompletionReminder::class,
@@ -203,8 +225,11 @@ class NotificationService
                         'missing_items' => $missingItems
                     ]
                 );
+                $notificationsSent++;
             }
         }
+
+        Log::info('Completed profile completion reminders process. Sent ' . $notificationsSent . ' notifications');
     }
 
     /**

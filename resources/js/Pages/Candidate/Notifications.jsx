@@ -226,9 +226,16 @@ const NotificationsPage = () => {
 
     // Helper to get the base path for API calls based on user role
     const getBasePath = () => {
-        if (auth.user.role.slug === 'admin') {
+        // Add null checks to prevent errors if role is undefined
+        if (!auth.user || !auth.user.role) {
+            return '/candidate'; // Default to candidate if role info is missing
+        }
+        
+        const roleId = auth.user.role.id || auth.user.role.role_id;
+        
+        if (roleId === 1) {
             return '/admin';
-        } else if (auth.user.role.slug === 'manager') {
+        } else if (roleId === 2) {
             return '/manager';
         } else {
             return '/candidate';
@@ -312,12 +319,12 @@ const NotificationsPage = () => {
     };
 
     const getPageTitle = () => {
-        if (auth.user.role.slug === 'admin') {
-            return "Admin Notifications";
-        } else if (auth.user.role.slug === 'manager') {
-            return "Manager Notifications";
+        if (activeTab === 0) {
+            return 'Notifikasi';
+        } else if (activeTab === 1) {
+            return `Notifikasi Belum Dibaca (${filteredUnreadCount})`;
         } else {
-            return "Notifikasi";
+            return `Notifikasi Sudah Dibaca (${filteredNotifications.length})`;
         }
     };
 

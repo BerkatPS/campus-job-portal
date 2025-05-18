@@ -51,30 +51,30 @@ const StatCard = ({ title, value, icon, color }) => {
 
     return (
         <MuiCard sx={{
-            borderRadius: '1rem',
+            borderRadius: '0.75rem',
             border: '1px solid',
             borderColor: 'divider',
             boxShadow: 'none',
             overflow: 'hidden',
-            transition: 'transform 0.2s, box-shadow 0.2s',
+            transition: 'all 0.15s ease-in-out',
             height: '100%',
             '&:hover': {
-                transform: 'translateY(-3px)',
-                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.05)',
+                transform: 'translateY(-2px)',
+                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.03)',
             }
         }}>
             <CardContent sx={{ p: 2.5, height: '100%' }}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1 }}>
-                    <Typography color="text.secondary" variant="body2">{title}</Typography>
+                    <Typography color="text.secondary" variant="body2" fontWeight="500">{title}</Typography>
                     <Box sx={{
                         p: 1,
-                        borderRadius: '50%',
-                        bgcolor: alpha(theme.palette[color].main, 0.1)
+                        borderRadius: '8px',
+                        bgcolor: alpha(theme.palette[color].main, 0.08)
                     }}>
                         {icon}
                     </Box>
                 </Stack>
-                <Typography variant="h4" sx={{ fontWeight: 'bold', color: color === 'success' ? theme.palette.success.main : 'inherit' }}>
+                <Typography variant="h4" sx={{ fontWeight: '600', color: theme.palette.text.primary }}>
                     {value}
                 </Typography>
             </CardContent>
@@ -138,8 +138,8 @@ const Index = () => {
                         sx={{
                             width: 40,
                             height: 40,
-                            border: '2px solid',
-                            borderColor: theme => alpha(theme.palette.primary.main, 0.2),
+                            border: '1px solid',
+                            borderColor: alpha(theme.palette.divider, 0.5),
                         }}
                     />
                     <Box>
@@ -187,10 +187,10 @@ const Index = () => {
                         label={row.status.name}
                         size="small"
                         sx={{
-                            backgroundColor: `${row.status.color}20`,
+                            backgroundColor: alpha(row.status.color, 0.12),
                             color: row.status.color,
                             fontWeight: 500,
-                            borderRadius: '12px',
+                            borderRadius: '6px',
                             py: 0.5
                         }}
                     />
@@ -199,10 +199,10 @@ const Index = () => {
                         label="Unknown"
                         size="small"
                         sx={{
-                            backgroundColor: '#eee',
-                            color: '#666',
+                            backgroundColor: alpha(theme.palette.grey[500], 0.12),
+                            color: theme.palette.grey[600],
                             fontWeight: 500,
-                            borderRadius: '12px',
+                            borderRadius: '6px',
                             py: 0.5
                         }}
                     />
@@ -219,9 +219,9 @@ const Index = () => {
                         size="small"
                         variant="outlined"
                         sx={{
-                            borderColor: row.current_stage.color,
+                            borderColor: alpha(row.current_stage.color, 0.5),
                             color: row.current_stage.color,
-                            borderRadius: '12px',
+                            borderRadius: '6px',
                             py: 0.5
                         }}
                     />
@@ -274,7 +274,7 @@ const Index = () => {
 
     // Mark application as favorite
     const markAsFavorite = (id) => {
-        router.post(route('manager.applications.toggle-favorite-post', id), {}, {
+        router.put(route('manager.applications.toggle-favorite', id), {}, {
             preserveScroll: true,
             preserveState: true
         });
@@ -306,12 +306,14 @@ const Index = () => {
             {/* Header Section with Stats */}
             <Box
                 sx={{
-                    background: 'linear-gradient(135deg, rgba(15, 118, 110, 0.08) 0%, rgba(20, 184, 166, 0.15) 100%)',
+                    background: theme.palette.mode === 'dark'
+                        ? alpha(theme.palette.primary.dark, 0.05)
+                        : alpha(theme.palette.primary.light, 0.05),
                     py: 4,
-                    borderRadius: '1rem',
+                    borderRadius: '0.75rem',
                     px: 3,
                     mb: 4,
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.05)',
+                    boxShadow: 'none',
                     border: '1px solid',
                     borderColor: 'divider',
                 }}
@@ -324,58 +326,13 @@ const Index = () => {
                     sx={{ mb: 3 }}
                 >
                     <Box>
-                        <Typography variant="h5" fontWeight="600" gutterBottom>Job Applications</Typography>
+                        <Typography variant="h5" fontWeight="600" gutterBottom>Lamaran Pekerjaan</Typography>
                         <Typography variant="body2" color="text.secondary">
-                            Manage and review candidate applications for your open positions
+                            Kelola dan tinjau aplikasi kandidat untuk posisi terbuka Anda
                         </Typography>
                     </Box>
 
-                    <Stack direction="row" spacing={2}>
-                        <ButtonGroup
-                            variant="outlined"
-                            size="small"
-                            sx={{
-                                bgcolor: 'background.paper',
-                                borderRadius: '8px',
-                                overflow: 'hidden',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                            }}
-                        >
-                            <Tooltip title="List View">
-                                <IconButton
-                                    color={view === 'list' ? 'primary' : 'default'}
-                                    onClick={() => setView('list')}
-                                    sx={{ borderRadius: 0 }}
-                                >
-                                    <ViewList />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Kanban View">
-                                <IconButton
-                                    color={view === 'kanban' ? 'primary' : 'default'}
-                                    onClick={() => {
-                                        setView('kanban');
-                                        router.visit(route('manager.applications.kanban'));
-                                    }}
-                                    sx={{ borderRadius: 0 }}
-                                >
-                                    <ViewKanban />
-                                </IconButton>
-                            </Tooltip>
-                        </ButtonGroup>
 
-                        <Tooltip title="Export Applications">
-                            <Button
-                                variant="contained"
-                                startIcon={<FileDownload />}
-                                onClick={exportToCSV}
-                                size="small"
-                                sx={{ borderRadius: '8px' }}
-                            >
-                                Export
-                            </Button>
-                        </Tooltip>
-                    </Stack>
                 </Stack>
 
                 {/* Stats Cards */}
@@ -439,10 +396,10 @@ const Index = () => {
                 sx={{
                     p: 2.5,
                     mb: 3,
-                    borderRadius: '1rem',
+                    borderRadius: '0.75rem',
                     border: '1px solid',
                     borderColor: 'divider',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+                    boxShadow: 'none'
                 }}
             >
                 <Box
@@ -531,10 +488,10 @@ const Index = () => {
                 elevation={0}
                 sx={{
                     overflow: 'hidden',
-                    borderRadius: '1rem',
+                    borderRadius: '0.75rem',
                     border: '1px solid',
                     borderColor: 'divider',
-                    boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)'
+                    boxShadow: 'none'
                 }}
             >
                 {applications?.data ? (
@@ -549,24 +506,29 @@ const Index = () => {
                                 items={getRowActions(row)}
                             />
                         )}
-                        borderRadius="large"
+                        borderRadius="medium"
                         variant="outlined"
-                        zebraPattern
+                        zebraPattern={false}
                         hoverEffect
                         sx={{
                             '& .MuiTableHead-root': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                bgcolor: theme.palette.mode === 'dark'
+                                    ? alpha(theme.palette.background.paper, 0.5)
+                                    : alpha(theme.palette.grey[50], 1),
                             },
                             '& .MuiTableCell-head': {
                                 fontWeight: 600,
-                                color: theme.palette.text.primary
+                                color: theme.palette.text.primary,
+                                fontSize: '0.875rem'
                             },
                             '& .MuiTableCell-root': {
                                 borderColor: theme.palette.divider,
                                 padding: '12px 16px',
                             },
                             '& .MuiTableRow-root:hover': {
-                                bgcolor: alpha(theme.palette.primary.main, 0.04),
+                                bgcolor: theme.palette.mode === 'dark'
+                                    ? alpha(theme.palette.primary.dark, 0.08)
+                                    : alpha(theme.palette.primary.light, 0.08),
                             }
                         }}
                     />

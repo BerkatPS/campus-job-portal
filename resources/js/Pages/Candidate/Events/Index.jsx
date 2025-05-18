@@ -1,74 +1,39 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import {
     Container,
     Typography,
     Box,
-    Grid,
-    Avatar,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
     Paper,
     Chip,
     Divider,
     IconButton,
     Tab,
     Tabs,
-    Tooltip,
     useTheme,
     useMediaQuery,
-    Backdrop,
-    Fade,
-    Modal,
     Alert,
-    AlertTitle,
     LinearProgress,
-    Card,
-    CardContent,
     Badge,
-    Stack
+    TableContainer,
+    Table,
+    TableHead,
+    TableBody,
+    TableRow,
+    TableCell
 } from '@mui/material';
 import {
-    Person as PersonIcon,
-    Work as WorkIcon,
-    School as SchoolIcon,
-    Phone as PhoneIcon,
-    Email as EmailIcon,
-    Home as HomeIcon,
-    LinkedIn as LinkedInIcon,
-    Language as LanguageIcon,
-    GitHub as GitHubIcon,
-    Twitter as TwitterIcon,
-    UploadFile as UploadFileIcon,
-    Edit as EditIcon,
-    CalendarToday as CalendarTodayIcon,
-    ArrowBack as ArrowBackIcon,
     LocationOn as LocationIcon,
-    Star as StarIcon,
-    Description as DescriptionIcon,
-    Close as CloseIcon,
-    Download as DownloadIcon,
-    MoreVert as MoreVertIcon,
-    ContentCopy as ContentCopyIcon,
-    Verified as VerifiedIcon,
-    Visibility as VisibilityIcon,
     Event as EventIcon,
-    CalendarMonth as CalendarIcon,
     AccessTime as TimeIcon,
-    Business as BusinessIcon,
     Videocam as VideocamIcon,
-    CheckCircleOutline as CheckCircleOutlineIcon,
-    CancelOutlined as CancelOutlinedIcon,
-    Info as InfoIcon,
-    ArrowForward as ArrowForwardIcon,
-    VisibilityOff as VisibilityOffIcon,
     Notifications as NotificationsIcon,
-    Today as TodayIcon
+    Today as TodayIcon,
+    ChevronLeft as ChevronLeftIcon,
+    ChevronRight as ChevronRightIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { format, parseISO, isAfter, isBefore, isToday, isEqual } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, isToday, isEqual, addMonths, subMonths, getDay, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addDays, parse } from 'date-fns';
 import { id } from 'date-fns/locale';
 import Layout from "@/Components/Layout/Layout.jsx";
 import Button from "@/Components/Shared/Button";
@@ -95,136 +60,207 @@ const StyledCard = ({ children, elevation = 0, sx = {} }) => (
         </Paper>
     );
 
+// Custom Calendar Component
+const CalendarComponent = ({ events, onDateClick }) => {
+    const theme = useTheme();
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
-const TabPanel = (props) => {
-    const { children, value, index, ...other } = props;
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(currentDate);
+    const startDate = monthStart;
+    const endDate = monthEnd;
+
+    const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
+    const startDayOfWeek = getDay(monthStart);
+
+    const dayNames = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+    const monthNames = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+
+    const prevMonth = () => {
+        setCurrentDate(subMonths(currentDate, 1));
+    };
+
+    const nextMonth = () => {
+        setCurrentDate(addMonths(currentDate, 1));
+    };
+
+    const onDateClickHandler = (day) => {
+        setSelectedDate(day);
+        if (onDateClick) onDateClick(day);
+    };
+
+    // Function to check if a date has events
+    const hasEvents = (date) => {
+        return events.some(event => {
+            const eventDate = parseISO(event.start_time);
+            return isSameDay(eventDate, date);
+        });
+    };
+
+    // Function to get events for a date
+    const getEventsForDate = (date) => {
+        return events.filter(event => {
+            const eventDate = parseISO(event.start_time);
+            return isSameDay(eventDate, date);
+        });
+    };
+
+    // Count events for each date
+    const eventCounts = {};
+    daysInMonth.forEach(day => {
+        const eventsOnDay = getEventsForDate(day);
+        if (eventsOnDay.length > 0) {
+            eventCounts[format(day, 'yyyy-MM-dd')] = eventsOnDay.length;
+        }
+    });
 
     return (
-        <div
-            role="tabpanel"
-            hidden={value !== index}
-            id={`event-tabpanel-${index}`}
-            aria-labelledby={`event-tab-${index}`}
-            {...other}
-        >
-            {value === index && (
-                <AnimatePresence mode="wait">
-                    <motion.div
-                        key={index}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        transition={{ duration: 0.25 }}
-                    >
-                        <Box sx={{ pt: 3 }}>
-                            {children}
+        <Box>
+            {/* Calendar Header */}
+            <Box sx={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                mb: 2,
+                px: 1
+            }}>
+                <IconButton onClick={prevMonth} size="small" sx={{ color: theme.palette.grey[700] }}>
+                    <ChevronLeftIcon />
+                </IconButton>
+
+                <Typography variant="h6" fontWeight="bold">
+                    {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+                </Typography>
+
+                <IconButton onClick={nextMonth} size="small" sx={{ color: theme.palette.grey[700] }}>
+                    <ChevronRightIcon />
+                </IconButton>
             </Box>
-                    </motion.div>
-                </AnimatePresence>
-            )}
-        </div>
+
+            {/* Calendar Grid */}
+            <TableContainer component={Paper} elevation={0} sx={{ borderRadius: '1rem', overflow: 'hidden' }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow sx={{ backgroundColor: theme.palette.grey[50] }}>
+                            {dayNames.map((day) => (
+                                <TableCell key={day} align="center" sx={{
+                                    fontWeight: 'bold',
+                                    color: theme.palette.grey[700],
+                                    py: 1,
+                                    borderBottom: '1px solid',
+                                    borderColor: theme.palette.grey[200]
+                                }}>
+                                    {day}
+                                </TableCell>
+                            ))}
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {Array(Math.ceil((daysInMonth.length + startDayOfWeek) / 7))
+                            .fill(null)
+                            .map((_, weekIndex) => (
+                                <TableRow key={weekIndex}>
+                                    {Array(7).fill(null).map((_, dayIndex) => {
+                                        const dayNumber = weekIndex * 7 + dayIndex - startDayOfWeek + 1;
+                                        const isCurrentMonth = dayNumber > 0 && dayNumber <= daysInMonth.length;
+
+                                        if (!isCurrentMonth) {
+                                            return <TableCell key={dayIndex} sx={{ height: '60px', borderColor: theme.palette.grey[100] }}></TableCell>;
+                                        }
+
+                                        const day = daysInMonth[dayNumber - 1];
+                                        const isToday = isSameDay(day, new Date());
+                                        const isSelected = isSameDay(day, selectedDate);
+                                        const dayHasEvents = hasEvents(day);
+                                        const eventCount = eventCounts[format(day, 'yyyy-MM-dd')] || 0;
+
+                                        return (
+                                            <TableCell
+                                                key={dayIndex}
+                                                onClick={() => onDateClickHandler(day)}
+                                                sx={{
+                                                    height: '60px',
+                                                    cursor: 'pointer',
+                                                    position: 'relative',
+                                                    p: 0.5,
+                                                    borderColor: theme.palette.grey[100],
+                                                    ...(isToday && {
+                                                        backgroundColor: 'rgba(20, 184, 166, 0.05)',
+                                                    }),
+                                                    ...(isSelected && {
+                                                        backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                                                    }),
+                                                    '&:hover': {
+                                                        backgroundColor: theme.palette.grey[50],
+                                                    }
+                                                }}
+                                            >
+                                                <Box sx={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    height: '100%',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                }}>
+                                                    <Typography
+                                                        variant="body2"
+                                                        sx={{
+                                                            fontWeight: isToday || isSelected ? 'bold' : 'normal',
+                                                            color: isToday ? theme.palette.primary.main : 'inherit',
+                                                            width: '24px',
+                                                            height: '24px',
+                                                            display: 'flex',
+                                                            alignItems: 'center',
+                                                            justifyContent: 'center',
+                                                            borderRadius: '50%',
+                                                            ...(isToday && {
+                                                                backgroundColor: 'rgba(20, 184, 166, 0.1)',
+                                                            })
+                                                        }}
+                                                    >
+                                                        {dayNumber}
+                                                    </Typography>
+
+                                                    {dayHasEvents && (
+                                                        <Badge
+                                                            badgeContent={eventCount}
+                                                            color="primary"
+                                                            sx={{
+                                                                '& .MuiBadge-badge': {
+                                                                    fontSize: '0.7rem',
+                                                                    height: '18px',
+                                                                    minWidth: '18px',
+                                                                    borderRadius: '9px',
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Box sx={{ width: 4, height: 4 }} />
+                                                        </Badge>
+                                                    )}
+                                                </Box>
+                                            </TableCell>
+                                        );
+                                    })}
+                                </TableRow>
+                            ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        </Box>
     );
 };
 
-// Resume preview modal
-const ResumePreviewModal = ({ open, handleClose, resumeUrl }) => {
-    return (
-        <Modal
-            open={open}
-            onClose={handleClose}
-            closeAfterTransition
-            BackdropComponent={Backdrop}
-            BackdropProps={{
-                timeout: 500,
-            }}
-        >
-            <Fade in={open}>
-            <Box
-                sx={{
-                        position: 'absolute',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '90%',
-                        maxWidth: 900,
-                        maxHeight: '90vh',
-                        bgcolor: 'background.paper',
-                        boxShadow: 24,
-                        borderRadius: '1rem',
-                        overflow: 'hidden',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                <Box
-                    sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            p: 2,
-                            bgcolor: 'primary.50',
-                            borderBottom: '1px solid',
-                            borderColor: 'primary.100',
-                        }}
-                    >
-                        <Typography variant="h6" fontWeight="bold" color="primary.main">
-                            Resume Preview
-                            </Typography>
-                        <Box sx={{ display: 'flex', gap: 1 }}>
-                            <Tooltip title="Download Resume">
-                                <IconButton
-                                    component="a"
-                                    href={resumeUrl}
-                                    download
-                                size="small"
-                                sx={{
-                                        bgcolor: 'primary.50',
-                                        '&:hover': { bgcolor: 'primary.100' },
-                                    }}
-                                >
-                                    <DownloadIcon fontSize="small" color="primary" />
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Close">
-                                <IconButton
-                                    onClick={handleClose}
-                                size="small"
-                                sx={{
-                                        bgcolor: 'error.50',
-                                        '&:hover': { bgcolor: 'error.100' },
-                                    }}
-                                >
-                                    <CloseIcon fontSize="small" color="error" />
-                                </IconButton>
-                            </Tooltip>
-                                </Box>
-                                </Box>
-                    <Box
-                            sx={{
-                            flexGrow: 1,
-                            height: 'calc(90vh - 64px)',
-                            overflow: 'auto',
-                        }}
-                    >
-                        <iframe
-                            src={`${resumeUrl}#toolbar=0`}
-                            width="100%"
-                            height="100%"
-                            style={{ border: 'none' }}
-                            title="Resume Preview"
-                        />
-                </Box>
-            </Box>
-            </Fade>
-        </Modal>
-    );
-};
+
 
 export default function Index({ upcomingEvents = [], pastEvents = [], profileCompleteness = { percentage: 0, missingItems: [], isComplete: false }, user = {}, profile = {} }) {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
     const [tabValue, setTabValue] = useState(0);
-    const [eventTabValue, setEventTabValue] = useState(0);
+    const [selectedDate, setSelectedDate] = useState(new Date());
     const [openResumeModal, setOpenResumeModal] = useState(false);
     const [copiedField, setCopiedField] = useState(null);
 
@@ -232,15 +268,15 @@ export default function Index({ upcomingEvents = [], pastEvents = [], profileCom
         setTabValue(newValue);
     };
 
-    const handleEventTabChange = (event, newValue) => {
-        setEventTabValue(newValue);
-    };
-
     const handleCopyToClipboard = (text, field) => {
         navigator.clipboard.writeText(text).then(() => {
             setCopiedField(field);
             setTimeout(() => setCopiedField(null), 2000);
         });
+    };
+
+    const handleDateClick = (date) => {
+        setSelectedDate(date);
     };
 
     const skillBadges = profile.skills
@@ -262,15 +298,18 @@ export default function Index({ upcomingEvents = [], pastEvents = [], profileCom
         });
     }, [upcomingEvents]);
 
-    // Helper function to format date
-    const formatDate = (dateString) => {
-        try {
-            const date = parseISO(dateString);
-            return format(date, 'd MMMM yyyy', { locale: id });
-        } catch (e) {
-            return dateString;
-        }
-    };
+    // Filter events for selected date
+    const selectedDateEvents = useMemo(() => {
+        return upcomingEvents.filter(event => {
+            try {
+                const eventDate = parseISO(event.start_time);
+                return isSameDay(eventDate, selectedDate);
+            } catch (e) {
+                return false;
+            }
+        });
+    }, [upcomingEvents, selectedDate]);
+
 
     // Helper function to format time
     const formatTime = (dateString) => {
@@ -371,30 +410,145 @@ export default function Index({ upcomingEvents = [], pastEvents = [], profileCom
         }
     };
 
+    // Event card component for selected date
+    const EventCard = ({ event }) => {
+        return (
+            <Paper
+                elevation={0}
+                sx={{
+                    p: 2.5,
+                    mb: 2,
+                    borderRadius: '1rem',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    transition: 'all 0.3s ease',
+                    '&:hover': {
+                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
+                        borderColor: theme.palette.grey[300],
+                    }
+                }}
+            >
+                <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                    {/* Time Section */}
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: { xs: 'flex-start', sm: 'center' },
+                        justifyContent: 'center',
+                        width: { xs: '100%', sm: '16.66%' }, // Equivalent to sm={2}
+                    }}>
+                        <Typography variant="h5" fontWeight="bold" color="text.primary">
+                            {formatTime(event.start_time)}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                            {formatTime(event.end_time)}
+                        </Typography>
+                    </Box>
+
+                    {/* Content Section */}
+                    <Box sx={{
+                        flex: 1, // Takes remaining space
+                        width: { xs: '100%', sm: '83.33%' }, // Equivalent to sm={10}
+                    }}>
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1, alignItems: 'flex-start' }}>
+                            <Box>
+                                <Typography variant="h6" fontWeight="bold">
+                                    {event.title}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                    {event.job?.company?.name || 'Perusahaan'} - {event.job?.title || 'Posisi'}
+                                </Typography>
+                            </Box>
+                            <Chip
+                                label={getStatusText(event.status)}
+                                size="small"
+                                sx={{
+                                    backgroundColor: `${getStatusColor(event.status)}15`,
+                                    color: getStatusColor(event.status),
+                                    fontWeight: 'medium',
+                                    borderRadius: '0.5rem',
+                                }}
+                            />
+                        </Box>
+
+                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mt: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <Box sx={{ mr: 1, display: 'flex', alignItems: 'center' }}>
+                                    <Chip
+                                        label={getEventTypeText(event.type)}
+                                        size="small"
+                                        sx={{
+                                            backgroundColor: getEventTypeBgColor(event.type),
+                                            fontWeight: 'medium',
+                                            borderRadius: '0.5rem',
+                                        }}
+                                        icon={<EventIcon style={{ opacity: 0.7 }} />}
+                                    />
+                                </Box>
+                            </Box>
+
+                            {event.location && (
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <LocationIcon sx={{ fontSize: 18, color: theme.palette.grey[500], mr: 0.5 }} />
+                                    <Typography variant="body2" color="text.secondary">
+                                        {event.location}
+                                    </Typography>
+                                </Box>
+                            )}
+
+                            {event.type === 'online' && event.meeting_link && (
+                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                    <VideocamIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: 0.5 }} />
+                                    <Link href={event.meeting_link} target="_blank" sx={{ textDecoration: 'none' }}>
+                                        <Typography
+                                            variant="body2"
+                                            color="primary"
+                                            sx={{ '&:hover': { textDecoration: 'underline' } }}
+                                        >
+                                            Join Meeting
+                                        </Typography>
+                                    </Link>
+                                </Box>
+                            )}
+                        </Box>
+
+                        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                            <Button
+                                component={Link}
+                                href={route('candidate.events.show', event.id)}
+                                variant="outlined"
+                                color="primary"
+                                size="small"
+                                sx={{
+                                    borderRadius: '0.8rem',
+                                    fontWeight: 'medium',
+                                    textTransform: 'none',
+                                    px: 2,
+                                }}
+                            >
+                                Detail Event
+                            </Button>
+                        </Box>
+                    </Box>
+                </Box>
+            </Paper>
+        );
+    };
+
     return (
         <Layout>
             <Head title="Jadwal Events" />
 
-            {/* Modern gradient background */}
+            {/* Modern subtle background */}
             <Box
                 sx={{
-                    backgroundImage: 'linear-gradient(135deg, rgba(20, 184, 166, 0.12) 0%, rgba(15, 118, 110, 0.08) 100%)',
+                    backgroundImage: 'linear-gradient(135deg, rgba(245, 245, 245, 0.6) 0%, rgba(250, 250, 250, 0.8) 100%)',
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     right: 0,
                     height: 200,
                     zIndex: -1,
-                    '&::before': {
-                        content: '""',
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100\' height=\'100\' viewBox=\'0 0 100 100\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z\' fill=\'%2314b8a6\' fill-opacity=\'0.05\' fill-rule=\'evenodd\'/%3E%3C/svg%3E")',
-                        backgroundSize: '150px',
-                    }
                 }}
             />
 
@@ -407,7 +561,7 @@ export default function Index({ upcomingEvents = [], pastEvents = [], profileCom
                     {/* Page Header */}
                     <motion.div variants={itemVariants}>
                         <Box sx={{ mb: 4, textAlign: { xs: 'center', md: 'left' } }}>
-                            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
+                            <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom color="text.primary">
                                 Jadwal Event
                             </Typography>
                             <Typography variant="body1" color="text.secondary">
@@ -483,657 +637,265 @@ export default function Index({ upcomingEvents = [], pastEvents = [], profileCom
                         </motion.div>
                     )}
 
-                    {/* Today's Events Section - Only show if profile completeness >= 60% */}
-                    {profileCompleteness.percentage >= 60 && todayEvents.length > 0 && (
+                    {/* If profile completeness < 60%, show nothing */}
+                    {profileCompleteness.percentage < 60 ? (
                         <motion.div variants={itemVariants}>
-                            <StyledCard elevation={2} sx={{ mb: 4, overflow: 'visible', position: 'relative' }}>
-                                <Box sx={{ position: 'absolute', top: -10, left: 20 }}>
-                                    <Chip
-                                        label="Hari Ini"
-                                        color="primary"
-                                        icon={<TodayIcon />}
-                                        sx={{
-                                            fontWeight: 'bold',
-                                            fontSize: '0.9rem',
-                                            py: 2,
-                                            borderRadius: '1rem',
-                                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)'
-                                        }}
-                                    />
+                            <StyledCard sx={{ p: 4, textAlign: 'center' }}>
+                                <Box sx={{ mb: 3, opacity: 0.7 }}>
+                                    <EventIcon sx={{ fontSize: 60, color: theme.palette.grey[400] }} />
                                 </Box>
-                                <Box sx={{ p: 3, pt: 4 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, mt: 1 }}>
-                                        <Typography variant="h6" fontWeight="bold">
-                                            Interview dan Event Hari Ini
-                                        </Typography>
-                                        <Badge color="error" badgeContent={todayEvents.length} sx={{ ml: 2 }}>
-                                            <NotificationsIcon color="primary" />
-                                        </Badge>
-                                    </Box>
-                                    <Divider sx={{ mb: 3 }} />
-
-                                    <Box sx={{
-                                        display: 'grid',
-                                        gridTemplateColumns: {
-                                            xs: '1fr',
-                                            md: 'repeat(2, 1fr)',
-                                            lg: 'repeat(3, 1fr)'
-                                        },
-                                        gap: 3
-                                    }}>
-                                        {todayEvents.map((event) => (
-                                            <Box key={event.id}>
-                                                <Paper
-                                                    elevation={0}
-                                                    sx={{
-                                                        p: 2,
-                                                        borderRadius: '1rem',
-                                                        border: '1px solid',
-                                                        borderColor: 'divider',
-                                                        backgroundColor: 'rgba(20, 184, 166, 0.05)',
-                                                        display: 'flex',
-                                                        height: '100%'
+                                <Typography variant="h5" fontWeight="bold" gutterBottom>
+                                    Lengkapi Profil Anda
+                                </Typography>
+                                <Typography variant="body1" color="text.secondary" sx={{ mb: 3, maxWidth: 500, mx: 'auto' }}>
+                                    Anda perlu melengkapi profil setidaknya 60% untuk dapat melihat dan mengelola jadwal event interview.
+                                </Typography>
+                                <Button
+                                    component={Link}
+                                    href={route('candidate.profile.edit')}
+                                    variant="contained"
+                                    sx={{
+                                        borderRadius: '1rem',
+                                        px: 3,
+                                        py: 1,
+                                        fontWeight: 'bold',
+                                        textTransform: 'none'
+                                    }}
+                                >
+                                    Lengkapi Profil
+                                </Button>
+                            </StyledCard>
+                        </motion.div>
+                    ) : (
+                        <>
+                            {/* Today's Events Section */}
+                            {todayEvents.length > 0 && (
+                                <motion.div variants={itemVariants}>
+                                    <StyledCard elevation={0} sx={{ mb: 4, overflow: 'visible', position: 'relative' }}>
+                                        <Box sx={{ position: 'absolute', top: -10, left: 20 }}>
+                                            <Chip
+                                                label="Hari Ini"
+                                                icon={<TodayIcon />}
+                                                sx={{
+                                                    fontWeight: 'bold',
+                                                    fontSize: '0.9rem',
+                                                    py: 2,
+                                                    borderRadius: '1rem',
+                                                    boxShadow: '0 4px 10px rgba(0, 0, 0, 0.08)',
+                                                    bgcolor: theme.palette.grey[50],
+                                                    color: theme.palette.text.primary,
+                                                    border: '1px solid',
+                                                    borderColor: theme.palette.divider,
+                                                    '& .MuiChip-icon': {
+                                                        color: theme.palette.primary.main
+                                                    }
+                                                }}
+                                            />
+                                        </Box>
+                                        <Box sx={{ p: 3, pt: 4 }}>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, mt: 1 }}>
+                                                <Typography variant="h6" fontWeight="bold" color="text.primary">
+                                                    Interview dan Event Hari Ini
+                                                </Typography>
+                                                <Badge badgeContent={todayEvents.length}
+                                                    sx={{ ml: 2,
+                                                        '& .MuiBadge-badge': {
+                                                            bgcolor: theme.palette.grey[700],
+                                                            color: theme.palette.common.white
+                                                        }
                                                     }}
                                                 >
-                                                    <Box sx={{
-                                                        display: 'flex',
-                                                        flexDirection: 'column',
-                                                        justifyContent: 'center',
-                                                        alignItems: 'center',
-                                                        p: 1,
-                                                        mr: 2,
-                                                        minWidth: 80,
-                                                        backgroundColor: 'primary.50',
-                                                        borderRadius: '0.8rem'
-                                                    }}>
-                                                        <Typography
-                                                            variant="h5"
-                                                            fontWeight="bold"
-                                                            color="primary"
-                                                            sx={{ lineHeight: 1 }}
-                                                        >
-                                                            {format(parseISO(event.start_time), 'HH:mm', { locale: id })}
-                                                        </Typography>
-                                                        <Typography
-                                                            variant="caption"
-                                                            color="text.secondary"
-                                                            fontWeight="medium"
-                                                        >
-                                                            {format(parseISO(event.end_time), 'HH:mm', { locale: id })}
-                                                        </Typography>
-                                                    </Box>
+                                                    <NotificationsIcon sx={{ color: theme.palette.grey[600] }} />
+                                                </Badge>
+                                            </Box>
+                                            <Divider sx={{ mb: 3 }} />
 
-                                                    <Box sx={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}>
-                                                        <Box sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                                                <Typography variant="subtitle1" fontWeight="bold">
-                                                                    {event.title}
-                                                                </Typography>
+                                            <Box sx={{
+                                                display: 'flex',
+                                                flexWrap: 'wrap',
+                                                mx: -1.5, // Negative margin to offset padding
+                                            }}>
+                                                {todayEvents.map((event) => (
+                                                    <Box
+                                                        key={event.id}
+                                                        sx={{
+                                                            width: {
+                                                                xs: '100%',       // Full width on mobile
+                                                                md: '50%',        // 2 cards per row on tablet
+                                                                lg: '33.333%',    // 3 cards per row on desktop
+                                                            },
+                                                            p: 1.5,
+                                                        }}
+                                                    >
+                                                        <Paper
+                                                            elevation={0}
+                                                            sx={{
+                                                                p: 2,
+                                                                height: '100%',
+                                                                borderRadius: '1rem',
+                                                                border: '1px solid',
+                                                                borderColor: 'divider',
+                                                                transition: 'all 0.2s',
+                                                                '&:hover': {
+                                                                    borderColor: theme.palette.grey[300],
+                                                                    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                                                                }
+                                                            }}
+                                                        >
+                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                                                                 <Chip
                                                                     label={getEventTypeText(event.type)}
                                                                     size="small"
                                                                     sx={{
-                                                                        ml: 1,
                                                                         fontWeight: 'medium',
                                                                         backgroundColor: getEventTypeBgColor(event.type),
                                                                         borderRadius: '0.5rem',
                                                                     }}
                                                                 />
-                                                            </Box>
-                                                            <Chip
-                                                                label={getStatusText(event.status)}
-                                                                size="small"
-                                                                sx={{
-                                                                    backgroundColor: `${getStatusColor(event.status)}20`,
-                                                                    color: getStatusColor(event.status),
-                                                                    fontWeight: 'medium',
-                                                                }}
-                                                            />
-                                                        </Box>
-
-                                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                                            {event.job?.company?.name || 'Perusahaan'} - {event.job?.title || 'Posisi'}
-                                                        </Typography>
-
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                                                            {event.type === 'online' || event.meeting_link ? (
-                                                                <>
-                                                                    <VideocamIcon fontSize="small" color="primary" sx={{ mr: 1, opacity: 0.7 }} />
-                                                                    <Typography variant="body2" fontWeight="medium">
-                                                                        {event.location || 'Video Call'}
-                                                                    </Typography>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <LocationIcon fontSize="small" color="primary" sx={{ mr: 1, opacity: 0.7 }} />
-                                                                    <Typography variant="body2" fontWeight="medium">
-                                                                        {event.location || 'Lokasi belum ditentukan'}
-                                                                    </Typography>
-                                                                </>
-                                                            )}
-                                                        </Box>
-
-                                                        <Box sx={{ mt: 'auto', display: 'flex', justifyContent: 'flex-end' }}>
-                                                            <Button
-                                                                component={Link}
-                                                                href={route('candidate.events.show', event.id)}
-                                                                variant="outlined"
-                                                                color="primary"
-                                                                size="small"
-                                                                endIcon={<ArrowForwardIcon />}
-                                                                sx={{
-                                                                    borderRadius: '8px',
-                                                                    textTransform: 'none',
-                                                                    fontWeight: 'medium',
-                                                                }}
-                                                            >
-                                                                Lihat Detail
-                                                            </Button>
-                                                        </Box>
-                                                    </Box>
-                                                </Paper>
-                                            </Box>
-                                        ))}
-                                    </Box>
-                                </Box>
-                            </StyledCard>
-                        </motion.div>
-                    )}
-
-                    {/* Profile is too incomplete - Show only completion guidance */}
-                    {profileCompleteness.percentage < 60 ? (
-                        <motion.div variants={itemVariants}>
-                            <StyledCard elevation={1} sx={{ mb: 4, overflow: 'hidden' }}>
-                                <Box sx={{ textAlign: 'center', p: 5 }}>
-                                    <EventIcon sx={{ fontSize: 80, color: 'text.disabled', mb: 2 }} />
-                                    <Typography variant="h5" gutterBottom fontWeight="bold" color="text.secondary">
-                                        Jadwal Event Tidak Tersedia
-                                    </Typography>
-                                    <Typography variant="body1" color="text.secondary" paragraph>
-                                        Anda perlu melengkapi profil minimal 60% untuk dapat melihat jadwal event.
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" paragraph sx={{ maxWidth: 500, mx: 'auto' }}>
-                                        Lengkapi informasi profil Anda seperti kontak, pendidikan, pengalaman, dan keahlian untuk
-                                        meningkatkan kelengkapan profil Anda.
-                                    </Typography>
-
-                                    <Button
-                                        component={Link}
-                                        href={route('candidate.profile.edit')}
-                                        variant="contained"
-                                        color="primary"
-                                        startIcon={<EditIcon />}
-                                        sx={{ mt: 2 }}
-                                    >
-                                        Lengkapi Profil Sekarang
-                                    </Button>
-                                </Box>
-                            </StyledCard>
-                        </motion.div>
-                    ) : (
-                        <>
-
-
-                        {/* Event Tabs */}
-                        <motion.div variants={itemVariants}>
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    borderRadius: '1rem',
-                                    overflow: 'hidden',
-                                    border: '1px solid',
-                                    borderColor: 'divider',
-                                }}
-                            >
-                                <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                                    <Tabs
-                                        value={eventTabValue}
-                                        onChange={handleEventTabChange}
-                                        aria-label="event tabs"
-                                        sx={{
-                                            '& .MuiTab-root': {
-                                                textTransform: 'none',
-                                                minWidth: 120,
-                                                fontWeight: 500,
-                                                fontSize: '0.95rem',
-                                                py: 2,
-                                                '&.Mui-selected': {
-                                                    fontWeight: 700,
-                                                }
-                                            },
-                                            '& .MuiTabs-indicator': {
-                                                height: 3,
-                                                borderTopLeftRadius: 3,
-                                                borderTopRightRadius: 3,
-                                            }
-                                        }}
-                                    >
-                                        <Tab
-                                            label={`Mendatang (${upcomingEvents.length})`}
-                                            id="event-tab-0"
-                                            aria-controls="event-tabpanel-0"
-                                            icon={<CalendarIcon fontSize="small" />}
-                                            iconPosition="start"
-                                        />
-                                        <Tab
-                                            label={`Selesai (${pastEvents.length})`}
-                                            id="event-tab-1"
-                                            aria-controls="event-tabpanel-1"
-                                            icon={<CheckCircleOutlineIcon fontSize="small" />}
-                                            iconPosition="start"
-                                        />
-                                    </Tabs>
-                                </Box>
-
-                                {/* Upcoming Events Tab */}
-                                <TabPanel value={eventTabValue} index={0}>
-                                    <Box sx={{ p: 2 }}>
-                                        {upcomingEvents.length > 0 ? (
-                                            <Box sx={{
-                                                display: 'grid',
-                                                gridTemplateColumns: {
-                                                    xs: '1fr',
-                                                    md: 'repeat(2, 1fr)',
-                                                    lg: 'repeat(3, 1fr)'
-                                                },
-                                                gap: 3
-                                            }}>
-                                                {upcomingEvents.map((event) => (
-                                                    <Box key={event.id}>
-                                                        <StyledCard>
-                                                            <Box sx={{ position: 'relative' }}>
-                                                                {/* Event Type Badge */}
-                                                                <Box
+                                                                <Chip
+                                                                    label={getStatusText(event.status)}
+                                                                    size="small"
                                                                     sx={{
-                                                                        position: 'absolute',
-                                                                        top: 16,
-                                                                        right: 16,
-                                                                        zIndex: 1
-                                                                    }}
-                                                                >
-                                                                    <Chip
-                                                                        label={getEventTypeText(event.type)}
-                                                                        size="small"
-                                                                        sx={{
-                                                                            color: 'white',
-                                                                            fontWeight: 'medium',
-                                                                            backgroundColor: getEventTypeBgColor(event.type),
-                                                                            borderRadius: '0.5rem',
-                                                                        }}
-                                                                    />
-                                                                </Box>
-
-                                                                {/* Colorful Header Banner */}
-                                                                <Box
-                                                                    sx={{
-                                                                        height: 80,
-                                                                        background: 'linear-gradient(135deg, #14b8a6 0%, #0f766e 100%)',
-                                                                        position: 'relative',
-                                                                        '&::before': {
-                                                                            content: '""',
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            right: 0,
-                                                                            bottom: 0,
-                                                                            backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-                                                                        }
+                                                                        backgroundColor: `${getStatusColor(event.status)}15`,
+                                                                        color: getStatusColor(event.status),
+                                                                        fontWeight: 'medium',
+                                                                        borderRadius: '0.5rem',
                                                                     }}
                                                                 />
-
-                                                                {/* Company Logo/Job Info */}
-                                                                <Box sx={{ px: 3, py: 5 }}>
-                                                                    <Box sx={{
-                                                                        mt: -4,
-                                                                        mb: 2,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center'
-                                                                    }}>
-                                                                        <Avatar
-                                                                            src={event.job?.company?.logo}
-                                                                            alt={event.job?.company?.name || ''}
-                                                                            sx={{
-                                                                                width: 64,
-                                                                                height: 64,
-                                                                                border: '3px solid white',
-                                                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                                                                backgroundColor: 'white'
-                                                                            }}
-                                                                        >
-                                                                            {!event.job?.company?.logo && <BusinessIcon color="primary" />}
-                                                                        </Avatar>
-                                                                        <Box sx={{ ml: 2 }}>
-                                                                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                                                {event.job?.company?.name || 'Perusahaan'}
-                                                                            </Typography>
-                                                                            <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                                                                {event.job?.title || 'Posisi'}
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    </Box>
-
-                                                                    {/* Event Title */}
-                                                                    <Typography variant="h6" gutterBottom>
-                                                                        {event.title}
-                                                                    </Typography>
-
-                                                                    {/* Event Info List */}
-                                                                    <List dense disablePadding>
-                                                                        <ListItem disableGutters>
-                                                                            <ListItemIcon sx={{ minWidth: 36 }}>
-                                                                                <CalendarIcon fontSize="small" color="primary" />
-                                                                            </ListItemIcon>
-                                                                            <ListItemText
-                                                                                primary={formatDate(event.start_time)}
-                                                                                primaryTypographyProps={{ variant: 'body2' }}
-                                                                            />
-                                                                        </ListItem>
-                                                                        <ListItem disableGutters>
-                                                                            <ListItemIcon sx={{ minWidth: 36 }}>
-                                                                                <TimeIcon fontSize="small" />
-                                                                            </ListItemIcon>
-                                                                            <ListItemText
-                                                                                primary={`${formatTime(event.start_time)} - ${formatTime(event.end_time)}`}
-                                                                                primaryTypographyProps={{ variant: 'body2' }}
-                                                                            />
-                                                                        </ListItem>
-                                                                        {event.location && (
-                                                                            <ListItem disableGutters>
-                                                                                <ListItemIcon sx={{ minWidth: 36 }}>
-                                                                                    {event.type === 'online' || event.meeting_link ? (
-                                                                                        <VideocamIcon fontSize="small" color="primary" />
-                                                                                    ) : (
-                                                                                        <LocationIcon fontSize="small" color="primary" />
-                                                                                    )}
-                                                                                </ListItemIcon>
-                                                                                <ListItemText
-                                                                                    primary={event.location}
-                                                                                    primaryTypographyProps={{
-                                                                                        variant: 'body2',
-                                                                                        noWrap: true,
-                                                                                        style: { maxWidth: '200px' }
-                                                                                    }}
-                                                                                />
-                                                                            </ListItem>
-                                                                        )}
-                                                                    </List>
-
-                                                                    <Box sx={{ mt: 2 }}>
-                                                                        <Chip
-                                                                            label={getStatusText(event.status)}
-                                                                            size="small"
-                                                                            sx={{
-                                                                                backgroundColor: `${getStatusColor(event.status)}20`,
-                                                                                color: getStatusColor(event.status),
-                                                                                fontWeight: 'medium',
-                                                                            }}
-                                                                        />
-                                                                    </Box>
-                                                                </Box>
-
-                                                                <Divider />
-
-                                                                {/* Card Actions */}
-                                                                <Box sx={{ p: 2, textAlign: 'right' }}>
-                                                                    <Button
-                                                                        component={Link}
-                                                                        href={route('candidate.events.show', event.id)}
-                                                                        variant="contained"
-                                                                        color="primary"
-                                                                        endIcon={<ArrowForwardIcon />}
-                                                                        disabled={!profileCompleteness.isComplete}
-                                                                        sx={{
-                                                                            borderRadius: '8px',
-                                                                            textTransform: 'none',
-                                                                            fontWeight: 'medium',
-                                                                        }}
-                                                                    >
-                                                                        Lihat Detail
-                                                                    </Button>
-                                                                    {!profileCompleteness.isComplete && (
-                                                                        <Typography variant="caption" color="text.secondary" display="block" mt={1}>
-                                                                            Lengkapi profil untuk melihat detail
-                                                                        </Typography>
-                                                                    )}
-                                                                </Box>
                                                             </Box>
-                                                        </StyledCard>
-                                                    </Box>
-                                                ))}
-                                            </Box>
-                                        ) : (
-                                            <Box sx={{
-                                                textAlign: 'center',
-                                                py: 8,
-                                                backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                                borderRadius: '12px'
-                                            }}>
-                                                <EventIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
-                                                <Typography variant="h6" color="text.secondary" gutterBottom>
-                                                    Tidak ada event yang akan datang
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Anda belum memiliki jadwal interview atau event lain untuk saat ini
-                                                </Typography>
-                                            </Box>
-                                        )}
-                                    </Box>
-                                </TabPanel>
 
-                                {/* Past Events Tab */}
-                                <TabPanel value={eventTabValue} index={1}>
-                                    <Box sx={{ p: 2 }}>
-                                        {pastEvents.length > 0 ? (
-                                            <Box sx={{
-                                                display: 'grid',
-                                                gridTemplateColumns: {
-                                                    xs: '1fr',
-                                                    md: 'repeat(2, 1fr)',
-                                                    lg: 'repeat(3, 1fr)'
-                                                },
-                                                gap: 3
-                                            }}>
-                                                {pastEvents.map((event) => (
-                                                    <Box key={event.id}>
-                                                        <StyledCard sx={{
-                                                            opacity: 0.85,
-                                                            '&:hover': {
-                                                                opacity: 1
-                                                            }
-                                                        }}>
-                                                            <Box sx={{ position: 'relative' }}>
-                                                                {/* Event Type Badge */}
-                                                                <Box
+                                                            <Typography variant="subtitle1" fontWeight="bold" sx={{ mt: 1.5, mb: 0.5 }}>
+                                                                {event.title}
+                                                            </Typography>
+
+                                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                                                {event.job?.company?.name || 'Perusahaan'} - {event.job?.title || 'Posisi'}
+                                                            </Typography>
+
+                                                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                                <TimeIcon sx={{ fontSize: 18, color: theme.palette.grey[500], mr: 0.5 }} />
+                                                                <Typography variant="body2" color="text.secondary">
+                                                                    {format(parseISO(event.start_time), 'HH:mm', { locale: id })} - {format(parseISO(event.end_time), 'HH:mm', { locale: id })}
+                                                                </Typography>
+                                                            </Box>
+
+                                                            {event.location && (
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                                    <LocationIcon sx={{ fontSize: 18, color: theme.palette.grey[500], mr: 0.5 }} />
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        {event.location}
+                                                                    </Typography>
+                                                                </Box>
+                                                            )}
+
+                                                            {event.type === 'online' && event.meeting_link && (
+                                                                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                                                                    <VideocamIcon sx={{ fontSize: 18, color: theme.palette.primary.main, mr: 0.5, opacity: 0.7 }} />
+                                                                    <Link href={event.meeting_link} target="_blank" sx={{ textDecoration: 'none' }}>
+                                                                        <Typography
+                                                                            variant="body2"
+                                                                            color="primary"
+                                                                            sx={{ '&:hover': { textDecoration: 'underline' } }}
+                                                                        >
+                                                                            Join Meeting
+                                                                        </Typography>
+                                                                    </Link>
+                                                                </Box>
+                                                            )}
+
+                                                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2 }}>
+                                                                <Button
+                                                                    component={Link}
+                                                                    href={route('candidate.events.show', event.id)}
+                                                                    variant="outlined"
+                                                                    color="primary"
+                                                                    size="small"
                                                                     sx={{
-                                                                        position: 'absolute',
-                                                                        top: 16,
-                                                                        right: 16,
-                                                                        zIndex: 1
+                                                                        borderRadius: '0.8rem',
+                                                                        fontWeight: 'medium',
+                                                                        textTransform: 'none',
                                                                     }}
                                                                 >
-                                                                    <Chip
-                                                                        label={getEventTypeText(event.type)}
-                                                                        size="small"
-                                                                        sx={{
-                                                                            fontWeight: 'medium',
-                                                                            backgroundColor: getEventTypeBgColor(event.type),
-                                                                            borderRadius: '0.5rem',
-                                                                        }}
-                                                                    />
-                                                                </Box>
-
-                                                                {/* Grayscale Header Banner for past events */}
-                                                                <Box
-                                                                    sx={{
-                                                                        height: 80,
-                                                                        background: 'linear-gradient(135deg, #9e9e9e 0%, #616161 100%)',
-                                                                        position: 'relative',
-                                                                        filter: 'saturate(0.7)',
-                                                                        '&::before': {
-                                                                            content: '""',
-                                                                            position: 'absolute',
-                                                                            top: 0,
-                                                                            left: 0,
-                                                                            right: 0,
-                                                                            bottom: 0,
-                                                                            backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.08\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
-                                                                    }
-                                                                }}
-                                                            />
-
-                                                                {/* Company Logo/Job Info */}
-                                                                <Box sx={{ px: 3, py: 2 }}>
-                                                                    <Box sx={{
-                                                                        mt: -4,
-                                                                        mb: 2,
-                                                                        display: 'flex',
-                                                                        alignItems: 'center'
-                                                                    }}>
-                                                                        <Avatar
-                                                                            src={event.job?.company?.logo}
-                                                                            alt={event.job?.company?.name || ''}
-                                                                            sx={{
-                                                                                width: 64,
-                                                                                height: 64,
-                                                                                border: '3px solid white',
-                                                                                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                                                                                backgroundColor: 'white',
-                                                                                filter: 'grayscale(0.5)'
-                                                                            }}
-                                                                        >
-                                                                            {!event.job?.company?.logo && <BusinessIcon />}
-                                                                        </Avatar>
-                                                                        <Box sx={{ ml: 2 }}>
-                                                                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                                                                {event.job?.company?.name || 'Perusahaan'}
-                                                                            </Typography>
-                                                                            <Typography variant="subtitle1" fontWeight="bold" noWrap>
-                                                                                {event.job?.title || 'Posisi'}
-                                                                            </Typography>
-                                                                        </Box>
-                                                                    </Box>
-
-                                                                    {/* Event Title */}
-                                                                    <Typography variant="h6" gutterBottom>
-                                                                        {event.title}
-                                                                    </Typography>
-
-                                                                    {/* Event Info List */}
-                                                                    <List dense disablePadding>
-                                                                        <ListItem disableGutters>
-                                                                            <ListItemIcon sx={{ minWidth: 36 }}>
-                                                                                <CalendarIcon fontSize="small" />
-                                                                            </ListItemIcon>
-                                                                            <ListItemText
-                                                                                primary={formatDate(event.start_time)}
-                                                                                primaryTypographyProps={{ variant: 'body2' }}
-                                                                            />
-                                                                        </ListItem>
-                                                                        <ListItem disableGutters>
-                                                                            <ListItemIcon sx={{ minWidth: 36 }}>
-                                                                                <TimeIcon fontSize="small" />
-                                                                            </ListItemIcon>
-                                                                            <ListItemText
-                                                                                primary={`${formatTime(event.start_time)} - ${formatTime(event.end_time)}`}
-                                                                                primaryTypographyProps={{ variant: 'body2' }}
-                                                                            />
-                                                                        </ListItem>
-                                                                        {event.location && (
-                                                                            <ListItem disableGutters>
-                                                                                <ListItemIcon sx={{ minWidth: 36 }}>
-                                                                                    {event.type === 'online' || event.meeting_link ? (
-                                                                                        <VideocamIcon fontSize="small" />
-                                                                                    ) : (
-                                                                                        <LocationIcon fontSize="small" />
-                                                                                    )}
-                                                                                </ListItemIcon>
-                                                                                <ListItemText
-                                                                                    primary={event.location}
-                                                                                    primaryTypographyProps={{
-                                                                                        variant: 'body2',
-                                                                                        noWrap: true,
-                                                                                        style: { maxWidth: '200px' }
-                                                                                    }}
-                                                                                />
-                                                                            </ListItem>
-                                                                        )}
-                                                                    </List>
-
-                                                                    <Box sx={{ mt: 2 }}>
-                                                                        <Chip
-                                                                            label={getStatusText(event.status)}
-                                                                            size="small"
-                                                                            sx={{
-                                                                                backgroundColor: `${getStatusColor(event.status)}20`,
-                                                                                color: getStatusColor(event.status),
-                                                                                fontWeight: 'medium',
-                                                                            }}
-                                                                        />
-                                                                    </Box>
-                                                                </Box>
-
-                                                                <Divider />
-
-                                                                {/* Card Actions */}
-                                                                <Box sx={{ p: 2, textAlign: 'right' }}>
-                                                                    <Button
-                                                                        component={Link}
-                                                                        href={route('candidate.events.show', event.id)}
-                                                                        variant="outlined"
-                                                                        color="primary"
-                                                                        endIcon={<ArrowForwardIcon />}
-                                                                        disabled={!profileCompleteness.isComplete}
-                                                                        sx={{
-                                                                            borderRadius: '8px',
-                                                                            textTransform: 'none',
-                                                                            fontWeight: 'medium',
-                                                                        }}
-                                                                    >
-                                                                        Lihat Detail
-                                                                    </Button>
-                                                                    {!profileCompleteness.isComplete && (
-                                                                        <Typography variant="caption" color="text.secondary" display="block" mt={1}>
-                                                                            Lengkapi profil untuk melihat detail
-                                                                        </Typography>
-                                                                    )}
-                                                                </Box>
+                                                                    Detail
+                                                                </Button>
                                                             </Box>
-                                                        </StyledCard>
+                                                        </Paper>
                                                     </Box>
                                                 ))}
                                             </Box>
-                                        ) : (
-                                            <Box sx={{
-                                                textAlign: 'center',
-                                                py: 8,
-                                                backgroundColor: 'rgba(0, 0, 0, 0.02)',
-                                                borderRadius: '12px'
-                                            }}>
-                                                <EventIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
-                                                <Typography variant="h6" color="text.secondary" gutterBottom>
-                                                    Tidak ada event yang telah berlalu
-                                                </Typography>
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Riwayat event akan muncul di sini setelah event selesai
+                                        </Box>
+                                    </StyledCard>
+                                </motion.div>
+                            )}
+
+                            {/* Calendar and Event Listing Section */}
+                            <motion.div variants={itemVariants}>
+                                <Box sx={{
+                                    display: 'flex',
+                                    flexDirection: { xs: 'column', md: 'row' },
+                                    gap: 3
+                                }}>
+                                    {/* Calendar */}
+                                    <Box sx={{
+                                        width: { xs: '100%', md: '40%', lg: '35%' }
+                                    }}>
+                                        <StyledCard sx={{ p: 3, height: '100%' }}>
+                                            <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                                Kalender
+                                            </Typography>
+                                            <CalendarComponent
+                                                events={upcomingEvents}
+                                                onDateClick={handleDateClick}
+                                            />
+                                        </StyledCard>
+                                    </Box>
+
+                                    {/* Events for Selected Date */}
+                                    <Box sx={{
+                                        width: { xs: '100%', md: '60%', lg: '65%' }
+                                    }}>
+                                        <StyledCard sx={{ p: 3, height: '100%' }}>
+                                            <Box sx={{ mb: 2 }}>
+                                                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                                                    Event pada {format(selectedDate, 'd MMMM yyyy', { locale: id })}
                                                 </Typography>
                                             </Box>
-                                        )}
+                                            <Box sx={{ minHeight: 300 }}>
+                                                {selectedDateEvents.length > 0 ? (
+                                                    <Box>
+                                                        {selectedDateEvents.map(event => (
+                                                            <EventCard key={event.id} event={event} />
+                                                        ))}
+                                                    </Box>
+                                                ) : (
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        flexDirection: 'column',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        py: 6,
+                                                        opacity: 0.7
+                                                    }}>
+                                                        <EventIcon sx={{ fontSize: 60, color: theme.palette.grey[400], mb: 2 }} />
+                                                        <Typography variant="h6" color="text.secondary" gutterBottom>
+                                                            Tidak ada event untuk tanggal ini
+                                                        </Typography>
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            Pilih tanggal lain atau periksa tab "Upcoming"
+                                                        </Typography>
+                                                    </Box>
+                                                )}
+                                            </Box>
+                                        </StyledCard>
                                     </Box>
-                                </TabPanel>
-                            </Paper>
-                        </motion.div>
-                    {/* Profile Resume */}
-                    {profile.resume && (
-                        <ResumePreviewModal
-                            open={openResumeModal}
-                            handleClose={() => setOpenResumeModal(false)}
-                            resumeUrl={profile.resume}
-                        />
+                                </Box>
+                            </motion.div>
+
+
+                        </>
                     )}
-                </>
-            )}
-        </motion.div>
-    </Container>
-</Layout>
-);
+                </motion.div>
+            </Container>
+        </Layout>
+    );
 }

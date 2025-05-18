@@ -82,6 +82,13 @@ export default function ShowJob({ job, hasApplied, relatedJobs }) {
                 text: flash.error,
                 icon: 'error'
             });
+        } else if (flash.warning) {
+            setSweetAlert({
+                show: true,
+                title: 'Perhatian',
+                text: flash.warning,
+                icon: 'warning'
+            });
         } else if (hasApplied) {
             setSweetAlert({
                 show: true,
@@ -176,10 +183,29 @@ export default function ShowJob({ job, hasApplied, relatedJobs }) {
     };
 
     const handleApplyClick = (e) => {
-        e.preventDefault()
+        e.preventDefault();
 
         if (!auth.user) {
             setOpenDialog(true);
+            return;
+        }
+
+        // Check if user has a resume
+        if (!auth.user.has_resume) {
+            setSweetAlert({
+                show: true,
+                title: 'Perhatian',
+                text: 'Anda belum memiliki resume. Silakan buat resume terlebih dahulu.',
+                icon: 'warning'
+            });
+            
+            // Set redirect pending to show loading indicator
+            setRedirectPending(true);
+            
+            // Redirect to profile edit page after a short delay
+            setTimeout(() => {
+                window.location.href = route('candidate.profile.edit');
+            }, 1500);
             return;
         }
 

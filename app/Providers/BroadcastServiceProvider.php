@@ -13,7 +13,11 @@ class BroadcastServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Broadcast::routes();
+        // Use both web and auth middleware to ensure proper authentication
+        // web middleware provides session data, and auth ensures the user is authenticated
+        Broadcast::routes(['middleware' => ['web', 'auth']]);
+        
+        // Register all channel authorization callbacks
         require base_path('routes/channels.php');
     }
 
@@ -26,7 +30,4 @@ class BroadcastServiceProvider extends ServiceProvider
             !empty($config['app_id']) &&
             !empty($config['app_id']);
     }
-
-
-
 }

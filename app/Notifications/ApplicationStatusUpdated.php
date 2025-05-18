@@ -29,7 +29,7 @@ class ApplicationStatusUpdated extends Notification implements ShouldQueue
     public function toDatabase($notifiable)
     {
         return [
-            'title' => 'Application Status Updated',
+            'title' => 'Status Lamaran Diperbarui',
             'message' => "Status lamaran Anda untuk posisi {$this->application->job->title} telah diperbarui",
             'action_url' => route('candidate.applications.show', $this->application),
             'old_status' => $this->data['old_status'] ?? null,
@@ -37,13 +37,14 @@ class ApplicationStatusUpdated extends Notification implements ShouldQueue
         ];
     }
 
-    public function toBroadcast($notifiable)
+        public function toBroadcast($notifiable)
     {
         return new BroadcastMessage([
             'id' => $this->id,
             'type' => get_class($this),
             'data' => $this->toDatabase($notifiable),
             'created_at' => now()->toISOString(),
+            'read_at' => null,
         ]);
     }
 }

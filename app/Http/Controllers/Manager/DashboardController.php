@@ -10,11 +10,13 @@ use App\Models\Job;
 use App\Models\JobApplication;
 use App\Models\ApplicationStatus;
 use App\Models\Event;
+use App\Models\User;
+use Illuminate\Support\Carbon;
 
 class DashboardController extends Controller
 {
     /**
-     * Display the manager dashboard.
+     * Display the manager dashboard with comprehensive analytics data.
      */
     public function index()
     {
@@ -25,30 +27,35 @@ class DashboardController extends Controller
         $activeJobsCount = Job::whereIn('company_id', $companyIds)
             ->where('is_active', true)
             ->count();
-
-        // Get total applications count
-        $totalApplicationsCount = JobApplication::whereHas('job', function($query) use ($companyIds) {
-            $query->whereIn('company_id', $companyIds);
-        })->count();
-
-        // Get applications by status
-        $applicationsByStatus = JobApplication::whereHas('job', function($query) use ($companyIds) {
+            
+        // Get total applicants count (unique users who have applied)
+        $totalApplicantsCount = JobApplication::whereHas('job', function($query) use ($companyIds) {
             $query->whereIn('company_id', $companyIds);
         })
-            ->selectRaw('status_id, count(*) as count')
-            ->groupBy('status_id')
-            ->with('status')
-            ->get()
-            ->map(function($item) {
-                return [
-                    'status' => $item->status->name,
-                    'color' => $item->status->color,
-                    'count' => $item->count,
-                ];
-            });
+        ->distinct('user_id')
+        ->count('user_id');
+        
+        // Get upcoming interviews count
+        $upcomingInterviewsCount = Event::whereHas('job', function($query) use ($companyIds) {
+            $query->whereIn('company_id', $companyIds);
+        })
+        ->where('start_time', '>=', now())
+        ->where('start_time', '<=', now()->addDays(7))
+        ->where('type', 'interview')
+        ->count();
+        
+        // Get accepted applicants in last 30 days
+        $acceptedApplicantsCount = JobApplication::whereHas('job', function($query) use ($companyIds) {
+            $query->whereIn('company_id', $companyIds);
+        })
+        ->whereHas('status', function($query) {
+            $query->where('name', 'like', '%Diterima%')->orWhere('name', 'like', '%Accepted%');
+        })
+        ->where('updated_at', '>=', now()->subDays(30))
+        ->count();
 
-        // Get recent applications
-        $recentApplications = JobApplication::with(['user', 'job.company', 'status'])
+        // Get recent applications with user details
+        $recentApplications = JobApplication::with(['user', 'job', 'status'])
             ->whereHas('job', function($query) use ($companyIds) {
                 $query->whereIn('company_id', $companyIds);
             })
@@ -58,26 +65,23 @@ class DashboardController extends Controller
             ->map(function($application) {
                 return [
                     'id' => $application->id,
-                    'user' => [
+                    'candidate' => [
+                        'id' => $application->user->id,
                         'name' => $application->user->name,
+                        'avatar_url' => $application->user->avatar ? asset('storage/' . $application->user->avatar) : null,
                     ],
                     'job' => [
                         'id' => $application->job->id,
                         'title' => $application->job->title,
-                        'company' => [
-                            'name' => $application->job->company->name,
-                        ],
+                        'location' => $application->job->location,
                     ],
-                    'status' => [
-                        'name' => $application->status->name,
-                        'color' => $application->status->color,
-                    ],
-                    'created_at' => $application->created_at,
+                    'status' => $application->status->name,
+                    'date_applied_formatted' => $application->created_at->diffForHumans(),
                 ];
             });
 
         // Get upcoming events/interviews
-        $upcomingEvents = Event::with(['jobApplication.user', 'job'])
+        $upcomingEvents = Event::with(['jobApplication.user', 'job.company'])
             ->whereHas('job', function($query) use ($companyIds) {
                 $query->whereIn('company_id', $companyIds);
             })
@@ -89,48 +93,59 @@ class DashboardController extends Controller
                 return [
                     'id' => $event->id,
                     'title' => $event->title,
-                    'start_time' => $event->start_time,
-                    'end_time' => $event->end_time,
+                    'time' => $event->start_time->format('d M Y, H:i'),
+                    'location' => $event->location ?: 'Online',
+                    'is_online' => (bool) $event->meeting_link,
                     'candidate' => $event->jobApplication ? [
+                        'id' => $event->jobApplication->user->id,
                         'name' => $event->jobApplication->user->name,
+                        'avatar_url' => $event->jobApplication->user->avatar ? asset('storage/' . $event->jobApplication->user->avatar) : null,
                     ] : null,
                     'job' => [
+                        'id' => $event->job->id,
                         'title' => $event->job->title,
                     ],
                     'type' => $event->type,
-                    'status' => $event->status,
                 ];
             });
 
-        // Get expiring jobs (within 7 days)
-        $expiringJobs = Job::whereIn('company_id', $companyIds)
+        // Get job statuses (active jobs with application counts)
+        $jobStatuses = Job::whereIn('company_id', $companyIds)
             ->where('is_active', true)
-            ->where('submission_deadline', '>=', now())
-            ->where('submission_deadline', '<=', now()->addDays(7))
-            ->orderBy('submission_deadline')
             ->with('company')
+            ->withCount('applications')
+            ->orderBy('submission_deadline')
+            ->take(5)
             ->get()
             ->map(function($job) {
+                $daysRemaining = now()->diffInDays($job->submission_deadline, false);
+                
                 return [
                     'id' => $job->id,
                     'title' => $job->title,
                     'company' => [
                         'name' => $job->company->name,
+                        'logo_url' => $job->company->logo ? asset('storage/' . $job->company->logo) : null,
                     ],
-                    'submission_deadline' => $job->submission_deadline,
-                    'days_remaining' => now()->diffInDays($job->submission_deadline, false),
+                    'location' => $job->location,
+                    'application_count' => $job->applications_count,
+                    'deadline' => $job->submission_deadline->format('d M Y'),
+                    'days_remaining' => $daysRemaining >= 0 ? $daysRemaining : 0,
+                    'is_expiring_soon' => $daysRemaining <= 7 && $daysRemaining >= 0,
+                    'is_expired' => $daysRemaining < 0,
                 ];
             });
 
         return Inertia::render('Manager/Dashboard', [
             'stats' => [
-                'activeJobsCount' => $activeJobsCount,
-                'totalApplicationsCount' => $totalApplicationsCount,
-                'applicationsByStatus' => $applicationsByStatus,
+                'total_applicants' => $totalApplicantsCount,
+                'active_jobs' => $activeJobsCount,
+                'upcoming_interviews' => $upcomingInterviewsCount,
+                'accepted_applicants' => $acceptedApplicantsCount,
             ],
-            'recentApplications' => $recentApplications,
-            'upcomingEvents' => $upcomingEvents,
-            'expiringJobs' => $expiringJobs,
+            'recent_applications' => $recentApplications,
+            'upcoming_events' => $upcomingEvents,
+            'job_statuses' => $jobStatuses,
         ]);
     }
 }

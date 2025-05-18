@@ -31,7 +31,7 @@ export default function NotificationListener({ userId }) {
             // Show toast notification
             if (window.showToast) {
                 let type = 'info';
-                let message = 'New notification received';
+                let message = 'Pemberitahuan baru diterima';
 
                 // Extract message from notification data
                 if (notification.data?.message) {

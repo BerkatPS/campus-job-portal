@@ -8,16 +8,21 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 
 class LoginController extends Controller
 {
+
     /**
      * Show the login form.
      */
     public function showLoginForm()
     {
-        return Inertia::render('Auth/Login');
+        return Inertia::render('Auth/Login', [
+            'csrf_token' => csrf_token(),
+            'status' => session('status'),
+        ]);
     }
 
     /**
@@ -25,7 +30,9 @@ class LoginController extends Controller
      */
     public function showRegistrationForm()
     {
-        return Inertia::render('Auth/Register');
+        return Inertia::render('Auth/Register', [
+            'csrf_token' => csrf_token(),
+        ]);
     }
 
     /**
@@ -42,6 +49,10 @@ class LoginController extends Controller
 
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
+
+            // Clear any previous session data that might cause conflicts
+            Session::forget('errors');
+
             return redirect()->intended(route('dashboard'));
         }
 

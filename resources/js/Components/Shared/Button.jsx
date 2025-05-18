@@ -2,6 +2,18 @@ import React from 'react';
 import { Button as MuiButton, CircularProgress, alpha, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
 
+// List of MUI-specific props that shouldn't be passed to DOM elements
+const muiSpecificProps = [
+    'focusRipple',
+    'focusVisibleClassName',
+    'disableRipple',
+    'disableFocusRipple',
+    'disableTouchRipple',
+    'centerRipple',
+    'TouchRippleProps',
+    'touchRippleRef'
+];
+
 const Button = React.forwardRef(({
                     children,
                     variant = 'contained',
@@ -52,6 +64,12 @@ const Button = React.forwardRef(({
             0.3
         )}`;
     };
+    
+    // Filter out MUI-specific props that shouldn't be passed to DOM elements
+    const filteredProps = { ...props };
+    muiSpecificProps.forEach(prop => {
+        delete filteredProps[prop];
+    });
 
     const buttonContent = (
         <MuiButton
@@ -82,7 +100,7 @@ const Button = React.forwardRef(({
                         alpha(theme.palette[color]?.main || theme.palette.primary.main, 0.08),
                 },
             }}
-            {...props}
+            {...filteredProps}
         >
             {loading && (
                 <CircularProgress

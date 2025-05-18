@@ -57,11 +57,11 @@ class JobController extends Controller
         $query->latest();
 
         // Paginate results
-        $jobs = $query->paginate(10);
+        $jobs = $query->paginate(12);
 
         // Get all categories for filter
         $categories = Category::orderBy('name')->get();
-        
+
         return Inertia::render('Public/Jobs/Index', [
             'jobs' => $jobs,
             'filters' => $request->only(['search', 'location', 'category_id', 'type', 'experience_level', 'page']),
@@ -76,9 +76,9 @@ class JobController extends Controller
     public function show($id)
     {
         $job = Job::with(['company', 'category'])->findOrFail($id);
-        
+
         return Inertia::render('Public/Jobs/Show', [
             'job' => $job
         ]);
     }
-} 
+}

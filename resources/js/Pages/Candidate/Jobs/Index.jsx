@@ -28,30 +28,29 @@ import {
     alpha
 } from '@mui/material';
 import {
-    Work as WorkIcon,
-    Business as BusinessIcon,
-    AccessTime as AccessTimeIcon,
-    ArrowForward as ArrowForwardIcon,
+    BusinessCenter,
+    AddCircleOutline as AddCircleOutlineIcon,
     Search as SearchIcon,
     FilterList as FilterListIcon,
-    Sort as SortIcon,
-    MoreVert as MoreVertIcon,
-    Star as StarIcon,
-    StarOutline as StarOutlineIcon,
-    KeyboardArrowDown as KeyboardArrowDownIcon,
-    VisibilityOutlined as VisibilityIcon,
-    MoreHoriz as MoreHorizIcon,
-    Assignment as AssignmentIcon,
-    AddCircleOutline as AddCircleOutlineIcon,
-    FilterAlt as FilterAltIcon,
     CheckCircle as CheckCircleIcon,
-    Cancel as CancelIcon,
-    Schedule as ScheduleIcon,
+    Sort as SortIcon,
+    KeyboardArrowDown as KeyboardArrowDownIcon,
+    AccessTime as AccessTimeIcon,
+    Work as WorkIcon,
     LocationOn,
     AttachMoney,
-    WorkOutline,
     CalendarToday,
-    BusinessCenter
+    ArrowForward as ArrowForwardIcon,
+    StarOutline as StarOutlineIcon,
+    Business as BusinessIcon,
+    WorkOutline,
+    Assignment as AssignmentIcon,
+    MonetizationOn as MonetizationOnIcon,
+    EventAvailable as EventAvailableIcon,
+    NotificationsActive as NotificationsActiveIcon,
+    Paid as PaidIcon,
+    Schedule as ScheduleIcon,
+    Badge as BadgeIcon
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
 import Layout from "@/Components/Layout/Layout.jsx";
@@ -61,6 +60,7 @@ import Button from '@/Components/Shared/Button';
 const JobCard = ({ job }) => {
     const theme = useTheme();
     const [starred, setStarred] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
 
     const formatDate = (dateString) => {
         if (!dateString) return '';
@@ -76,6 +76,26 @@ const JobCard = ({ job }) => {
             });
         } catch (error) {
             return '';
+        }
+    };
+
+    const formatSalary = (salary) => {
+        if (!salary) return null;
+
+        if (salary >= 1000000000000) {
+            return `${(salary / 1000000000000).toFixed(salary % 1000000000000 === 0 ? 0 : 1)} T`;
+        }
+        else if (salary >= 1000000000) {
+            return `${(salary / 1000000000).toFixed(salary % 1000000000 === 0 ? 0 : 1)} M`;
+        }
+        else if (salary >= 1000000) {
+            return `${(salary / 1000000).toFixed(salary % 1000000 === 0 ? 0 : 1)} Jt`;
+        } else if (salary >= 10000) {
+            return `${(salary / 1000).toFixed(salary % 1000 === 0 ? 0 : 1)} Rb` + (salary % 1000 === 0 ? '' : `.${salary % 1000}`)
+        } else if (salary >= 1000) {
+            return `${Math.floor(salary / 1000)} Rb`;
+        } else {
+            return salary.toString();
         }
     };
 
@@ -118,190 +138,193 @@ const JobCard = ({ job }) => {
     // Ensure days_remaining is an integer
     const daysRemaining = job?.days_remaining ? Math.floor(job.days_remaining) : null;
 
+    // Toggle star
+    const handleToggleStar = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setStarred(!starred);
+        // Here you would typically call an API to save the star status
+    };
+
+    // Format salary range for display
+    const getSalaryDisplay = () => {
+        if (job?.salary_min && job?.salary_max) {
+            return `${formatSalary(job.salary_min)} - ${formatSalary(job.salary_max)}`;
+        } else if (job?.salary_min) {
+            return `${formatSalary(job.salary_min)}+`;
+        } else if (job?.salary_max) {
+            return `Hingga ${formatSalary(job.salary_max)}`;
+        } else {
+            return "Gaji tidak ditampilkan";
+        }
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
+            style={{ height: '100%' }}
         >
             <Card
                 variant="outlined"
                 sx={{
                     height: '100%',
-                    borderRadius: 3,
-                    transition: 'all 0.3s ease',
+                    borderRadius: 2,
+                    transition: 'all 0.2s ease',
+                    position: 'relative',
+                    borderWidth: 1,
+                    borderColor: isHovered
+                        ? alpha(theme.palette.primary.main, 0.5)
+                        : alpha(theme.palette.divider, 0.7),
                     '&:hover': {
-                        transform: 'translateY(-5px)',
-                        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-                        borderColor: alpha(theme.palette.primary.main, 0.3)
+                        boxShadow: `0 8px 24px ${alpha(theme.palette.common.black, 0.08)}`,
+                        borderColor: alpha(theme.palette.primary.main, 0.5),
                     },
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden',
+                    background: '#ffffff',
                 }}
-                className="transition-all duration-300"
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
             >
-                {/* Status progress bar at top of card */}
-                <LinearProgress
-                    variant="determinate"
-                    value={job?.status === 'active' ? 100 : 0}
+                {/* Status indicator at top of card */}
+                <Box
                     sx={{
-                        height: 4,
-                        backgroundColor: 'rgba(0,0,0,0.05)',
-                        '& .MuiLinearProgress-bar': {
-                            backgroundColor: getStatusColor(job?.status)
-                        }
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        background: getStatusColor(job?.status),
                     }}
                 />
 
-                <CardContent sx={{
-                    p: 3,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    height: '100%'
-                }}>
-                    <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                <CardContent sx={{ p: 0, height: '100%', display: 'flex', flexDirection: 'column', '&:last-child': { pb: 0 } }}>
+                    {/* Header with company logo and job title */}
+                    <Box sx={{ display: 'flex', p: 3, pb: 2 }}>
                         <Avatar
                             src={job?.company?.logo}
                             alt={job?.company?.name}
                             variant="rounded"
                             sx={{
-                                width: 56,
-                                height: 56,
+                                width: 52,
+                                height: 52,
                                 mr: 2,
-                                borderRadius: 2,
-                                bgcolor: alpha(theme.palette.primary.main, 0.1),
+                                borderRadius: 1.5,
+                                bgcolor: alpha(theme.palette.primary.main, 0.08),
                                 border: '1px solid',
-                                borderColor: 'divider',
-                                p: 1
+                                borderColor: alpha(theme.palette.divider, 0.5),
                             }}
                         >
                             {!job?.company?.logo && job?.company?.name?.charAt(0)}
                         </Avatar>
+
                         <Box sx={{ flex: 1 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <Box>
                                     <Typography
                                         variant="h6"
                                         sx={{
-                                            fontWeight: 700,
-                                            color: 'text.primary',
-                                            mb: 0.5
+                                            fontWeight: 600,
+                                            fontSize: '1.05rem',
+                                            mb: 0.5,
+                                            transition: 'all 0.2s',
+                                            display: '-webkit-box',
+                                            overflow: 'hidden',
+                                            WebkitBoxOrient: 'vertical',
+                                            WebkitLineClamp: 2,
                                         }}
-                                        className="text-gray-800"
                                     >
                                         {job?.title}
                                     </Typography>
-                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                                        <Typography
-                                            variant="body2"
-                                            sx={{
-                                                color: 'primary.main',
-                                                fontWeight: 500,
-                                                display: 'flex',
-                                                alignItems: 'center'
-                                            }}
-                                        >
-                                            <BusinessIcon fontSize="small" sx={{ mr: 0.5, fontSize: 16 }} />
-                                            {job?.company?.name}
-                                        </Typography>
-                                    </Stack>
+
+                                    <Typography
+                                        variant="body2"
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            color: theme.palette.grey[600],
+                                            fontWeight: 500,
+                                            mb: 0.5
+                                        }}
+                                    >
+                                        <BusinessIcon fontSize="small" sx={{ mr: 0.5, fontSize: 16 }} />
+                                        {job?.company?.name}
+                                    </Typography>
                                 </Box>
+
                                 <Chip
                                     label={getStatusLabel(job?.status)}
                                     size="small"
                                     sx={{
+                                        ml: 1,
                                         height: 24,
-                                        fontWeight: 600,
-                                        bgcolor: alpha(getStatusColor(job?.status), 0.1),
-                                        color: getStatusColor(job?.status),
                                         fontSize: '0.7rem',
-                                        borderRadius: '0.5rem',
+                                        fontWeight: 600,
+                                        borderRadius: '4px',
+                                        backgroundColor: alpha(getStatusColor(job?.status), 0.12),
+                                        color: getStatusColor(job?.status),
                                         border: '1px solid',
-                                        borderColor: `${getStatusColor(job?.status)}30`
+                                        borderColor: alpha(getStatusColor(job?.status), 0.3),
                                     }}
                                 />
                             </Box>
                         </Box>
                     </Box>
 
-                    <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {job?.job_type && (
-                            <Chip
-                                icon={<WorkOutline fontSize="small" />}
-                                label={job.job_type}
-                                size="small"
-                                variant="outlined"
-                                sx={{ borderRadius: 1 }}
-                            />
-                        )}
-                        {job?.location && (
-                            <Chip
-                                icon={<LocationOn fontSize="small" />}
-                                label={job.location}
-                                size="small"
-                                variant="outlined"
-                                sx={{ borderRadius: 1 }}
-                            />
-                        )}
-                        {job?.experience_level && (
-                            <Chip
-                                icon={<AssignmentIcon fontSize="small" />}
-                                label={job.experience_level}
-                                size="small"
-                                variant="outlined"
-                                sx={{ borderRadius: 1 }}
-                            />
-                        )}
-                    </Box>
-
-                    {(job?.salary_min || job?.salary_max) && (
-                        <Box sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            mb: 2,
-                            color: 'success.main',
-                            bgcolor: alpha(theme.palette.success.main, 0.1),
-                            px: 1.5,
-                            py: 0.75,
-                            borderRadius: 1,
-                            width: 'fit-content'
-                        }}>
-                            <AttachMoney fontSize="small" sx={{ mr: 0.5 }} />
-                            <Typography variant="body2" fontWeight="medium">
-                                {job?.salary_min && job?.salary_max
-                                    ? `Rp${job.salary_min.toLocaleString()} - Rp${job.salary_max.toLocaleString()}`
-                                    : job?.salary_min
-                                        ? `Rp${job.salary_min.toLocaleString()}+`
-                                        : job?.salary_max
-                                            ? `Hingga Rp${job.salary_max.toLocaleString()}`
-                                            : ''
-                                }
-                            </Typography>
-                        </Box>
-                    )}
-
-                    <Box sx={{ mt: 'auto' }}>
-                        <Divider sx={{ my: 2 }} />
-                        <Box sx={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center'
-                        }}>
+                    {/* Key details section */}
+                    <Box sx={{ px: 3, mb: 2 }}>
+                        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
+                            {/* Location */}
                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <CalendarToday
-                                    fontSize="small"
-                                    sx={{
-                                        color: isDeadlineNear() ? 'error.main' : 'text.secondary',
-                                        mr: 0.5
-                                    }}
-                                />
+                                <LocationOn sx={{
+                                    color: theme.palette.grey[500],
+                                    mr: 0.75,
+                                    fontSize: 18
+                                }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 400 }}>
+                                    {job?.location || 'Lokasi tidak tersedia'}
+                                </Typography>
+                            </Box>
+
+                            {/* Experience */}
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <WorkIcon sx={{
+                                    color: theme.palette.grey[500],
+                                    mr: 0.75,
+                                    fontSize: 18
+                                }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 400 }}>
+                                    {job?.experience_level || 'Semua level'}
+                                </Typography>
+                            </Box>
+
+                            {/* Type */}
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <BadgeIcon sx={{
+                                    color: theme.palette.grey[500],
+                                    mr: 0.75,
+                                    fontSize: 18
+                                }} />
+                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 400 }}>
+                                    {job?.job_type || 'Tipe tidak tersedia'}
+                                </Typography>
+                            </Box>
+
+                            {/* Deadline */}
+                            <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                <ScheduleIcon sx={{
+                                    color: isDeadlineNear() ? theme.palette.error.main : theme.palette.grey[500],
+                                    mr: 0.75,
+                                    fontSize: 18
+                                }} />
                                 <Typography
-                                    variant="caption"
+                                    variant="body2"
                                     sx={{
-                                        color: isDeadlineNear() ? 'error.main' : 'text.secondary',
-                                        fontWeight: isDeadlineNear() ? 'bold' : 'normal'
+                                        fontWeight: isDeadlineNear() ? 600 : 400,
+                                        color: isDeadlineNear() ? theme.palette.error.main : 'text.secondary'
                                     }}
                                 >
                                     {daysRemaining > 0
@@ -312,27 +335,61 @@ const JobCard = ({ job }) => {
                                     }
                                 </Typography>
                             </Box>
-                            <Link href={route('candidate.jobs.show', job?.id)}>
-                                <Button
-                                    variant="contained"
-                                    size="small"
-                                    endIcon={<ArrowForwardIcon />}
-                                    sx={{
-                                        borderRadius: 2,
-                                        px: 2,
-                                        boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.25)',
-                                        '&:hover': {
-                                            boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
-                                        },
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    className="transition-all duration-300"
-                                    disabled={job?.status === 'expired' || job?.status === 'closed'}
-                                >
-                                    {job?.has_applied ? 'Sudah Dilamar' : 'Lihat Detail'}
-                                </Button>
-                            </Link>
                         </Box>
+                    </Box>
+
+                    {/* Salary & Description */}
+                    <Box sx={{ px: 3, mb: 'auto' }}>
+                        {/* Salary */}
+                        <Box sx={{ mb: 1.5 }}>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    py: 0.5,
+                                    px: 1.5,
+                                    borderRadius: 1,
+                                    fontWeight: 600,
+                                    bgcolor: alpha(theme.palette.success.main, 0.08),
+                                    color: theme.palette.success.dark,
+                                    border: `1px solid ${alpha(theme.palette.success.main, 0.2)}`,
+                                }}
+                            >
+                                <MonetizationOnIcon fontSize="small" sx={{ mr: 0.5, fontSize: 16 }} />
+                                {getSalaryDisplay()}
+                            </Typography>
+                        </Box>
+                    </Box>
+
+                    {/* Card Footer with action button */}
+                    <Box sx={{ p: 3, pt: 2, mt: 'auto' }}>
+                        <Divider sx={{ mb: 2, borderColor: alpha(theme.palette.divider, 0.5) }} />
+
+                        <Link href={route('candidate.jobs.show', job?.id)} style={{ textDecoration: 'none' }}>
+                            <Button
+                                variant="contained"
+                                size="medium"
+                                fullWidth
+                                endIcon={<ArrowForwardIcon />}
+                                sx={{
+                                    borderRadius: 1.5,
+                                    py: 1,
+                                    fontWeight: 600,
+                                    textTransform: 'none',
+                                    boxShadow: 'none',
+                                    '&:hover': {
+                                        boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.25)}`,
+                                    },
+                                    bgcolor: job?.has_applied
+                                        ? alpha(theme.palette.primary.main, 0.8)
+                                        : theme.palette.primary.main,
+                                }}
+                                disabled={job?.status === 'expired' || job?.status === 'closed'}
+                            >
+                                {job?.has_applied ? 'Sudah Dilamar' : 'Lihat Detail'}
+                            </Button>
+                        </Link>
                     </Box>
                 </CardContent>
             </Card>
@@ -938,8 +995,8 @@ export default function Index({ jobs, filters, filterOptions }) {
                                                         display: 'grid',
                                                         gridTemplateColumns: {
                                                             xs: '1fr',
-                                                            sm: 'repeat(2, 1fr)',
-                                                            lg: 'repeat(3, 1fr)'
+                                                            sm: 'repeat(1, 1fr)',
+                                                            md: 'repeat(2, 1fr)'
                                                         },
                                                         gap: 3
                                                     }}

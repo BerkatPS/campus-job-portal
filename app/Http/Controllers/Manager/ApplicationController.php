@@ -244,31 +244,37 @@ class ApplicationController extends Controller
         $application->update(['status_id' => $request->status_id]);
         $newStatus = $application->fresh()->status;
 
-        try {
-            // Send notification to candidate
-            $this->notificationService->sendNotification(
-                $application->user,
-                \App\Notifications\ApplicationStatusUpdated::class,
-                $application,
-                [
-                    'old_status' => $oldStatus->name,
-                    'new_status' => $newStatus->name,
-                ]
-            );
-        } catch (\Exception $e) {
-            // Log error but don't fail the request
-            \Log::error('Failed to send application status notification: ' . $e->getMessage());
+        // Only send notification if status actually changed
+        if ($oldStatus->id !== $newStatus->id) {
+            try {
+                // Send notification to candidate
+                $this->notificationService->sendNotification(
+                    $application->user,
+                    \App\Notifications\ApplicationStatusChanged::class,
+                    $application,
+                    ['old_status' => $oldStatus->name, 'new_status' => $newStatus->name]
+                );
+                
+                // Don't send email notification separately, it's already sent by the NotificationService
+                // $application->user->notify(new \App\Notifications\ApplicationStatusChanged(
+                //     $application,
+                //     ['old_status' => $oldStatus->name, 'new_status' => $newStatus->name]
+                // ));
+                
+                // If status changed to rejected or accepted, suggest sending a message
+                if (in_array(strtolower($newStatus->name), ['rejected', 'declined', 'accepted', 'hired'])) {
+                    return redirect()->route('manager.messages.create-from-application', $application->id)
+                        ->with('suggested_template', strtolower($newStatus->name) === 'rejected' || strtolower($newStatus->name) === 'declined' ? 'rejection' : 'offer');
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the request
+                \Log::error('Failed to send application status notification: ' . $e->getMessage());
+            }
         }
 
         return back()->with('success', 'Application status updated successfully.');
     }
 
-
-
-
-    /**
-     * Update the application stage.
-     */
     /**
      * Update the application stage.
      */
@@ -345,7 +351,6 @@ class ApplicationController extends Controller
             return back()->with('success', 'Tahap lamaran berhasil diperbarui, tetapi notifikasi tidak terkirim.');
         }
     }
-
 
     /**
      * Toggle favorite status.
@@ -654,7 +659,6 @@ class ApplicationController extends Controller
         // Return file download
         return response()->download($filePath);
     }
-
 
     /**
      * Check if user has access to the application.

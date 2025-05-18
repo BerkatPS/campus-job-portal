@@ -1,12 +1,15 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { Box, CssBaseline } from '@mui/material';
 import Header from '@/Components/Layout/Header';
 import Sidebar from '@/Components/Layout/Sidebar';
+import NotificationListener from '@/Components/NotificationListener';
+import ToastNotification from '@/Components/ToastNotification';
 
 export default function CandidateLayout({ children, title }) {
     const [open, setOpen] = React.useState(false);
     const [collapsed, setCollapsed] = React.useState(false);
+    const { auth } = usePage().props;
 
     const handleDrawerOpen = () => {
         setOpen(true);
@@ -25,6 +28,12 @@ export default function CandidateLayout({ children, title }) {
             <CssBaseline />
             
             <Head title={title} />
+            
+            {/* Add toast notification component */}
+            <ToastNotification />
+            
+            {/* Add notification listener for real-time updates */}
+            {auth?.user?.id && <NotificationListener userId={auth.user.id} />}
             
             <Sidebar 
                 isOpen={open} 
@@ -65,4 +74,4 @@ export default function CandidateLayout({ children, title }) {
             </Box>
         </Box>
     );
-} 
+}

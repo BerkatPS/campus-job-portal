@@ -7,6 +7,7 @@ use App\Models\Job;
 use App\Models\JobApplication;
 use App\Models\ApplicationStatus;
 use App\Models\FormResponse;
+use App\Models\PortfolioItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,19 @@ class ApplicationController extends Controller
         // Paginate results
         $applications = $query->paginate(10)
             ->through(function ($application) {
+                // Check if application has a review
+                $hasReview = $application->review()->exists();
+                $reviewId = $hasReview ? $application->review->id : null;
+                
+                // Determine if application is in final/completed stage
+                $isCompleted = false;
+                if (
+                    ($application->status->slug === 'hired' || $application->status->slug === 'rejected') &&
+                    !$application->current_stage_id // No current stage means application process is complete
+                ) {
+                    $isCompleted = true;
+                }
+                
                 return [
                     'id' => $application->id,
                     'job' => [
@@ -91,6 +105,9 @@ class ApplicationController extends Controller
                         ];
                     }),
                     'created_at' => $application->created_at ? $application->created_at->format('Y-m-d') : null,
+                    'is_completed' => $isCompleted,
+                    'has_review' => $hasReview,
+                    'review_id' => $reviewId,
                 ];
             });
 
@@ -149,6 +166,26 @@ class ApplicationController extends Controller
                 ->with('error', 'Anda perlu mengunggah resume ke profil sebelum melamar pekerjaan.');
         }
 
+        // Dapatkan portfolio items milik user untuk dipilih
+        $portfolioItems = Auth::user()->portfolioItems()
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('display_order', 'asc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'title' => $item->title,
+                    'description' => $item->description,
+                    'type' => $item->type,
+                    'type_label' => PortfolioItem::getTypes()[$item->type] ?? $item->type,
+                    'thumbnail' => $item->thumbnail ? asset('storage/' . $item->thumbnail) : null,
+                    'project_url' => $item->project_url,
+                    'repository_url' => $item->repository_url,
+                    'is_featured' => $item->is_featured,
+                ];
+            });
+
         return Inertia::render('Candidate/Jobs/Apply', [
             'job' => [
                 'id' => $job->id,
@@ -169,6 +206,7 @@ class ApplicationController extends Controller
                 'has_resume' => !empty($candidateProfile->resume),
                 'last_updated' => $candidateProfile->updated_at->format('M d, Y'),
             ],
+            'portfolioItems' => $portfolioItems,
         ]);
     }
 
@@ -182,15 +220,19 @@ class ApplicationController extends Controller
             Log::info('Proses pengajuan aplikasi dimulai', [
                 'job_id' => $job->id,
                 'user_id' => Auth::id(),
-                'request_data' => $request->only(['cover_letter']),
+                'request_data' => $request->only(['cover_letter', 'portfolio_items']),
             ]);
 
             // Validasi request
             $validation = $request->validate([
                 'cover_letter' => 'required|string|min:10',
+                'portfolio_items' => 'nullable|array',
+                'portfolio_items.*' => 'exists:portfolio_items,id',
             ], [
                 'cover_letter.required' => 'Cover letter wajib diisi',
                 'cover_letter.min' => 'Cover letter minimal 10 karakter',
+                'portfolio_items.array' => 'Portfolio harus berupa array',
+                'portfolio_items.*.exists' => 'Item portfolio yang dipilih tidak valid',
             ]);
 
             // Periksa apakah job masih aktif dan menerima aplikasi
@@ -275,6 +317,17 @@ class ApplicationController extends Controller
                     ]);
                 }
 
+                // Tambahkan portfolio items yang dipilih ke aplikasi
+                if ($request->has('portfolio_items') && is_array($request->portfolio_items)) {
+                    // Verifikasi bahwa portfolio items tersebut milik user
+                    $validPortfolioItems = PortfolioItem::where('user_id', Auth::id())
+                        ->whereIn('id', $request->portfolio_items)
+                        ->pluck('id')
+                        ->toArray();
+                    
+                    $application->portfolioItems()->sync($validPortfolioItems);
+                }
+
                 // Kirim notifikasi ke manajer perusahaan jika tersedia
                 if ($job->company && method_exists($job->company, 'managers') && $job->company->managers) {
                     try {
@@ -294,7 +347,8 @@ class ApplicationController extends Controller
 
                 Log::info('Aplikasi berhasil dibuat', [
                     'application_id' => $application->id,
-                    'resume_path' => $resumePath
+                    'resume_path' => $resumePath,
+                    'portfolio_items' => $validPortfolioItems ?? []
                 ]);
 
                 return redirect()->route('candidate.applications.index')

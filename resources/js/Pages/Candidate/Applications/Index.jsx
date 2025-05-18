@@ -161,7 +161,7 @@ const ApplicationCard = ({ application, navigate }) => {
                     }}
                 />
 
-                <Box sx={{ 
+                <Box sx={{
                     display: 'grid',
                     gridTemplateColumns: { xs: '1fr', md: '2fr 1fr' },
                     gap: 3
@@ -332,12 +332,68 @@ const ApplicationCard = ({ application, navigate }) => {
                                     '&:hover': {
                                         boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
                                     },
-                                    transition: 'all 0.3s ease'
+                                    transition: 'all 0.3s ease',
+                                    mb: application.status?.slug === 'completed' && !application.has_review ? 2 : 0
                                 }}
                                 className="transition-all duration-300"
                             >
                                 Lihat Detail
                             </Button>
+
+                            {(application.status?.slug === 'completed' || 
+                              application.status?.slug === 'hired' || 
+                              application.status?.slug === 'rejected' || 
+                              application.status?.slug === 'disqualified' || 
+                              application.is_completed) && !application.has_review && (
+                                <Button
+                                    variant="outlined"
+                                    color="secondary"
+                                    endIcon={<StarIcon />}
+                                    onClick={() => router.visit(route('candidate.reviews.create', application.id))}
+                                    sx={{
+                                        borderRadius: '0.75rem',
+                                        py: 1.25,
+                                        px: { xs: 2, md: 3 },
+                                        fontWeight: 600,
+                                        borderColor: 'secondary.main',
+                                        '&:hover': {
+                                            borderColor: 'secondary.dark',
+                                            backgroundColor: 'rgba(156, 39, 176, 0.04)',
+                                        },
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    className="transition-all duration-300"
+                                >
+                                    Berikan Ulasan
+                                </Button>
+                            )}
+
+                            {(application.status?.slug === 'completed' || 
+                              application.status?.slug === 'hired' || 
+                              application.status?.slug === 'rejected' || 
+                              application.status?.slug === 'disqualified' || 
+                              application.is_completed) && application.has_review && (
+                                <Button
+                                    variant="text"
+                                    color="secondary"
+                                    endIcon={<StarIcon />}
+                                    onClick={() => router.visit(route('candidate.reviews.show', application.review_id))}
+                                    sx={{
+                                        borderRadius: '0.75rem',
+                                        py: 1.25,
+                                        mt: 1,
+                                        px: { xs: 2, md: 3 },
+                                        fontWeight: 600,
+                                        '&:hover': {
+                                            backgroundColor: 'rgba(156, 39, 176, 0.04)',
+                                        },
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    className="transition-all duration-300"
+                                >
+                                    Lihat Ulasan
+                                </Button>
+                            )}
                         </Box>
                     </Box>
                 </Box>
@@ -502,25 +558,25 @@ export default function ApplicationsIndex({ applications, filters, filterOptions
         // Untuk implementasi filtering di server side
         let sort = 'created_at';
         let direction = 'desc';
-        
+
         if (value === 'newest') {
             sort = 'created_at';
             direction = 'desc';
         } else if (value === 'oldest') {
-            sort = 'created_at'; 
+            sort = 'created_at';
             direction = 'asc';
         } else if (value === 'company') {
             sort = 'company';
             direction = 'asc';
         }
-        
+
         router.visit(route('candidate.applications.index', {
             search: searchTerm,
             status: filters?.status,
             sort: sort,
             direction: direction
         }), { preserveState: true });
-        
+
         handleMenuClose();
     };
 
@@ -669,8 +725,9 @@ export default function ApplicationsIndex({ applications, filters, filterOptions
                                 fontWeight: 600,
                                 boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.25)',
                                 '&:hover': {
-                                    boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)'
-                                }
+                                    boxShadow: '0 6px 20px 0 rgba(20, 184, 166, 0.35)',
+                                },
+                                transition: 'all 0.3s ease',
                             }}
                             className="transition-all duration-300"
                         >
@@ -679,8 +736,8 @@ export default function ApplicationsIndex({ applications, filters, filterOptions
                     </Box>
 
                     {/* Stats cards */}
-                    <Box 
-                        sx={{ 
+                    <Box
+                        sx={{
                             display: 'grid',
                             gridTemplateColumns: {
                                 xs: 'repeat(2, 1fr)',
@@ -1020,10 +1077,10 @@ export default function ApplicationsIndex({ applications, filters, filterOptions
                                             />
                                         )}
                                     </MenuItem>
-                                    
+
                                     {filterOptions?.statuses?.map(status => (
-                                        <MenuItem 
-                                            key={status.id} 
+                                        <MenuItem
+                                            key={status.id}
                                             onClick={() => handleStatusChange(status.id)}
                                         >
                                             {status.name}

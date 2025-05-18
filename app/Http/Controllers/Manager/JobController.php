@@ -147,7 +147,6 @@ class JobController extends Controller
         // Membuat pekerjaan baru
         $job = Job::create($validatedData);
 
-
         // Menyimpan tahapan perekrutan
         if ($request->has('hiring_stages')) {
             foreach ($request->hiring_stages as $index => $stageId) {
@@ -170,6 +169,7 @@ class JobController extends Controller
             }
         }
 
+        // Notifikasi untuk manager perusahaan lainnya
         $companyManagers = $company->managers;
         foreach ($companyManagers as $manager) {
             if ($manager->id !== Auth::id()) { // Don't notify the creator
@@ -179,6 +179,23 @@ class JobController extends Controller
                 ]));
             }
         }
+
+        // Jika job aktif/published, kirim notifikasi ke semua kandidat
+        if ($validatedData['is_active']) {
+            // Dapatkan semua user dengan role kandidat (role_id = 3) yang aktif
+            $candidates = \App\Models\User::where('role_id', 3)
+                ->where('is_active', true)
+                ->get();
+            
+            // Kirim notifikasi ke semua kandidat
+            foreach ($candidates as $candidate) {
+                $candidate->notify(new \App\Notifications\JobCreated($job, [
+                    'created_by' => Auth::id(),
+                    'created_by_name' => Auth::user()->name,
+                ]));
+            }
+        }
+
         return redirect()->route('manager.jobs.index')->with('success', 'Lowongan pekerjaan berhasil dibuat.');
     }
 
@@ -350,6 +367,11 @@ class JobController extends Controller
         $validatedData = $request->validated();
         $validatedData = $this->synchronizeStatusAndIsActive($validatedData);
 
+        // Cek apakah status job berubah dari tidak aktif menjadi aktif
+        $wasActive = $job->is_active;
+        $willBeActive = $validatedData['is_active'];
+        $becomingActive = !$wasActive && $willBeActive;
+
         // Update the job
         $job->update($validatedData);
 
@@ -364,6 +386,22 @@ class JobController extends Controller
                     'hiring_stage_id' => $stageId,
                     'order_index' => $index,
                 ]);
+            }
+        }
+
+        // Jika job baru saja diaktifkan, kirim notifikasi ke semua kandidat
+        if ($becomingActive) {
+            // Dapatkan semua user dengan role kandidat (role_id = 3) yang aktif
+            $candidates = \App\Models\User::where('role_id', 3)
+                ->where('is_active', true)
+                ->get();
+            
+            // Kirim notifikasi ke semua kandidat
+            foreach ($candidates as $candidate) {
+                $candidate->notify(new \App\Notifications\JobCreated($job, [
+                    'created_by' => Auth::id(),
+                    'created_by_name' => Auth::user()->name,
+                ]));
             }
         }
 
@@ -402,6 +440,7 @@ class JobController extends Controller
 
         $oldStatus = $job->is_active ? 'active' : 'inactive';
         $newIsActive = !$job->is_active;
+        $becomingActive = !$job->is_active && $newIsActive;
 
         $job->update([
             'is_active' => $newIsActive,
@@ -419,6 +458,22 @@ class JobController extends Controller
                     'new_status' => $newStatus,
                     'updated_by' => Auth::id(),
                     'updated_by_name' => Auth::user()->name,
+                ]));
+            }
+        }
+
+        // Jika job baru saja diaktifkan, kirim notifikasi ke semua kandidat
+        if ($becomingActive) {
+            // Dapatkan semua user dengan role kandidat (role_id = 3) yang aktif
+            $candidates = \App\Models\User::where('role_id', 3)
+                ->where('is_active', true)
+                ->get();
+            
+            // Kirim notifikasi ke semua kandidat
+            foreach ($candidates as $candidate) {
+                $candidate->notify(new \App\Notifications\JobCreated($job, [
+                    'created_by' => Auth::id(),
+                    'created_by_name' => Auth::user()->name,
                 ]));
             }
         }

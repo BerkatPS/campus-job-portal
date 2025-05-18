@@ -20,7 +20,7 @@ class ManagerMiddleware
             return redirect()->route('login');
         }
 
-        if (Auth::user()->role->slug !== 'manager') {
+        if (!Auth::user()->isManager()) {
             if ($request->wantsJson()) {
                 return response()->json(['error' => 'Unauthorized. Manager access required.'], 403);
             }
@@ -30,4 +30,3 @@ class ManagerMiddleware
         return $next($request);
     }
 }
-

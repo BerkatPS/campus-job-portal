@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\RegisterRequest;
 use App\Models\User;
 use App\Models\Role;
 use App\Models\CandidateProfile;
@@ -17,18 +18,12 @@ class RegisterController extends Controller
     /**
      * Menangani permintaan pendaftaran aplikasi.
      */
-    public function register(Request $request)
+    public function register(RegisterRequest $request)
     {
         // Log input untuk debugging
         Log::info('Register attempt with NIM: ' . $request->nim);
 
-        // Validasi input form
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'nim' => 'required|string|max:20|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        // Validasi input form already handled by RegisterRequest class
 
         // Verifikasi NIM menggunakan layanan verifikasi NIM
         $verificationService = app(NIMVerificationService::class);
@@ -38,7 +33,7 @@ class RegisterController extends Controller
         Log::info('NIM format validation result: ' . ($isValidFormat ? 'valid' : 'invalid'));
 
         if (!$isValidFormat) {
-            return back()->withErrors(['nim' => 'Format NIM tidak valid. Format yang benar: YYCC.NNNN']);
+            return back()->withErrors(['nim' => 'Format NIM tidak valid. Format yang benar: 202501XXX']);
         }
 
         // Cek apakah NIM milik universitas - dengan logging
@@ -54,7 +49,7 @@ class RegisterController extends Controller
         Log::info('NIM graduate check result: ' . ($isGraduate ? 'is graduate' : 'not graduate'));
 
         if (!$isGraduate) {
-            return back()->withErrors(['nim' => 'Hanya lulusan yang dapat mendaftar. Tahun masuk harus sebelum atau sama dengan tahun sekarang.']);
+            return back()->withErrors(['nim' => 'Hanya lulusan yang dapat mendaftar. Tahun masuk harus 2025.']);
         }
 
         try {
@@ -82,6 +77,17 @@ class RegisterController extends Controller
             // Buat profil kandidat
             CandidateProfile::create([
                 'user_id' => $user->id,
+                // Add any additional profile fields that were provided
+                'phone' => $request->phone,
+                'address' => $request->address,
+                'date_of_birth' => $request->date_of_birth,
+                'education' => $request->education,
+                'experience' => $request->experience,
+                'skills' => $request->skills,
+                'linkedin' => $request->linkedin,
+                'website' => $request->website,
+                'twitter' => $request->twitter,
+                'github' => $request->github,
             ]);
 
             // Login pengguna
@@ -101,5 +107,4 @@ class RegisterController extends Controller
             ]);
         }
     }
-
 }

@@ -27,6 +27,7 @@ class CandidateProfile extends Model
         'twitter',
         'github',
         'resume',
+        'resume_name',
         'profile_picture',
         'pan_card_number',
     ];

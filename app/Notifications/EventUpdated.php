@@ -45,7 +45,7 @@ class EventUpdated extends Notification implements ShouldQueue
         ];
     }
 
-    public function toBroadcast($notifiable)
+        public function toBroadcast($notifiable)
     {
         return new BroadcastMessage([
             'id' => $this->id,

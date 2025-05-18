@@ -48,6 +48,7 @@ import Alert from '@/Components/Shared/Alert';
 import SearchBar from '@/Components/Shared/SearchBar';
 import Dropdown from '@/Components/Shared/Dropdown';
 import SharedBadge from '@/Components/Shared/Badge';
+import MessageIndicator from '@/Components/Navbar/MessageIndicator';
 
 const HideOnScroll = (props) => {
     const { children } = props;
@@ -311,6 +312,13 @@ const Navbar = () => {
                                                 </SharedBadge>
                                             </IconButton>
                                         </Tooltip>
+                                        
+                                        {/* Message indicator - only for managers */}
+                                        {isManager && (
+                                            <MessageIndicator 
+                                                initialUnreadCount={auth.unread_messages_count || 0} 
+                                            />
+                                        )}
                                         
                                         {/* User account menu */}
                                         <Dropdown
