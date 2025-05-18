@@ -3,38 +3,46 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+env:
+  APP_IMAGE: ghcr.io/berkatps/campus-job-portal
 
 jobs:
-  build-test-deploy:
+  build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GH_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata for Docker
+      - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/berkatps/campus-job-portal
+          images: ${{ env.APP_IMAGE }}
           tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
-            type=ref,event=pr
-            type=sha,format=long
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' }}
+            type=sha,format=short
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v4
+        id: build-and-push
+        uses: docker/build-push-action@v5
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}
@@ -42,37 +50,61 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          platforms: linux/amd64
 
-      - name: Setup test environment
-        if: github.event_name == 'pull_request'
+  test:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Copy .env file
+        run: cp .env.example .env
+        
+      - name: Set up Docker Compose
         run: |
           docker-compose up -d
-          docker-compose exec -T app composer install
-          docker-compose exec -T app php artisan key:generate
-          docker-compose exec -T app php artisan migrate:fresh --seed
-
+          docker-compose ps
+          
+      - name: Install dependencies
+        run: docker-compose exec -T app composer install
+        
+      - name: Generate application key
+        run: docker-compose exec -T app php artisan key:generate
+        
+      - name: Run database migrations
+        run: docker-compose exec -T app php artisan migrate:fresh --seed
+        
       - name: Run tests
-        if: github.event_name == 'pull_request'
-        run: |
-          docker-compose exec -T app php artisan test
+        run: docker-compose exec -T app php artisan test
+        
+      - name: Stop containers
+        if: always()
+        run: docker-compose down
 
-      - name: Deploy to production
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        run: |
-          # Add deployment steps here - for example:
-          # - SSH into server and pull latest image
-          # - Run docker-compose up -d
-          #
-          # Example:
-          # uses: appleboy/ssh-action@master
-          # with:
-          #   host: ${{ secrets.HOST }}
-          #   username: ${{ secrets.USERNAME }}
-          #   key: ${{ secrets.SSH_KEY }}
-          #   script: |
-          #     cd /path/to/project
-          #     docker pull ghcr.io/berkatps/campus-job-portal:latest
-          #     docker-compose up -d
-          #     docker-compose exec -T app php artisan migrate --force
-          #     docker-compose exec -T app php artisan optimize:clear
-          echo "Deployment script would run here"
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    environment: production
+    
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USERNAME }}
+          key: ${{ secrets.DEPLOY_KEY }}
+          port: ${{ secrets.DEPLOY_PORT }}
+          script: |
+            cd ${{ secrets.DEPLOY_PATH }}
+            docker pull ${{ env.APP_IMAGE }}:latest
+            docker-compose down
+            docker-compose up -d
+            docker-compose exec -T app php artisan migrate --force
+            docker-compose exec -T app php artisan optimize:clear
+            docker-compose exec -T app php artisan config:cache
+            docker-compose exec -T app php artisan route:cache
