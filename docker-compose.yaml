@@ -7,7 +7,6 @@ services:
     container_name: job_portal_app
     restart: unless-stopped
     volumes:
-      - ./:/var/www
       - ./storage:/var/www/storage
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
