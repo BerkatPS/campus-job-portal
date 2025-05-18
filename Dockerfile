@@ -26,10 +26,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy package files first to leverage Docker cache
 COPY package.json package-lock.json ./
 
-# Install required NPM packages before copying the app code
-RUN npm install
-# Install all Nivo chart packages to prevent any missing dependencies
-RUN npm install @nivo/core @nivo/line @nivo/bar @nivo/pie @nivo/scatterplot @nivo/radar @nivo/heatmap @nivo/calendar @nivo/network
+# Install NPM packages
+RUN npm install --legacy-peer-deps
+RUN npm install --legacy-peer-deps @nivo/core @nivo/line @nivo/bar @nivo/pie @nivo/scatterplot @nivo/radar @nivo/heatmap @nivo/calendar @nivo/network
 
 # Copy composer files
 COPY composer.json composer.lock ./
@@ -45,9 +44,8 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www
 RUN chmod -R 775 /var/www/storage
 
-# Install NPM dependencies and build assets
-RUN npm install
-RUN npm run build
+# Build frontend assets with debug output
+RUN NODE_ENV=production npm run build || (echo "Build failed with following error:" && cat npm-debug.log && exit 1)
 
 # Expose port 9000 for PHP-FPM
 EXPOSE 9000
