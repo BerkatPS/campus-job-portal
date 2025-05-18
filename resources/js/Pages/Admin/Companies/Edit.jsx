@@ -8,7 +8,6 @@ import {
     Paper,
     alpha,
     Tooltip,
-    IconButton,
     Chip,
     useTheme,
     Tab,
@@ -38,7 +37,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import custom components
-import Card from '@/Components/Shared/Card';
 import Button from '@/Components/Shared/Button';
 import Input from '@/Components/Shared/Input';
 import TextArea from '@/Components/Shared/TextArea';

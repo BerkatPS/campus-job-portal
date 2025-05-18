@@ -3,20 +3,14 @@ import { Head, Link, usePage, useForm } from '@inertiajs/react';
 import {
     Box,
     Typography,
-    Divider,
-    Stack,
     InputAdornment,
     Paper,
     Avatar,
     alpha,
-    Chip,
     Stepper,
     Step,
     StepLabel,
-    StepContent,
     useTheme,
-    Tooltip,
-    Button as MuiButton,
     FormControlLabel,
     Switch
 } from '@mui/material';
@@ -42,7 +36,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Import custom components
-import Card from '@/Components/Shared/Card';
 import Input from '@/Components/Shared/Input';
 import Button from '@/Components/Shared/Button';
 import Select from '@/Components/Shared/Select';
