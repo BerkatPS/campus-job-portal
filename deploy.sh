@@ -27,25 +27,31 @@ docker-compose pull
 echo "🏗️ Membangun dan menjalankan container..."
 docker-compose up -d --build
 
-# 3. INSTALASI DEPENDENSI BACKEND
+# 3. PERSIAPAN ENVIRONMENT
+echo "⚙️ Menyiapkan file environment..."
+# Membuat .env file di dalam container
+cat .env | docker-compose exec -T app bash -c 'cat > /var/www/.env'
+docker-compose exec -T app php -r "file_exists('/var/www/.env') ? echo 'File .env berhasil dibuat di container ✅' : echo 'Gagal membuat file .env ❌';"
+
+# 4. INSTALASI DEPENDENSI BACKEND
 echo "📦 Menginstall dependensi PHP..."
 docker-compose exec -T app composer install --optimize-autoloader
 
 echo "🔑 Mengatur kunci aplikasi..."
 docker-compose exec -T app php artisan key:generate --force
 
-# 4. INSTALASI DEPENDENSI FRONTEND
+# 5. INSTALASI DEPENDENSI FRONTEND
 echo "📦 Menginstall dependensi JavaScript..."
 docker-compose exec -T app npm ci
 
 echo "🏭 Membangun aset frontend..."
 docker-compose exec -T app npm run build
 
-# 5. SETUP DATABASE
+# 6. SETUP DATABASE
 echo "🗄️ Menjalankan migrasi database..."
 docker-compose exec -T app php artisan migrate --force
 
-# 6. OPTIMASI APLIKASI
+# 7. OPTIMASI APLIKASI
 echo "🔄 Menyegarkan cache aplikasi..."
 docker-compose exec -T app php artisan optimize:clear
 docker-compose exec -T app php artisan optimize
@@ -53,7 +59,7 @@ docker-compose exec -T app php artisan config:cache
 docker-compose exec -T app php artisan route:cache
 docker-compose exec -T app php artisan view:cache
 
-# 7. SETUP PENYIMPANAN
+# 8. SETUP PENYIMPANAN
 echo "📁 Mengatur izin penyimpanan..."
 docker-compose exec -T app chmod -R 775 /var/www/storage
 docker-compose exec -T app chown -R www-data:www-data /var/www/storage
@@ -61,7 +67,7 @@ docker-compose exec -T app chown -R www-data:www-data /var/www/storage
 echo "🔗 Membuat symlink storage..."
 docker-compose exec -T app php artisan storage:link
 
-# 8. SETUP BACKGROUND SERVICES
+# 9. SETUP BACKGROUND SERVICES
 echo "⚙️ Me-restart layanan queue..."
 docker-compose exec -T app php artisan queue:restart
 
@@ -71,7 +77,7 @@ docker-compose exec -T -d app php artisan queue:work --tries=3 --timeout=90
 echo "🕒 Memulai scheduler di background..."
 docker-compose exec -T -d app php artisan schedule:work
 
-# 9. SELESAI
+# 10. SELESAI
 echo "✅ Aplikasi berhasil di-deploy dan berjalan di VPS!"
 echo "   Lihat aplikasi di: http://SERVER_IP:8000"
 echo "   Pastikan port 8000 terbuka di firewall atau konfigurasi reverse proxy untuk akses melalui domain"
