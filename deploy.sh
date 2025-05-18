@@ -24,16 +24,16 @@ echo "🏗️ Membangun dan menjalankan container..."
 docker-compose up -d --build
 
 echo "📦 Menginstall dependensi PHP..."
-docker-compose exec -T app composer install --no-dev --optimize-autoloader
+docker-compose exec -T app composer install --optimize-autoloader
 
 echo "🔑 Mengatur kunci aplikasi..."
 docker-compose exec -T app php artisan key:generate --force
 
 echo "📦 Menginstall dependensi JavaScript..."
-docker-compose exec -T app npm ci --only=production
+docker-compose exec -T app npm ci
 
 echo "🏭 Membangun aset frontend..."
-docker-compose exec -T app npm run build --production
+docker-compose exec -T app npm run build
 
 echo "🗄️ Menjalankan migrasi database..."
 docker-compose exec -T app php artisan migrate --force
