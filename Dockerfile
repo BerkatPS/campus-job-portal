@@ -45,7 +45,8 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www
 RUN chmod -R 775 /var/www/storage
 
-# Build assets
+# Install NPM dependencies and build assets
+RUN npm install
 RUN npm run build
 
 # Expose port 9000 for PHP-FPM
