@@ -4,18 +4,20 @@ FROM php:8.2
 WORKDIR /var/www
 
 # Install dependencies
-RUN apk add --no-cache \
-    build-base \
+RUN apt-get update && apt-get install -y \
+    build-essential \
     libpng-dev \
     libzip-dev \
-    oniguruma-dev \
+    libonig-dev \
     libxml2-dev \
     zip \
     unzip \
     curl \
-    git \
-    nodejs \
-    npm
+    git
+
+# Install Node.js
+RUN curl -sL https://deb.nodesource.com/setup_18.x | bash -
+RUN apt-get install -y nodejs
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
