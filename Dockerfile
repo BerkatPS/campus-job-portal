@@ -23,7 +23,14 @@ RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Copy composer files first to leverage Docker cache
+# Copy package files first to leverage Docker cache
+COPY package.json package-lock.json ./
+
+# Install required NPM packages before copying the app code
+RUN npm install
+RUN npm install @nivo/core @nivo/line @nivo/bar
+
+# Copy composer files
 COPY composer.json composer.lock ./
 RUN composer install --no-scripts --no-autoloader
 
@@ -37,8 +44,7 @@ RUN composer dump-autoload --optimize
 RUN chown -R www-data:www-data /var/www
 RUN chmod -R 775 /var/www/storage
 
-# Install NPM dependencies and build assets
-RUN npm install
+# Build assets
 RUN npm run build
 
 # Expose port 9000 for PHP-FPM
