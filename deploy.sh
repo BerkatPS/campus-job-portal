@@ -1,38 +1,66 @@
 #!/bin/bash
+set -e
 
-# Build and start containers
-docker-compose up -d
+echo "🚀 Memulai proses deployment aplikasi ke VPS..."
 
-# Install dependencies
-docker-compose exec app composer install
-docker-compose exec app npm install
+# Pastikan docker dan docker-compose tersedia
+if ! command -v docker &> /dev/null || ! command -v docker-compose &> /dev/null; then
+    echo "❌ Docker atau Docker Compose tidak terinstall. Silakan install terlebih dahulu."
+    echo "   Petunjuk instalasi: https://docs.docker.com/engine/install/"
+    exit 1
+fi
 
-# Generate application key
-docker-compose exec app php artisan key:generate
+# Pastikan file konfigurasi tersedia
+if [ ! -f .env ]; then
+    echo "⚙️ File .env tidak ditemukan, membuat dari .env.example..."
+    cp .env.example .env
+    echo "⚠️ Pastikan mengubah konfigurasi di file .env sesuai dengan environment produksi"
+fi
 
-# Run migrations
-docker-compose exec app php artisan migrate:fresh --seed
+echo "🔄 Mendownload/memperbarui image terbaru..."
+docker-compose pull
 
-# Build frontend assets
-docker-compose exec app npm run build
+echo "🏗️ Membangun dan menjalankan container..."
+docker-compose up -d --build
 
-# Clear cache
-docker-compose exec app php artisan optimize:clear
+echo "📦 Menginstall dependensi PHP..."
+docker-compose exec -T app composer install --no-dev --optimize-autoloader
 
-# set permission
-docker-compose exec app chmod -R 775 /var/www/storage
-docker-compose exec app chown -R www-data:www-data /var/www/storage
+echo "🔑 Mengatur kunci aplikasi..."
+docker-compose exec -T app php artisan key:generate --force
 
-# create Storage Link
-docker-compose exec app php artisan storage:link
+echo "📦 Menginstall dependensi JavaScript..."
+docker-compose exec -T app npm ci --only=production
 
-# restart queue
-docker-compose exec app php artisan queue:restart
+echo "🏭 Membangun aset frontend..."
+docker-compose exec -T app npm run build --production
 
-# start queue
-docker-compose exec app php artisan queue:work
+echo "🗄️ Menjalankan migrasi database..."
+docker-compose exec -T app php artisan migrate --force
 
-# start scheduler
-docker-compose exec app php artisan schedule:work
+echo "🔄 Menyegarkan cache aplikasi..."
+docker-compose exec -T app php artisan optimize:clear
+docker-compose exec -T app php artisan optimize
+docker-compose exec -T app php artisan config:cache
+docker-compose exec -T app php artisan route:cache
+docker-compose exec -T app php artisan view:cache
 
-echo "Application deployed successfully!"
+echo "📁 Mengatur izin penyimpanan..."
+docker-compose exec -T app chmod -R 775 /var/www/storage
+docker-compose exec -T app chown -R www-data:www-data /var/www/storage
+
+echo "🔗 Membuat symlink storage..."
+docker-compose exec -T app php artisan storage:link
+
+echo "⚙️ Me-restart layanan queue..."
+docker-compose exec -T app php artisan queue:restart
+
+echo "🔄 Memulai queue worker di background..."
+docker-compose exec -T -d app php artisan queue:work --tries=3 --timeout=90
+
+echo "🕒 Memulai scheduler di background..."
+docker-compose exec -T -d app php artisan schedule:work
+
+echo "✅ Aplikasi berhasil di-deploy dan berjalan di VPS!"
+echo "   Lihat aplikasi di: http://SERVER_IP:8000"
+echo "   Pastikan port 8000 terbuka di firewall atau konfigurasi reverse proxy untuk akses melalui domain"
