@@ -86,7 +86,7 @@ if ! command -v docker &> /dev/null; then
     exit 1
 fi
 
-if ! command -v docker-compose &> /dev/null; then
+if ! command -v "docker compose" &> /dev/null; then
     log_error "Docker Compose tidak terinstall. Silakan install terlebih dahulu."
     exit 1
 fi
@@ -145,7 +145,7 @@ log_success "Konfigurasi environment berhasil diperbarui"
 log_info "Membersihkan environment sebelumnya..."
 
 # Stop dan remove container yang ada
-docker-compose down --remove-orphans || true
+"docker compose" down --remove-orphans || true
 
 # Remove unused images (optional)
 log_info "Membersihkan Docker images yang tidak terpakai..."
@@ -155,24 +155,24 @@ docker image prune -f || true
 log_info "Memulai proses build dan deployment..."
 
 # Pull latest images
-run_command "Mendownload image terbaru" "docker-compose pull" true
+run_command "Mendownload image terbaru" "docker compose pull" true
 
 # Build dan start services
-run_command "Membangun dan menjalankan container" "docker-compose up -d --build"
+run_command "Membangun dan menjalankan container" "docker compose up -d --build"
 
 # 5. MENUNGGU SERVICES SIAP
-wait_for_service "Database MySQL" "docker-compose exec -T db mysqladmin ping -h localhost -u root --password=password --silent 2>/dev/null"
+wait_for_service "Database MySQL" "docker compose exec -T db mysqladmin ping -h localhost -u root --password=password --silent 2>/dev/null"
 
-wait_for_service "PHP-FPM Service" "docker-compose exec -T app php --version > /dev/null 2>&1"
+wait_for_service "PHP-FPM Service" "docker compose exec -T app php --version > /dev/null 2>&1"
 
 # 6. SETUP ENVIRONMENT DI CONTAINER
 log_info "Menyiapkan environment di dalam container..."
 
 # Copy .env ke container
-docker-compose exec -T app sh -c 'cat > /var/www/.env' < .env
+docker compose exec -T app sh -c 'cat > /var/www/.env' < .env
 
 # Verify .env exists in container
-if docker-compose exec -T app test -f /var/www/.env; then
+if docker compose exec -T app test -f /var/www/.env; then
     log_success "File .env berhasil di-copy ke container"
 else
     log_error "Gagal meng-copy file .env ke container"
@@ -184,22 +184,22 @@ log_info "Menginstall dependensi aplikasi..."
 
 # Install PHP dependencies
 run_command "Menginstall dependensi PHP dengan Composer" \
-    "docker-compose exec -T app composer install --no-dev --optimize-autoloader --no-interaction" \
+    "docker compose exec -T app composer install --no-dev --optimize-autoloader --no-interaction" \
     true
 
 # Generate application key
 run_command "Menggenerate application key" \
-    "docker-compose exec -T app php artisan key:generate --force" \
+    "docker compose exec -T app php artisan key:generate --force" \
     false
 
 # Install NPM dependencies (jika belum di-build dalam Dockerfile)
 run_command "Menginstall dependensi JavaScript" \
-    "docker-compose exec -T app npm ci --production" \
+    "docker compose exec -T app npm ci --production" \
     true
 
 # Build frontend assets
 run_command "Membangun aset frontend" \
-    "docker-compose exec -T app npm run build" \
+    "docker compose exec -T app npm run build" \
     true
 
 # 8. DATABASE OPERATIONS
@@ -207,39 +207,39 @@ log_info "Melakukan operasi database..."
 
 # Test database connection
 run_command "Menguji koneksi database" \
-    "docker-compose exec -T app php artisan tinker --execute='DB::connection()->getPdo(); echo \"Database connection successful\n\";'" \
+    "docker compose exec -T app php artisan tinker --execute='DB::connection()->getPdo(); echo \"Database connection successful\n\";'" \
     false
 
 # Setup session dan cache tables jika diperlukan
 log_info "Membuat tabel session dan cache..."
 run_command "Membuat tabel session" \
-    "docker-compose exec -T app php artisan session:table" \
+    "docker compose exec -T app php artisan session:table" \
     true
 
 run_command "Membuat tabel cache" \
-    "docker-compose exec -T app php artisan cache:table" \
+    "docker compose exec -T app php artisan cache:table" \
     true
 
 run_command "Membuat tabel queue" \
-    "docker-compose exec -T app php artisan queue:table" \
+    "docker compose exec -T app php artisan queue:table" \
     true
 
 run_command "Membuat tabel queue batches" \
-    "docker-compose exec -T app php artisan queue:batches-table" \
+    "docker compose exec -T app php artisan queue:batches-table" \
     true
 
 run_command "Membuat tabel failed jobs" \
-    "docker-compose exec -T app php artisan queue:failed-table" \
+    "docker compose exec -T app php artisan queue:failed-table" \
     true
 
 # Run migrations
 run_command "Menjalankan migrasi database" \
-    "docker-compose exec -T app php artisan migrate --force" \
+    "docker compose exec -T app php artisan migrate --force" \
     false
 
 # Seed database (optional - uncomment if needed)
 # run_command "Menjalankan database seeder" \
-#     "docker-compose exec -T app php artisan db:seed --force" \
+#     "docker compose exec -T app php artisan db:seed --force" \
 #     true
 
 # 9. OPTIMASI APLIKASI
@@ -247,34 +247,34 @@ log_info "Mengoptimasi aplikasi Laravel..."
 
 # Clear all caches first
 run_command "Membersihkan cache aplikasi" \
-    "docker-compose exec -T app php artisan optimize:clear" \
+    "docker compose exec -T app php artisan optimize:clear" \
     true
 
 # Setup file-based cache directory
 run_command "Membuat direktori cache" \
-    "docker-compose exec -T app mkdir -p /var/www/storage/framework/cache/data" \
+    "docker compose exec -T app mkdir -p /var/www/storage/framework/cache/data" \
     true
 
 run_command "Mengatur permissions cache directory" \
-    "docker-compose exec -T app chmod -R 775 /var/www/storage/framework/cache" \
+    "docker compose exec -T app chmod -R 775 /var/www/storage/framework/cache" \
     true
 
 # Generate optimized caches
 run_command "Menggenerate config cache" \
-    "docker-compose exec -T app php artisan config:cache" \
+    "docker compose exec -T app php artisan config:cache" \
     true
 
 run_command "Menggenerate route cache" \
-    "docker-compose exec -T app php artisan route:cache" \
+    "docker compose exec -T app php artisan route:cache" \
     true
 
 run_command "Menggenerate view cache" \
-    "docker-compose exec -T app php artisan view:cache" \
+    "docker compose exec -T app php artisan view:cache" \
     true
 
 # Warm up application cache
 run_command "Warming up application cache" \
-    "docker-compose exec -T app php artisan cache:clear && docker-compose exec -T app php artisan config:cache" \
+    "docker compose exec -T app php artisan cache:clear && docker compose exec -T app php artisan config:cache" \
     true
 
 # 10. SETUP STORAGE DAN PERMISSIONS
@@ -282,16 +282,16 @@ log_info "Mengatur storage dan permissions..."
 
 # Setup storage permissions
 run_command "Mengatur permissions storage" \
-    "docker-compose exec -T app chmod -R 775 /var/www/storage /var/www/bootstrap/cache" \
+    "docker compose exec -T app chmod -R 775 /var/www/storage /var/www/bootstrap/cache" \
     true
 
 run_command "Mengatur ownership storage" \
-    "docker-compose exec -T app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache" \
+    "docker compose exec -T app chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache" \
     true
 
 # Create storage symlink
 run_command "Membuat symlink storage" \
-    "docker-compose exec -T app php artisan storage:link" \
+    "docker compose exec -T app php artisan storage:link" \
     true
 
 # 11. BACKGROUND SERVICES
@@ -299,7 +299,7 @@ log_info "Mengatur background services..."
 
 # Setup queue
 run_command "Me-restart queue worker" \
-    "docker-compose exec -T app php artisan queue:restart" \
+    "docker compose exec -T app php artisan queue:restart" \
     true
 
 # Note: Queue worker dan scheduler akan dijalankan menggunakan supervisor atau cron
@@ -309,11 +309,11 @@ run_command "Me-restart queue worker" \
 log_info "Melakukan health check aplikasi..."
 
 # Check if all containers are running
-if docker-compose ps | grep -q "Up"; then
+if docker compose ps | grep -q "Up"; then
     log_success "Semua container berjalan dengan baik"
 else
     log_error "Beberapa container tidak berjalan dengan baik"
-    docker-compose ps
+    docker compose ps
 fi
 
 # Test HTTP response
@@ -334,7 +334,7 @@ log_success "DEPLOYMENT SELESAI!"
 echo "=========================================="
 
 log_info "Status Container:"
-docker-compose ps
+docker compose ps
 
 echo ""
 log_info "Informasi Akses:"
@@ -353,7 +353,7 @@ log_info "Langkah selanjutnya:"
 echo "  1. Pastikan firewall mengizinkan port 8000"
 echo "  2. Setup reverse proxy (Nginx/Apache) untuk domain custom"
 echo "  3. Setup SSL certificate untuk HTTPS"
-echo "  4. Monitor logs: docker-compose logs -f"
+echo "  4. Monitor logs: docker compose logs -f"
 echo ""
 
 log_success "Job Portal berhasil di-deploy ke VPS!"
