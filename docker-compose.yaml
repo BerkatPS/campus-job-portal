@@ -1,5 +1,5 @@
 services:
-  # PHP Service
+  # PHP Application Service
   app:
     build:
       context: .
@@ -8,21 +8,36 @@ services:
     restart: unless-stopped
     volumes:
       - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=campus_job_portal
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
     networks:
       - job_portal_network
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '0.5'
-#          memory: 512M
-#        reservations:
-#          cpus: '0.2'
-#          memory: 256M
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "php", "-v"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
-  # Nginx Service
+  # Nginx Web Server Service
   webserver:
-    image: nginx
+    image: nginx:alpine
     container_name: job_portal_nginx
     restart: unless-stopped
     ports:
@@ -30,48 +45,139 @@ services:
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./storage/app/public:/var/www/storage/app/public
     networks:
       - job_portal_network
     depends_on:
-      - app
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '0.5'
-#          memory: 512M
-#        reservations:
-#          cpus: '0.2'
-#          memory: 256M
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
-  # MySQL Service
+  # MySQL Database Service
   db:
     image: mysql:8.0
     container_name: job_portal_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: password  # Ini untuk root
+      MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: campus_job_portal
-      SERVICE_TAGS: dev
-      SERVICE_NAME: mysql
+      MYSQL_USER: laravel_user
+      MYSQL_PASSWORD: laravel_password
     volumes:
       - dbdata:/var/lib/mysql
+      - ./mysql/conf.d:/etc/mysql/conf.d
     networks:
       - job_portal_network
     ports:
       - "3306:3306"
-#    deploy:
-#      resources:
-#        limits:
-#          cpus: '0.5'
-#          memory: 512M
-#        reservations:
-#          cpus: '0.2'
-#          memory: 256M
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=password"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+
+
+  # Queue Worker Service (untuk background jobs)
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job_portal_queue
+    restart: unless-stopped
+    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
+    volumes:
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=campus_job_portal
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
+    networks:
+      - job_portal_network
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+
+  # Scheduler Service (untuk Laravel scheduled tasks)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: job_portal_scheduler
+    restart: unless-stopped
+    command: >
+      sh -c "
+        while true; do
+          php artisan schedule:run --verbose --no-interaction &
+          sleep 60
+        done
+      "
+    volumes:
+      - ./storage:/var/www/storage
+      - ./bootstrap/cache:/var/www/bootstrap/cache
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=campus_job_portal
+      - DB_USERNAME=root
+      - DB_PASSWORD=password
+    networks:
+      - job_portal_network
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
 # Networks
 networks:
   job_portal_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
 
 # Volumes
 volumes:
