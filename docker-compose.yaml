@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # PHP Application Service
   app:
@@ -7,33 +9,38 @@ services:
     container_name: job_portal_app
     restart: unless-stopped
     volumes:
+      - ./:/var/www
       - ./storage:/var/www/storage
       - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+      - ./wait-for-db.sh:/wait-for-db.sh
     environment:
+      - DB_CONNECTION=mysql
       - DB_HOST=db
+      - DB_PORT=3306
       - DB_DATABASE=campus_job_portal
       - DB_USERNAME=root
       - DB_PASSWORD=password
+      - APP_ENV=local
+      - APP_DEBUG=true
     networks:
       - job_portal_network
     depends_on:
-      db:
-        condition: service_healthy
+      - db
+    entrypoint: ["/bin/bash", "-c"]
+    command: 
+      - |
+        chmod +x /wait-for-db.sh
+        /wait-for-db.sh db
+        php artisan config:clear
+        php artisan migrate --force
+        php-fpm
     healthcheck:
       test: ["CMD", "php", "-v"]
-      interval: 30s
-      timeout: 10s
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
+      start_period: 30s
 
   # Nginx Web Server Service
   webserver:
@@ -49,22 +56,13 @@ services:
     networks:
       - job_portal_network
     depends_on:
-      app:
-        condition: service_healthy
+      - app
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 30s
-      timeout: 10s
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 10s
+      timeout: 5s
       retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+      start_period: 10s
 
   # MySQL Database Service
   db:
@@ -79,27 +77,18 @@ services:
     volumes:
       - dbdata:/var/lib/mysql
       - ./mysql/conf.d:/etc/mysql/conf.d
+      - ./mysql/init:/docker-entrypoint-initdb.d
     networks:
       - job_portal_network
     ports:
       - "3306:3306"
     command: --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=password"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppassword"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
-          memory: 512M
-
-
 
   # Queue Worker Service (untuk background jobs)
   queue:
@@ -108,30 +97,32 @@ services:
       dockerfile: Dockerfile
     container_name: job_portal_queue
     restart: unless-stopped
-    command: php artisan queue:work --sleep=3 --tries=3 --max-time=3600
     volumes:
+      - ./:/var/www
       - ./storage:/var/www/storage
       - ./bootstrap/cache:/var/www/bootstrap/cache
+      - ./wait-for-db.sh:/wait-for-db.sh
     environment:
+      - DB_CONNECTION=mysql
       - DB_HOST=db
+      - DB_PORT=3306
       - DB_DATABASE=campus_job_portal
       - DB_USERNAME=root
       - DB_PASSWORD=password
+      - APP_ENV=local
+      - APP_DEBUG=true
     networks:
       - job_portal_network
     depends_on:
-      db:
-        condition: service_healthy
-      app:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+      - db
+      - app
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        chmod +x /wait-for-db.sh
+        /wait-for-db.sh db
+        sleep 15  # Tunggu app container siap
+        php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 
   # Scheduler Service (untuk Laravel scheduled tasks)
   scheduler:
@@ -140,44 +131,40 @@ services:
       dockerfile: Dockerfile
     container_name: job_portal_scheduler
     restart: unless-stopped
-    command: >
-      sh -c "
-        while true; do
-          php artisan schedule:run --verbose --no-interaction &
-          sleep 60
-        done
-      "
     volumes:
+      - ./:/var/www
       - ./storage:/var/www/storage
       - ./bootstrap/cache:/var/www/bootstrap/cache
+      - ./wait-for-db.sh:/wait-for-db.sh
     environment:
+      - DB_CONNECTION=mysql
       - DB_HOST=db
+      - DB_PORT=3306
       - DB_DATABASE=campus_job_portal
       - DB_USERNAME=root
       - DB_PASSWORD=password
+      - APP_ENV=local
+      - APP_DEBUG=true
     networks:
       - job_portal_network
     depends_on:
-      db:
-        condition: service_healthy
-      app:
-        condition: service_healthy
-    deploy:
-      resources:
-        limits:
-          cpus: '0.25'
-          memory: 256M
-        reservations:
-          cpus: '0.1'
-          memory: 128M
+      - db
+      - app
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        chmod +x /wait-for-db.sh
+        /wait-for-db.sh db
+        sleep 20  # Tunggu app container siap
+        while true; do
+          php artisan schedule:run --verbose --no-interaction
+          sleep 60
+        done
 
 # Networks
 networks:
   job_portal_network:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 172.20.0.0/16
 
 # Volumes
 volumes:
