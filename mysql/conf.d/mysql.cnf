@@ -1,46 +1,8 @@
 [mysqld]
-# Basic settings
-user = mysql
-default-storage-engine = innodb
-socket = /var/run/mysqld/mysqld.sock
-pid-file = /var/run/mysqld/mysqld.pid
-
-# Connection settings
-bind-address = 0.0.0.0
-port = 3306
-max_connections = 200
-max_connect_errors = 1000000
-
-# Buffer settings
-innodb_buffer_pool_size = 256M
-innodb_log_file_size = 64M
-innodb_flush_log_at_trx_commit = 1
-innodb_flush_method = O_DIRECT
-
-# Logging
-log-error = /var/log/mysql/error.log
-general_log = 1 
-general_log_file = /var/log/mysql/general.log
-slow_query_log = 1
-slow_query_log_file = /var/log/mysql/slow.log
-long_query_time = 2
-
-# Character set
+# Minimal configuration for Docker environment
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_ci
-
-# Security
-local-infile = 0
-
-# MyISAM settings
-key_buffer_size = 16M
-table_open_cache = 64
-
-# Other settings
-tmp_table_size = 32M
-max_heap_table_size = 32M
-query_cache_type = 0
-query_cache_size = 0
+default-storage-engine = innodb
 
 [mysql]
 default-character-set = utf8mb4
