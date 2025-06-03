@@ -71,12 +71,19 @@ RUN composer install --no-scripts --no-autoloader --optimize-autoloader
 COPY package*.json ./
 RUN npm ci
 
-# Copy application code
+# Set proper permissions for storage and cache directories first
+RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
+    && chmod -R 775 /var/www/storage \
+    && chmod -R 775 /var/www/bootstrap/cache
+
+# Copy application code (excluding node_modules)
 COPY . .
 
-# Set proper permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www \
+# Set proper permissions (excluding node_modules to avoid I/O errors)
+RUN find /var/www -type d -not -path "*/node_modules/*" -exec chown -R www-data:www-data {} \; \
+    && find /var/www -type f -not -path "*/node_modules/*" -exec chown www-data:www-data {} \; \
+    && find /var/www -type d -not -path "*/node_modules/*" -exec chmod 755 {} \; \
+    && find /var/www -type f -not -path "*/node_modules/*" -exec chmod 644 {} \; \
     && chmod -R 775 /var/www/storage \
     && chmod -R 775 /var/www/bootstrap/cache
 
