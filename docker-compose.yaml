@@ -19,16 +19,20 @@ services:
       - DB_DATABASE=campus_job_portal
       - DB_USERNAME=root
       - DB_PASSWORD=password
-      - APP_ENV=local
-      - APP_DEBUG=true
+      - APP_ENV=production
+      - APP_DEBUG=false
     networks:
       - job_portal_network
     depends_on:
       db:
         condition: service_healthy
-    entrypoint: ["/bin/bash", "-c"]
-    command: 
+    entrypoint:
+      - /bin/bash
+      - -c
       - |
+        mkdir -p /var/www/storage/logs /var/www/storage/framework/sessions /var/www/storage/framework/views /var/www/storage/framework/cache /var/www/bootstrap/cache
+        chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+        chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache
         chmod +x /wait-for-db.sh
         /wait-for-db.sh db
         php artisan config:clear
@@ -36,9 +40,9 @@ services:
         php-fpm
     healthcheck:
       test: ["CMD", "php", "-v"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+      interval: 30s
+      timeout: 10s
+      retries: 5
       start_period: 30s
 
   # Nginx Web Server Service
@@ -47,21 +51,24 @@ services:
     container_name: job_portal_nginx
     restart: unless-stopped
     ports:
+      - "80:80"
       - "8000:80"
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
       - ./storage/app/public:/var/www/storage/app/public
+      - ./nginx/logs:/var/log/nginx
     networks:
       - job_portal_network
     depends_on:
-      - app
+      app:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   # MySQL Database Service
   db:
@@ -78,7 +85,6 @@ services:
       - dbdata:/var/lib/mysql
       - ./mysql/conf.d:/etc/mysql/conf.d
       - ./mysql/init:/docker-entrypoint-initdb.d
-      - mysql_logs:/var/log/mysql
     networks:
       - job_portal_network
     ports:
@@ -86,19 +92,12 @@ services:
     command: >
       --default-authentication-plugin=mysql_native_password
       --bind-address=0.0.0.0
-      --log-error=/var/log/mysql/error.log
-      --general-log=1
-      --general-log-file=/var/log/mysql/general.log
-      --slow-query-log=1
-      --slow-query-log-file=/var/log/mysql/slow.log
-      --long_query_time=2
-      --log-queries-not-using-indexes=1
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-ppassword"]
-      interval: 15s
-      timeout: 10s
-      retries: 5
-      start_period: 45s
+      interval: 20s
+      timeout: 15s
+      retries: 10
+      start_period: 60s
 
   # Queue Worker Service (untuk background jobs)
   queue:
@@ -112,22 +111,13 @@ services:
       - ./storage:/var/www/storage
       - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./wait-for-db.sh:/wait-for-db.sh
-    environment:
-      - DB_CONNECTION=mysql
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_DATABASE=campus_job_portal
-      - DB_USERNAME=root
-      - DB_PASSWORD=password
-      - APP_ENV=local
-      - APP_DEBUG=true
     networks:
       - job_portal_network
     depends_on:
       db:
         condition: service_healthy
       app:
-        condition: service_healthy
+        condition: service_started
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
@@ -136,7 +126,7 @@ services:
         sleep 15  # Tunggu app container siap
         php artisan queue:work --sleep=3 --tries=3 --max-time=3600
 
-  # Scheduler Service (untuk Laravel scheduled tasks)
+  # Scheduler Service (untuk scheduled tasks)
   scheduler:
     build:
       context: .
@@ -148,22 +138,13 @@ services:
       - ./storage:/var/www/storage
       - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./wait-for-db.sh:/wait-for-db.sh
-    environment:
-      - DB_CONNECTION=mysql
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_DATABASE=campus_job_portal
-      - DB_USERNAME=root
-      - DB_PASSWORD=password
-      - APP_ENV=local
-      - APP_DEBUG=true
     networks:
       - job_portal_network
     depends_on:
       db:
         condition: service_healthy
       app:
-        condition: service_healthy
+        condition: service_started
     entrypoint: ["/bin/bash", "-c"]
     command:
       - |
@@ -183,6 +164,4 @@ networks:
 # Volumes
 volumes:
   dbdata:
-    driver: local
-  mysql_logs:
     driver: local

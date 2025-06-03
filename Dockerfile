@@ -65,19 +65,22 @@ RUN echo "opcache.enable=1" >> /usr/local/etc/php/conf.d/opcache.ini \
 
 # Copy composer files and install dependencies
 COPY composer.json composer.lock ./
-RUN composer install --no-scripts --no-autoloader --optimize-autoloader
 
 # Copy package.json and install Node dependencies
 COPY package*.json ./
-RUN npm ci
+RUN npm ci \
+    && npm install @nivo/line @nivo/bar @nivo/pie --save
 
-# Set proper permissions for storage and cache directories first
 RUN mkdir -p /var/www/storage /var/www/bootstrap/cache \
     && chmod -R 775 /var/www/storage \
     && chmod -R 775 /var/www/bootstrap/cache
 
 # Copy application code (excluding node_modules)
 COPY . .
+
+# Install Composer dependencies with proper permissions
+RUN composer install --no-interaction --optimize-autoloader \
+    && composer dump-autoload --optimize --classmap-authoritative
 
 # Set proper permissions (excluding node_modules to avoid I/O errors)
 RUN find /var/www -type d -not -path "*/node_modules/*" -exec chown -R www-data:www-data {} \; \
@@ -86,9 +89,6 @@ RUN find /var/www -type d -not -path "*/node_modules/*" -exec chown -R www-data:
     && find /var/www -type f -not -path "*/node_modules/*" -exec chmod 644 {} \; \
     && chmod -R 775 /var/www/storage \
     && chmod -R 775 /var/www/bootstrap/cache
-
-# Generate optimized autoload files
-RUN composer dump-autoload --optimize --classmap-authoritative
 
 # Build frontend assets using vite
 RUN npm run build
