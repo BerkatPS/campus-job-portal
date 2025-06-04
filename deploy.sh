@@ -27,7 +27,8 @@ fi
 # Perbarui file .env dengan konfigurasi database yang benar
 echo "Memperbarui konfigurasi database dan URL di .env..."
 sed -i'.bak' 's/DB_HOST=127.0.0.1/DB_HOST=db/g' .env
-sed -i'.bak' 's/DB_PASSWORD=/DB_PASSWORD=password/g' .env
+sed -i'.bak' 's/^DB_USERNAME=.*/DB_USERNAME=laravel_user/g' .env
+sed -i'.bak' 's/^DB_PASSWORD=.*/DB_PASSWORD=laravel_password/g' .env
 sed -i'.bak' 's|APP_URL=.*|APP_URL=http://128.199.31.100|g' .env
 echo "Konfigurasi database dan URL telah diperbarui"
 

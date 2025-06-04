@@ -8,8 +8,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/var/www
-      - ./storage:/var/www/storage
-      - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
       - ./wait-for-db.sh:/wait-for-db.sh
     environment:
@@ -17,8 +15,8 @@ services:
       - DB_HOST=db
       - DB_PORT=3306
       - DB_DATABASE=campus_job_portal
-      - DB_USERNAME=root
-      - DB_PASSWORD=password
+      - DB_USERNAME=laravel_user
+      - DB_PASSWORD=laravel_password
       - APP_ENV=production
       - APP_DEBUG=false
     networks:
@@ -108,8 +106,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/var/www
-      - ./storage:/var/www/storage
-      - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./wait-for-db.sh:/wait-for-db.sh
     networks:
       - job_portal_network
@@ -135,8 +131,6 @@ services:
     restart: unless-stopped
     volumes:
       - ./:/var/www
-      - ./storage:/var/www/storage
-      - ./bootstrap/cache:/var/www/bootstrap/cache
       - ./wait-for-db.sh:/wait-for-db.sh
     networks:
       - job_portal_network
