@@ -9,7 +9,6 @@ VPS_HOST="128.199.31.100"
 VPS_USER="root"  # Ganti sesuai user VPS Anda
 VPS_PORT="22"
 PROJECT_DIR="/var/www/campus-job-portal"
-GITHUB_REPO="https://github.com/username/campus-job-portal.git"  # Ganti dengan repo Anda
 
 # Warna untuk output
 RED='\033[0;31m'

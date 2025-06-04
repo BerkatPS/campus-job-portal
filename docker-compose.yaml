@@ -54,7 +54,6 @@ services:
     volumes:
       - ./:/var/www
       - ./nginx/conf.d/:/etc/nginx/conf.d/
-      - ./storage/app/public:/var/www/storage/app/public
       - ./nginx/logs:/var/log/nginx
     networks:
       - job_portal_network
@@ -62,11 +61,12 @@ services:
       app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost" ]
       interval: 30s
       timeout: 10s
-      retries: 5
-      start_period: 30s
+      retries: 3
+      start_period: 40s
+
 
   # MySQL Database Service
   db:
