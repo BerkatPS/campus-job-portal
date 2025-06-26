@@ -40,8 +40,9 @@ COPY . .
 
 # Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction \
-    && npm ci --only=production \
+    && npm ci \
     && npm run build \
+    && npm prune --production \
     && rm -rf node_modules
 
 # Create required directories and set permissions
