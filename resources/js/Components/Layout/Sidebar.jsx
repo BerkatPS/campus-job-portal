@@ -262,12 +262,12 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 route: 'candidate.applications.index',
                 color: primaryColor
             },
-            {
-                text: 'Resume AI',
-                icon: <AutoFixHighIcon />,
-                route: 'candidate.resume-enhancer.index',
-                color: primaryColor
-            },
+            // {
+            //     text: 'Resume AI',
+            //     icon: <AutoFixHighIcon />,
+            //     route: 'candidate.resume-enhancer.index',
+            //     color: primaryColor
+            // },
             {
                 text: 'Acara',
                 icon: <EventIcon />,
