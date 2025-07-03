@@ -62,6 +62,7 @@ import 'moment/locale/id';
 import { motion } from 'framer-motion';
 import Layout from '@/Components/Layout/Layout';
 import Pagination from '@/Components/Shared/Pagination';
+import Swal from 'sweetalert2';
 
 moment.locale('id');
 
@@ -70,11 +71,9 @@ const JobsIndex = ({ jobs, filters, categories }) => {
     const theme = useTheme();
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [selectedJob, setSelectedJob] = useState(null);
-    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState(null);
     const [viewMode, setViewMode] = useState('list');
     const [loading, setLoading] = useState(false);
-    const [categoryFilter, setCategoryFilter] = useState(filters.category || '');
     const [statusFilter, setStatusFilter] = useState(filters.status || '');
     const [tabValue, setTabValue] = useState(statusFilter === 'active' ? 1 : (statusFilter === 'closed' ? 2 : 0));
     const [actionsAnchorEl, setActionsAnchorEl] = useState(null);
@@ -122,15 +121,12 @@ const JobsIndex = ({ jobs, filters, categories }) => {
     useEffect(() => {
         if (jobs?.data) {
             // Only update URL if user explicitly changed filters (not on initial load)
-            if (searchTerm || categoryFilter || statusFilter) {
+            if (searchTerm || statusFilter) {
                 const params = { ...route().params };
                 
                 // Add filters to URL params
                 if (searchTerm) params.search = searchTerm;
                 else delete params.search;
-                
-                if (categoryFilter) params.category = categoryFilter;
-                else delete params.category;
                 
                 if (statusFilter) params.status = statusFilter;
                 else delete params.status;
@@ -145,12 +141,11 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                 });
             }
         }
-    }, [searchTerm, categoryFilter, statusFilter]);
+    }, [searchTerm, statusFilter]);
 
     // Reset all filters
     const resetFilters = () => {
         setSearchTerm('');
-        setCategoryFilter('');
         setStatusFilter('');
         setTabValue(0);
         
@@ -164,11 +159,26 @@ const JobsIndex = ({ jobs, filters, categories }) => {
     // Dialog handlers
     const handleDeleteDialogOpen = (job) => {
         setSelectedJob(job);
-        setDeleteDialogOpen(true);
+        
+        Swal.fire({
+            title: 'Konfirmasi Hapus',
+            text: `Apakah Anda yakin ingin menghapus lowongan ${job.title}? Tindakan ini tidak dapat dibatalkan dan akan menghapus semua data terkait lowongan ini.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: theme.palette.error.main,
+            cancelButtonColor: theme.palette.grey[500],
+            confirmButtonText: 'Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                handleDeleteJob();
+            } else {
+                setSelectedJob(null);
+            }
+        });
     };
 
     const handleDeleteDialogClose = () => {
-        setDeleteDialogOpen(false);
         setSelectedJob(null);
     };
 
@@ -196,11 +206,44 @@ const JobsIndex = ({ jobs, filters, categories }) => {
         if (selectedJob) {
             setLoading(true);
             router.delete(route('admin.jobs.destroy', selectedJob.id), {
-                onSuccess: () => {
-                    handleDeleteDialogClose();
-                    setLoading(false);
+                onSuccess: (page) => {
+                    // Tampilkan pesan sukses dengan SweetAlert2
+                    const message = page.props.flash && page.props.flash.message
+                        ? page.props.flash.message
+                        : 'Lowongan berhasil dihapus';
+                    
+                    Swal.fire({
+                        title: 'Berhasil!',
+                        text: message,
+                        icon: 'success',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: theme.palette.primary.main
+                    });
+                    
+                    setSelectedJob(null);
+                    // Refresh data setelah penghapusan berhasil
+                    router.reload({ only: ['jobs'] });
                 },
-                onError: () => {
+                onError: (errors) => {
+                    // Tampilkan pesan error dengan SweetAlert2
+                    console.error('Error deleting job:', errors);
+                    let errorMessage = 'Gagal menghapus lowongan: Terjadi kesalahan';
+                    
+                    if (errors.message) {
+                        errorMessage = errors.message;
+                    } else if (errors.errors && Object.keys(errors.errors).length > 0) {
+                        errorMessage = 'Gagal menghapus lowongan:\n' + Object.values(errors.errors).flat().join('\n');
+                    }
+                    
+                    Swal.fire({
+                        title: 'Error!',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK',
+                        confirmButtonColor: theme.palette.error.main
+                    });
+                },
+                onFinish: () => {
                     setLoading(false);
                 }
             });
@@ -481,6 +524,155 @@ const JobsIndex = ({ jobs, filters, categories }) => {
         );
     };
 
+    // Fungsi untuk mengekspor data ke CSV
+    const exportToCSV = () => {
+        // Pastikan ada data untuk diekspor
+        if (!jobs?.data || jobs.data.length === 0) {
+            alert('Tidak ada data untuk diekspor');
+            return;
+        }
+    
+        // Membuat header CSV
+        const headers = [
+            'ID', 'Judul', 'Perusahaan', 'Lokasi', 'Status',
+            'Tanggal Dibuat', 'Gaji Minimum', 'Gaji Maksimum', 'Jumlah Pelamar'
+        ];
+    
+        // Mengubah data jobs menjadi format CSV
+        const csvData = jobs.data.map(job => [
+            job.id,
+            job.title,
+            job.company?.name || '-',
+            job.location || '-',
+            getStatusText(job.status),
+            moment(job.created_at).format('DD/MM/YYYY'),
+            job.salary_min ? `Rp ${new Intl.NumberFormat('id-ID').format(job.salary_min)}` : '-',
+            job.salary_max ? `Rp ${new Intl.NumberFormat('id-ID').format(job.salary_max)}` : '-',
+            job.applications_count || 0
+        ]);
+    
+        // Menggabungkan header dan data
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n');
+    
+        // Membuat blob dan link untuk download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `lowongan-pekerjaan-${moment().format('YYYY-MM-DD')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // Fungsi untuk mencetak daftar lowongan
+    const printJobList = () => {
+        // Pastikan ada data untuk dicetak
+        if (!jobs?.data || jobs.data.length === 0) {
+            alert('Tidak ada data untuk dicetak');
+            return;
+        }
+    
+        // Membuat konten HTML untuk dicetak
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Daftar Lowongan Pekerjaan - ${moment().format('DD MMMM YYYY')}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1 {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    .print-date {
+                        text-align: right;
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    .status-active {
+                        color: green;
+                        font-weight: bold;
+                    }
+                    .status-closed {
+                        color: red;
+                        font-weight: bold;
+                    }
+                    .status-draft {
+                        color: orange;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-date">Dicetak pada: ${moment().format('DD MMMM YYYY, HH:mm:ss')}</div>
+                <h1>Daftar Lowongan Pekerjaan</h1>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Judul</th>
+                            <th>Perusahaan</th>
+                            <th>Lokasi</th>
+                            <th>Status</th>
+                            <th>Tanggal Dibuat</th>
+                            <th>Jumlah Pelamar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${jobs.data.map((job, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${job.title}</td>
+                                <td>${job.company?.name || '-'}</td>
+                                <td>${job.location || '-'}</td>
+                                <td class="status-${job.status}">${getStatusText(job.status)}</td>
+                                <td>${moment(job.created_at).format('DD/MM/YYYY')}</td>
+                                <td>${job.applications_count || 0}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+    
+        // Membuka jendela baru untuk mencetak
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Menunggu konten dimuat sebelum mencetak
+        printWindow.onload = function() {
+            printWindow.print();
+            // printWindow.close(); // Uncomment jika ingin jendela otomatis tertutup setelah mencetak
+        };
+    };
+
     // Actions Menu Component
     const ActionsMenu = ({ anchorEl, onClose }) => {
         return (
@@ -505,19 +697,28 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
             >
-                <MenuItem onClick={onClose}>
+                <MenuItem onClick={() => {
+                    exportToCSV();
+                    onClose();
+                }}>
                     <ListItemIcon>
                         <CloudDownloadIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>Ekspor CSV</ListItemText>
                 </MenuItem>
-                <MenuItem onClick={onClose}>
+                <MenuItem onClick={() => {
+                    printJobList();
+                    onClose();
+                }}>
                     <ListItemIcon>
                         <PrintIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>Cetak Daftar</ListItemText>
                 </MenuItem>
-                <MenuItem onClick={onClose}>
+                <MenuItem onClick={() => {
+                    resetFilters();
+                    onClose();
+                }}>
                     <ListItemIcon>
                         <RefreshIcon fontSize="small" />
                     </ListItemIcon>
@@ -626,40 +827,13 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                                     size="small"
                                 />
                             </Box>
-                            <Box sx={{ flex: '1 1 220px' }}>
-                                <TextField
-                                    select
-                                    fullWidth
-                                    size="small"
-                                    label="Kategori"
-                                    value={categoryFilter}
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                    InputProps={{
-                                        startAdornment: (
-                                            <InputAdornment position="start">
-                                                <BusinessIcon fontSize="small" color="action" />
-                                            </InputAdornment>
-                                        ),
-                                        sx: {
-                                            borderRadius: 2,
-                                        }
-                                    }}
-                                >
-                                    <MenuItem value="">Semua Kategori</MenuItem>
-                                    {categories.map((category) => (
-                                        <MenuItem key={category.id} value={category.id}>
-                                            {category.name}
-                                        </MenuItem>
-                                    ))}
-                                </TextField>
-                            </Box>
                             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                                 <Tooltip title="Reset Semua Filter">
                                     <span>
                                         <IconButton
                                             color="primary"
                                             onClick={resetFilters}
-                                            disabled={!searchTerm && !categoryFilter && tabValue === 0}
+                                            disabled={!searchTerm && tabValue === 0}
                                             size="small"
                                             sx={{
                                                 border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
@@ -679,10 +853,10 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                         <Box>
                             <Typography variant="body2" color="text.secondary">
                                 {jobs.total} {jobs.total === 1 ? 'lowongan' : 'lowongan'} ditemukan
-                                {(searchTerm || categoryFilter || statusFilter) ? ' dengan filter saat ini' : ''}
+                                {(searchTerm || statusFilter) ? ' dengan filter saat ini' : ''}
                             </Typography>
                         </Box>
-                        {(searchTerm || categoryFilter || tabValue > 0) && (
+                        {(searchTerm || tabValue > 0) && (
                             <Button
                                 variant="text"
                                 size="small"
@@ -711,7 +885,6 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                                             <TableRow>
                                                 <TableCell>Lowongan</TableCell>
                                                 <TableCell>Perusahaan</TableCell>
-                                                <TableCell>Kategori</TableCell>
                                                 <TableCell>Status</TableCell>
                                                 <TableCell>Tanggal Dibuat</TableCell>
                                                 <TableCell align="center">Pelamar</TableCell>
@@ -737,9 +910,6 @@ const JobsIndex = ({ jobs, filters, categories }) => {
                                                         </TableCell>
                                                         <TableCell>
                                                             {job.company ? job.company.name : '-'}
-                                                        </TableCell>
-                                                        <TableCell>
-                                                            {job.category ? job.category.name : '-'}
                                                         </TableCell>
                                                         <TableCell>
                                                             <Chip
@@ -900,35 +1070,16 @@ const JobsIndex = ({ jobs, filters, categories }) => {
             >
                 <MenuItem onClick={() => {
                     handleMenuClose();
-                    handleDeleteDialogOpen(selectedJob);
+                    if (selectedJob) {
+                        handleDeleteDialogOpen(selectedJob);
+                    }
                 }} sx={{ color: 'error.main' }}>
                     <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
                     Hapus Lowongan
                 </MenuItem>
             </Menu>
 
-            {/* Delete confirmation dialog */}
-            <Dialog
-                open={deleteDialogOpen}
-                onClose={handleDeleteDialogClose}
-            >
-                <DialogTitle>Konfirmasi Hapus</DialogTitle>
-                <DialogContent>
-                    <DialogContentText>
-                        Apakah Anda yakin ingin menghapus lowongan <strong>{selectedJob?.title}</strong>? Tindakan ini tidak dapat dibatalkan dan akan menghapus semua data terkait lowongan ini.
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleDeleteDialogClose}>Batal</Button>
-                    <Button
-                        onClick={handleDeleteJob}
-                        color="error"
-                        variant="contained"
-                    >
-                        Hapus
-                    </Button>
-                </DialogActions>
-            </Dialog>
+            {/* Delete confirmation dialog menggunakan SweetAlert2 */}
 
             {/* Actions menu */}
             <ActionsMenu anchorEl={actionsAnchorEl} onClose={handleCloseActionsMenu} />

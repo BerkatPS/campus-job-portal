@@ -1032,29 +1032,7 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 display: 'flex',
                 justifyContent: collapsed ? 'center' : 'flex-start'
             }}>
-                <Button
-                    href={route('logout')}
-                    method="post"
-                    as="button"
-                    startIcon={collapsed ? null : <LogoutIcon />}
-                    color="error"
-                    size={collapsed ? "small" : "medium"}
-                    sx={{
-                        borderRadius: '12px',
-                        px: collapsed ? 1 : 3,
-                        py: 1,
-                        backgroundColor: mode === 'dark' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)',
-                        color: 'error.main',
-                        fontWeight: 600,
-                        transition: 'all 0.2s ease',
-                        '&:hover': {
-                            backgroundColor: mode === 'dark' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(239, 68, 68, 0.15)',
-                            transform: 'translateY(-2px)',
-                        }
-                    }}
-                >
-                    {collapsed ? <LogoutIcon fontSize="small" /> : 'Logout'}
-                </Button>
+                
             </Box>
         </Box>
     );

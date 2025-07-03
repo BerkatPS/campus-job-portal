@@ -11,7 +11,7 @@ class UserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +21,26 @@ class UserRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            //
+        $rules = [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'role_id' => 'required|exists:roles,id',
+            'is_active' => 'boolean',
+            'nim' => 'nullable|string|max:50',
+            'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
         ];
+
+        // Add password rules for new users (when creating)
+        if ($this->isMethod('post')) {
+            $rules['password'] = 'required|string|min:8|confirmed';
+        } else {
+            // For updates, password is optional
+            $rules['password'] = 'nullable|string|min:8|confirmed';
+            
+            // Update unique email rule to ignore current user
+            $rules['email'] = 'required|string|email|max:255|unique:users,email,' . $this->route('user')->id;
+        }
+
+        return $rules;
     }
 }

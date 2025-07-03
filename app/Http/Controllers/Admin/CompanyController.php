@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\User;
+use App\Models\CompanyReview;
 use App\Http\Requests\Admin\CompanyRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class CompanyController extends Controller
 {
@@ -357,28 +359,69 @@ class CompanyController extends Controller
     public function destroy(Company $company)
     {
         try {
-            // Check if company has jobs
-            if ($company->jobs()->exists()) {
-                return back()->with('error', 'Tidak dapat menghapus perusahaan yang memiliki lowongan pekerjaan.');
+            // Start a database transaction to ensure atomicity
+            DB::beginTransaction();
+            
+            // Check if company has reviews
+            if (CompanyReview::where('company_id', $company->id)->exists()) {
+                return response()->json([
+                    'message' => 'Perusahaan tidak dapat dihapus karena memiliki ulasan dari pengguna.'
+                ], 422);
             }
-
+            
+            // Get all jobs associated with this company
+            $jobs = $company->jobs()->get();
+            
+            // For each job, delete related data
+            foreach ($jobs as $job) {
+                // Delete job applications and related data
+                 $job->applications()->each(function ($application) {
+                     // Delete application events
+                     $application->events()->delete();
+                     // Delete the application
+                     $application->delete();
+                 });
+                
+                // Delete job events
+                $job->events()->delete();
+                
+                // Delete job hiring stages
+                 $job->hiringStages()->delete();
+                
+                // Delete the job
+                $job->delete();
+            }
+            
             // Delete logo if it exists
             if ($company->logo) {
                 $logoDeleted = Storage::disk('public')->delete($company->logo);
                 \Log::info('Company logo deletion: ' . ($logoDeleted ? 'successful' : 'failed') . ' - ' . $company->logo);
             }
-
+            
+            // Delete company managers
+             $company->managers()->delete();
+            
+            // Delete the company
             $company->delete();
             \Log::info('Company deleted successfully: ' . $company->id);
-
-            return redirect()->route('admin.companies.index')
-                ->with('success', 'Perusahaan berhasil dihapus.');
-
+            
+            // Commit the transaction
+            DB::commit();
+            
+            return response()->json([
+                'message' => 'Perusahaan berhasil dihapus.'
+            ], 200);
+            
         } catch (\Exception $e) {
+            // Rollback transaction if any error occurs
+            DB::rollBack();
+            
             \Log::error('Company deletion failed: ' . $e->getMessage());
             \Log::error($e->getTraceAsString());
 
-            return back()->with('error', 'Gagal menghapus perusahaan: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Gagal menghapus perusahaan: ' . $e->getMessage()
+            ], 500);
         }
     }
 

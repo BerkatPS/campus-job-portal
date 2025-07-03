@@ -385,7 +385,7 @@ const CompanyDetails = ({ company, stats }) => {
 
                         <Divider sx={{ my: 2 }} />
 
-                        <Button
+                        {/* <Button
                             variant="contained"
                             fullWidth
                             component={Link}
@@ -393,7 +393,7 @@ const CompanyDetails = ({ company, stats }) => {
                             sx={{ mb: 1 }}
                         >
                             Manage Managers
-                        </Button>
+                        </Button> */}
 
                         <Button
                             variant="outlined"

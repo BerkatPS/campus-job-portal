@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\Job;
 use App\Models\Company;
 use App\Models\HiringStage;
+use App\Models\CompanyReview;
 use App\Http\Requests\Admin\JobRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class JobController extends Controller
@@ -300,13 +303,48 @@ class JobController extends Controller
      */
     public function destroy(Job $job)
     {
-        // Check if job has applications
-        if ($job->jobApplications()->exists()) {
-            return back()->with('error', 'Cannot delete job as it has applications.');
+        try {
+            // Begin transaction to ensure all related data is deleted properly
+            DB::beginTransaction();
+            
+            // Check if job has applications
+            if ($job->jobApplications()->exists()) {
+                // Jika ada aplikasi terkait, periksa apakah ada review terkait
+                $hasReviews = CompanyReview::whereHas('jobApplication', function($query) use ($job) {
+                    $query->where('job_id', $job->id);
+                })->exists();
+                
+                if ($hasReviews) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Tidak dapat menghapus lowongan karena memiliki review perusahaan terkait.'], 422);
+                }
+                
+                // Hapus semua aplikasi terkait terlebih dahulu
+                // Ini aman karena kita sudah memeriksa tidak ada review terkait
+                $job->jobApplications()->delete();
+            }
+            
+            // Delete events related to this job
+            $job->events()->delete();
+            
+            // Delete job hiring stages first to avoid foreign key constraints
+            $job->jobHiringStages()->delete();
+            
+            // Delete the job
+            $job->delete();
+            
+            // Commit transaction
+            DB::commit();
+            
+            return response()->json(['message' => 'Lowongan berhasil dihapus.']);
+        } catch (\Exception $e) {
+            // Rollback transaction if any error occurs
+            DB::rollBack();
+            
+            // Log the error for debugging
+            Log::error('Failed to delete job: ' . $e->getMessage());
+            
+            return response()->json(['message' => 'Gagal menghapus lowongan: ' . $e->getMessage()], 500);
         }
-
-        $job->delete();
-
-        return redirect()->route('admin.jobs.index')->with('success', 'Job deleted successfully.');
     }
 }

@@ -168,28 +168,28 @@ const UsersIndex = () => {
                 />
             ),
         },
-        {
-            field: 'email_verified_at',
-            header: 'Verified',
-            sortable: true,
-            render: (verified) => (
-                <Chip
-                    icon={verified ? <CheckCircleOutlineIcon fontSize="small" /> : <DoDisturbOnIcon fontSize="small" />}
-                    label={verified ? 'Verified' : 'Unverified'}
-                    color={verified ? 'success' : 'warning'}
-                    size="small"
-                    variant={verified ? 'filled' : 'outlined'}
-                    sx={{
-                        fontWeight: 500,
-                        backgroundColor: verified ? alpha('#4caf50', 0.1) : 'transparent',
-                        '& .MuiChip-icon': {
-                            fontSize: '1rem',
-                            color: 'inherit',
-                        }
-                    }}
-                />
-            ),
-        },
+        // {
+        //     field: 'email_verified_at',
+        //     header: 'Verified',
+        //     sortable: true,
+        //     render: (verified) => (
+        //         <Chip
+        //             icon={verified ? <CheckCircleOutlineIcon fontSize="small" /> : <DoDisturbOnIcon fontSize="small" />}
+        //             label={verified ? 'Verified' : 'Unverified'}
+        //             color={verified ? 'success' : 'warning'}
+        //             size="small"
+        //             variant={verified ? 'filled' : 'outlined'}
+        //             sx={{
+        //                 fontWeight: 500,
+        //                 backgroundColor: verified ? alpha('#4caf50', 0.1) : 'transparent',
+        //                 '& .MuiChip-icon': {
+        //                     fontSize: '1rem',
+        //                     color: 'inherit',
+        //                 }
+        //             }}
+        //         />
+        //     ),
+        // },
         {
             field: 'is_active',
             header: 'Status',
@@ -265,6 +265,157 @@ const UsersIndex = () => {
 
         return matchesSearch && matchesRole && matchesStatus;
     }) || [];
+    
+    // Fungsi untuk mengekspor data ke CSV
+    const exportToCSV = () => {
+        // Pastikan ada data untuk diekspor
+        if (!filteredUsers || filteredUsers.length === 0) {
+            alert('Tidak ada data untuk diekspor');
+            return;
+        }
+    
+        // Membuat header CSV
+        const headers = [
+            'ID', 'Nama', 'Email', 'NIM', 'Role', 'Status',
+            'Tanggal Bergabung'
+        ];
+    
+        // Mengubah data users menjadi format CSV
+        const csvData = filteredUsers.map(user => [
+            user.id,
+            user.name || '-',
+            user.email || '-',
+            user.nim || '-',
+            user.role?.name || '-',
+            user.is_active ? 'Active' : 'Inactive',
+            new Date(user.created_at).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            })
+        ]);
+    
+        // Menggabungkan header dan data
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n');
+    
+        // Membuat blob dan link untuk download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `users-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // Fungsi untuk mencetak daftar pengguna
+    const printUserList = () => {
+        // Pastikan ada data untuk dicetak
+        if (!filteredUsers || filteredUsers.length === 0) {
+            alert('Tidak ada data untuk dicetak');
+            return;
+        }
+    
+        // Membuat konten HTML untuk dicetak
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Daftar Pengguna - ${new Date().toLocaleDateString()}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1 {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    .print-date {
+                        text-align: right;
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    .status-active {
+                        color: green;
+                        font-weight: bold;
+                    }
+                    .status-inactive {
+                        color: #757575;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-date">Dicetak pada: ${new Date().toLocaleString()}</div>
+                <h1>Daftar Pengguna</h1>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>NIM</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Tanggal Bergabung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredUsers.map((user, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${user.name || '-'}</td>
+                                <td>${user.email || '-'}</td>
+                                <td>${user.nim || '-'}</td>
+                                <td>${user.role?.name || '-'}</td>
+                                <td class="status-${user.is_active ? 'active' : 'inactive'}">${user.is_active ? 'Active' : 'Inactive'}</td>
+                                <td>${new Date(user.created_at).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                })}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+    
+        // Membuka jendela baru untuk mencetak
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Menunggu konten dimuat sebelum mencetak
+        printWindow.onload = function() {
+            printWindow.print();
+            // printWindow.close(); // Uncomment jika ingin jendela otomatis tertutup setelah mencetak
+        };
+    };
 
     // Prepare the actions for the table
     const actions = (user) => (
@@ -530,12 +681,12 @@ const UsersIndex = () => {
 
                     <Box>
                         <Tooltip title="Export Users">
-                            <IconButton>
+                            <IconButton onClick={exportToCSV}>
                                 <CloudDownloadIcon />
                             </IconButton>
                         </Tooltip>
                         <Tooltip title="Print List">
-                            <IconButton>
+                            <IconButton onClick={printUserList}>
                                 <PrintIcon />
                             </IconButton>
                         </Tooltip>
@@ -810,3 +961,155 @@ const UsersIndex = () => {
 };
 
 export default UsersIndex;
+
+
+    // Fungsi untuk mengekspor data ke CSV
+    const exportToCSV = () => {
+        // Pastikan ada data untuk diekspor
+        if (!filteredUsers || filteredUsers.length === 0) {
+            alert('Tidak ada data untuk diekspor');
+            return;
+        }
+    
+        // Membuat header CSV
+        const headers = [
+            'ID', 'Nama', 'Email', 'NIM', 'Role', 'Status',
+            'Tanggal Bergabung'
+        ];
+    
+        // Mengubah data users menjadi format CSV
+        const csvData = filteredUsers.map(user => [
+            user.id,
+            user.name || '-',
+            user.email || '-',
+            user.nim || '-',
+            user.role?.name || '-',
+            user.is_active ? 'Active' : 'Inactive',
+            new Date(user.created_at).toLocaleDateString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+            })
+        ]);
+    
+        // Menggabungkan header dan data
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n');
+    
+        // Membuat blob dan link untuk download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `users-${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // Fungsi untuk mencetak daftar pengguna
+    const printUserList = () => {
+        // Pastikan ada data untuk dicetak
+        if (!filteredUsers || filteredUsers.length === 0) {
+            alert('Tidak ada data untuk dicetak');
+            return;
+        }
+    
+        // Membuat konten HTML untuk dicetak
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Daftar Pengguna - ${new Date().toLocaleDateString()}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1 {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    .print-date {
+                        text-align: right;
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    .status-active {
+                        color: green;
+                        font-weight: bold;
+                    }
+                    .status-inactive {
+                        color: #757575;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-date">Dicetak pada: ${new Date().toLocaleString()}</div>
+                <h1>Daftar Pengguna</h1>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>NIM</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Tanggal Bergabung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredUsers.map((user, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${user.name || '-'}</td>
+                                <td>${user.email || '-'}</td>
+                                <td>${user.nim || '-'}</td>
+                                <td>${user.role?.name || '-'}</td>
+                                <td class="status-${user.is_active ? 'active' : 'inactive'}">${user.is_active ? 'Active' : 'Inactive'}</td>
+                                <td>${new Date(user.created_at).toLocaleDateString(undefined, {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                })}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+    
+        // Membuka jendela baru untuk mencetak
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Menunggu konten dimuat sebelum mencetak
+        printWindow.onload = function() {
+            printWindow.print();
+            // printWindow.close(); // Uncomment jika ingin jendela otomatis tertutup setelah mencetak
+        };
+    };

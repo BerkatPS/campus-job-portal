@@ -675,7 +675,6 @@ const Dashboard = ({ stats, recentJobs, recentCompanies, statusData, application
                     >
                         <Tab label="Recent Companies" />
                         <Tab label="Recent Jobs" />
-                        <Tab label="Recent Activities" />
                     </Tabs>
 
                     {/* Companies Tab */}
@@ -751,9 +750,7 @@ const Dashboard = ({ stats, recentJobs, recentCompanies, statusData, application
                                             </ListItem>
                                         </React.Fragment>
                                     ))}
-                                    <Box sx={{ p: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`, display: 'flex', justifyContent: 'center' }}>
-                                        <Button endIcon={<ChevronRightIcon />} sx={{ textTransform: 'none' }}>View All Companies</Button>
-                                    </Box>
+                                    
                                 </>
                             ) : (
                                 <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
@@ -847,9 +844,7 @@ const Dashboard = ({ stats, recentJobs, recentCompanies, statusData, application
                                             </ListItem>
                                         </React.Fragment>
                                     ))}
-                                    <Box sx={{ p: 2, borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`, display: 'flex', justifyContent: 'center' }}>
-                                        <Button endIcon={<ChevronRightIcon />} sx={{ textTransform: 'none' }}>View All Jobs</Button>
-                                    </Box>
+                                    
                                 </>
                             ) : (
                                 <Box sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>

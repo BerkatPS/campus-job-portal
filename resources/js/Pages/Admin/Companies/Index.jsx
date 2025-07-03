@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Head, usePage, Link, router } from '@inertiajs/react';
+import moment from 'moment';
 import {
     Box,
     Typography,
@@ -27,6 +28,7 @@ import {
     MenuItem,
     Grid
 } from '@mui/material';
+import Swal from 'sweetalert2';
 import {
     Add as AddIcon,
     Search as SearchIcon,
@@ -144,31 +146,27 @@ const CompanyLogo = ({ company, size = 48 }) => {
     );
 };
 
-// Modal component for deletion confirmation
-const DeleteModal = ({ open, onClose, company, onDelete, loading }) => {
-    return (
-        <Modal
-            open={open}
-            onClose={onClose}
-            title="Hapus Perusahaan"
-            description={
-                <>
-                    <Typography variant="body1">
-                        Apakah Anda yakin ingin menghapus {company?.name}?
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        Tindakan ini tidak dapat dibatalkan. Semua data terkait perusahaan ini akan dihapus secara permanen.
-                    </Typography>
-                </>
-            }
-            confirmButton
-            cancelButton
-            confirmText="Hapus"
-            confirmColor="error"
-            onConfirm={onDelete}
-            loading={loading}
-        />
-    );
+// Fungsi untuk menampilkan dialog konfirmasi penghapusan dengan SweetAlert2
+const showDeleteConfirmation = (company, onConfirm) => {
+    Swal.fire({
+        title: 'Hapus Perusahaan',
+        html: `
+            <p>Apakah Anda yakin ingin menghapus ${company?.name}?</p>
+            <p style="color: #666; font-size: 0.9em; margin-top: 8px;">
+                Tindakan ini tidak dapat dibatalkan. Semua data terkait perusahaan ini akan dihapus secara permanen.
+            </p>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f44336', // error.main
+        cancelButtonColor: '#9e9e9e', // grey.500
+        confirmButtonText: 'Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            onConfirm();
+        }
+    });
 };
 
 // Stats Card component to reduce duplication
@@ -247,20 +245,43 @@ const ActionsMenu = ({ anchorEl, onClose }) => {
             onClose={onClose}
             transformOrigin={{ horizontal: 'right', vertical: 'top' }}
             anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            PaperProps={{
+                elevation: 0,
+                sx: {
+                    overflow: 'visible',
+                    filter: 'drop-shadow(0px 2px 8px rgba(0,0,0,0.1))',
+                    mt: 1.5,
+                    borderRadius: 2,
+                    minWidth: 180,
+                    '& .MuiMenuItem-root': {
+                        px: 2,
+                        py: 1.5,
+                    }
+                },
+            }}
         >
-            <MenuItem onClick={onClose}>
+            <MenuItem onClick={() => {
+                exportToCSV();
+                onClose();
+            }}>
                 <ListItemIcon>
                     <CloudDownloadIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText>Ekspor CSV</ListItemText>
             </MenuItem>
-            <MenuItem onClick={onClose}>
+            <MenuItem onClick={() => {
+                printCompanyList();
+                onClose();
+            }}>
                 <ListItemIcon>
                     <PrintIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText>Cetak Daftar</ListItemText>
             </MenuItem>
-            <MenuItem onClick={onClose}>
+            <MenuItem onClick={() => {
+                resetFilters();
+                onClose();
+            }}>
                 <ListItemIcon>
                     <RefreshIcon fontSize="small" />
                 </ListItemIcon>
@@ -275,7 +296,6 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
     const theme = useTheme();
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
-    const [deleteModal, setDeleteModal] = useState(false);
     const [companyToDelete, setCompanyToDelete] = useState(null);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertSeverity, setAlertSeverity] = useState('success');
@@ -546,17 +566,43 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
 
         setLoading(true);
         router.delete(route('admin.companies.destroy', companyToDelete.id), {
-            onSuccess: () => {
-                setDeleteModal(false);
+            onSuccess: (page) => {
                 setCompanyToDelete(null);
-                setAlertMessage('Perusahaan berhasil dihapus.');
-                setAlertSeverity('success');
-                setShowAlert(true);
+                
+                // Tampilkan pesan sukses dengan SweetAlert2
+                const message = page.props.flash && page.props.flash.message
+                    ? page.props.flash.message
+                    : 'Perusahaan berhasil dihapus';
+                
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: message,
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: theme.palette.primary.main
+                });
+                
+                // Refresh data setelah penghapusan berhasil
+                router.reload({ only: ['companies'] });
             },
             onError: (errors) => {
-                setAlertMessage('Gagal menghapus perusahaan: ' + Object.values(errors).flat().join(' '));
-                setAlertSeverity('error');
-                setShowAlert(true);
+                // Tampilkan pesan error dengan SweetAlert2
+                console.error('Error deleting company:', errors);
+                let errorMessage = 'Gagal menghapus perusahaan: Terjadi kesalahan';
+                
+                if (errors.message) {
+                    errorMessage = errors.message;
+                } else if (errors.errors && Object.keys(errors.errors).length > 0) {
+                    errorMessage = 'Gagal menghapus perusahaan:\n' + Object.values(errors.errors).flat().join('\n');
+                }
+                
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: theme.palette.error.main
+                });
             },
             onFinish: () => setLoading(false),
         });
@@ -631,7 +677,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                     size="small"
                     onClick={() => {
                         setCompanyToDelete(company);
-                        setDeleteModal(true);
+                        showDeleteConfirmation(company, handleDelete);
                     }}
                     sx={{
                         color: theme.palette.error.main,
@@ -657,6 +703,149 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
             preserveState: false,  // Don't preserve state to ensure complete refresh
             only: ['companies']
         });
+    };
+    
+    // Fungsi untuk mengekspor data ke CSV
+    const exportToCSV = () => {
+        // Pastikan ada data untuk diekspor
+        if (!companies?.data || companies.data.length === 0) {
+            alert('Tidak ada data untuk diekspor');
+            return;
+        }
+    
+        // Membuat header CSV
+        const headers = [
+            'ID', 'Nama Perusahaan', 'Industri', 'Alamat', 'Website', 'Status',
+            'Tanggal Dibuat'
+        ];
+    
+        // Mengubah data companies menjadi format CSV
+        const csvData = companies.data.map(company => [
+            company.id,
+            company.name,
+            company.industry || '-',
+            company.address || '-',
+            company.website || '-',
+            company.is_active ? 'Aktif' : 'Tidak Aktif',
+            moment(company.created_at).format('DD/MM/YYYY')
+        ]);
+    
+        // Menggabungkan header dan data
+        const csvContent = [
+            headers.join(','),
+            ...csvData.map(row => row.join(','))
+        ].join('\n');
+    
+        // Membuat blob dan link untuk download
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.setAttribute('href', url);
+        link.setAttribute('download', `daftar-perusahaan-${moment().format('YYYY-MM-DD')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
+    // Fungsi untuk mencetak daftar perusahaan
+    const printCompanyList = () => {
+        // Pastikan ada data untuk dicetak
+        if (!companies?.data || companies.data.length === 0) {
+            alert('Tidak ada data untuk dicetak');
+            return;
+        }
+    
+        // Membuat konten HTML untuk dicetak
+        const printContent = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Daftar Perusahaan - ${moment().format('DD MMMM YYYY')}</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                    }
+                    h1 {
+                        text-align: center;
+                        margin-bottom: 20px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                    }
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 8px;
+                        text-align: left;
+                    }
+                    th {
+                        background-color: #f2f2f2;
+                    }
+                    tr:nth-child(even) {
+                        background-color: #f9f9f9;
+                    }
+                    .print-date {
+                        text-align: right;
+                        margin-bottom: 20px;
+                        font-size: 12px;
+                    }
+                    .status-active {
+                        color: green;
+                        font-weight: bold;
+                    }
+                    .status-inactive {
+                        color: red;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="print-date">Dicetak pada: ${moment().format('DD MMMM YYYY, HH:mm:ss')}</div>
+                <h1>Daftar Perusahaan</h1>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Perusahaan</th>
+                            <th>Industri</th>
+                            <th>Alamat</th>
+                            <th>Website</th>
+                            <th>Status</th>
+                            <th>Tanggal Dibuat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${companies.data.map((company, index) => `
+                            <tr>
+                                <td>${index + 1}</td>
+                                <td>${company.name}</td>
+                                <td>${company.industry || '-'}</td>
+                                <td>${company.address || '-'}</td>
+                                <td>${company.website || '-'}</td>
+                                <td class="status-${company.is_active ? 'active' : 'inactive'}">${company.is_active ? 'Aktif' : 'Tidak Aktif'}</td>
+                                <td>${moment(company.created_at).format('DD/MM/YYYY')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </body>
+            </html>
+        `;
+    
+        // Membuka jendela baru untuk mencetak
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.focus();
+        
+        // Menunggu konten dimuat sebelum mencetak
+        printWindow.onload = function() {
+            printWindow.print();
+            // printWindow.close(); // Uncomment jika ingin jendela otomatis tertutup setelah mencetak
+        };
     };
 
     return (
@@ -700,14 +889,7 @@ const CompaniesIndex = ({ companies = { data: [] }, filters = { industries: [] }
                 </motion.div>
             </Box>
 
-            {/* Delete Confirmation Modal */}
-            <DeleteModal
-                open={deleteModal}
-                onClose={() => setDeleteModal(false)}
-                company={companyToDelete}
-                onDelete={handleDelete}
-                loading={loading}
-            />
+            {/* SweetAlert2 akan ditampilkan melalui fungsi showDeleteConfirmation */}
 
             <AnimatePresence>
                 {showAlert && (

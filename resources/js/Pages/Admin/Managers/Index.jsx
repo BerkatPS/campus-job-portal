@@ -38,6 +38,7 @@ import {
     Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { motion, AnimatePresence } from 'framer-motion';
+import Swal from 'sweetalert2';
 
 // Import custom components
 import Card from '@/Components/Shared/Card';
@@ -48,31 +49,27 @@ import Alert from '@/Components/Shared/Alert';
 import Select from '@/Components/Shared/Select';
 import Layout from '@/Components/Layout/Layout';
 
-// Modal component
-const DeleteModal = ({ open, onClose, manager, onDelete, loading }) => {
-    return (
-        <Modal
-            open={open}
-            onClose={onClose}
-            title="Remove Manager"
-            description={
-                <>
-                    <Typography variant="body1">
-                        Anda yakin ingin menghapus asosiasi manager {manager?.user?.name} dengan perusahaan {manager?.company?.name}?
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                        Tindakan ini hanya akan menghapus asosiasi, tidak menghapus data pengguna.
-                    </Typography>
-                </>
-            }
-            confirmButton
-            cancelButton
-            confirmText="Hapus"
-            confirmColor="error"
-            onConfirm={onDelete}
-            loading={loading}
-        />
-    );
+// Fungsi untuk menampilkan dialog konfirmasi penghapusan dengan SweetAlert2
+const showDeleteConfirmation = (manager, onConfirm) => {
+    Swal.fire({
+        title: 'Hapus Asosiasi Manager',
+        html: `
+            <p>Anda yakin ingin menghapus asosiasi manager ${manager?.user?.name} dengan perusahaan ${manager?.company?.name}?</p>
+            <p style="color: #666; font-size: 0.9em; margin-top: 8px;">
+                Tindakan ini hanya akan menghapus asosiasi, tidak menghapus data pengguna.
+            </p>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f44336', // error.main
+        cancelButtonColor: '#9e9e9e', // grey.500
+        confirmButtonText: 'Hapus',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            onConfirm();
+        }
+    });
 };
 
 // Stats Card component to reduce duplication
@@ -160,7 +157,6 @@ const ManagersIndex = ({ managers = { data: [] }, companies = [], roles = [] }) 
     const theme = useTheme();
     const [searchTerm, setSearchTerm] = useState('');
     const [loading, setLoading] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [managerToDelete, setManagerToDelete] = useState(null);
     const [alertMessage, setAlertMessage] = useState('');
     const [alertSeverity, setAlertSeverity] = useState('success');
@@ -218,17 +214,42 @@ const ManagersIndex = ({ managers = { data: [] }, companies = [], roles = [] }) 
 
         setLoading(true);
         router.delete(route('admin.managers.destroy', managerToDelete.id), {
-            onSuccess: () => {
-                setShowDeleteModal(false);
+            onSuccess: (page) => {
+                // Tampilkan pesan sukses dengan SweetAlert2
+                const message = page.props.flash && page.props.flash.message
+                    ? page.props.flash.message
+                    : 'Asosiasi manager berhasil dihapus';
+                
+                Swal.fire({
+                    title: 'Berhasil!',
+                    text: message,
+                    icon: 'success',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: theme.palette.primary.main
+                });
+                
                 setManagerToDelete(null);
-                setAlertMessage('Manager association removed successfully.');
-                setAlertSeverity('success');
-                setShowAlert(true);
+                // Refresh data setelah penghapusan berhasil
+                router.reload({ only: ['managers'] });
             },
             onError: (errors) => {
-                setAlertMessage('Failed to remove manager: ' + Object.values(errors).flat().join(' '));
-                setAlertSeverity('error');
-                setShowAlert(true);
+                // Tampilkan pesan error dengan SweetAlert2
+                console.error('Error deleting manager:', errors);
+                let errorMessage = 'Gagal menghapus asosiasi manager: Terjadi kesalahan';
+                
+                if (errors.message) {
+                    errorMessage = errors.message;
+                } else if (errors.errors && Object.keys(errors.errors).length > 0) {
+                    errorMessage = 'Gagal menghapus asosiasi manager:\n' + Object.values(errors.errors).flat().join('\n');
+                }
+                
+                Swal.fire({
+                    title: 'Error!',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: theme.palette.error.main
+                });
             },
             onFinish: () => setLoading(false),
         });
@@ -461,7 +482,7 @@ const ManagersIndex = ({ managers = { data: [] }, companies = [], roles = [] }) 
                     size="small"
                     onClick={() => {
                         setManagerToDelete(manager);
-                        setShowDeleteModal(true);
+                        showDeleteConfirmation(manager, handleDelete);
                     }}
                     sx={{
                         color: theme.palette.error.main,
@@ -524,14 +545,7 @@ const ManagersIndex = ({ managers = { data: [] }, companies = [], roles = [] }) 
                 </motion.div>
             </Box>
 
-            {/* Delete Confirmation Modal */}
-            <DeleteModal
-                open={showDeleteModal}
-                onClose={() => setShowDeleteModal(false)}
-                manager={managerToDelete}
-                onDelete={handleDelete}
-                loading={loading}
-            />
+            {/* Delete Confirmation Modal sudah diganti dengan SweetAlert2 */}
 
             <AnimatePresence>
                 {showAlert && (

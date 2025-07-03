@@ -40,18 +40,19 @@ const JobEdit = ({ job, companies = [], categories = [] }) => {
         description: job.description || '',
         requirements: job.requirements || '',
         location: job.location || '',
-        type: job.type || job.job_type || 'full_time', // Ensure correct value matching
+        job_type: job.job_type || 'full_time', // Use job_type consistently
         experience_level: job.experience_level || 'entry', // Ensure correct value matching
         salary_min: job.salary_min || '',
         salary_max: job.salary_max || '',
         status: job.status || (job.is_active ? 'active' : 'closed') || 'draft',
         category_id: job.category_id || '',
-        deadline: job.deadline ? job.deadline.split('T')[0] : (job.submission_deadline ? job.submission_deadline.split('T')[0] : ''),
+        submission_deadline: job.submission_deadline ? job.submission_deadline.split('T')[0] : (job.deadline ? job.deadline.split('T')[0] : ''),
         skills: job.skills || [],
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // Pastikan data yang dikirim menggunakan field job_type, bukan type
         put(route('admin.jobs.update', job.id));
     };
 
@@ -166,12 +167,12 @@ const JobEdit = ({ job, companies = [], categories = [] }) => {
                                     placeholder="Contoh: Jakarta, Remote, Hybrid"
                                 />
 
-                                <FormControl fullWidth required error={!!errors.type}>
-                                    <InputLabel id="type-label">Tipe Pekerjaan</InputLabel>
+                                <FormControl fullWidth required error={!!errors.job_type}>
+                                    <InputLabel id="job-type-label">Tipe Pekerjaan</InputLabel>
                                     <Select
-                                        labelId="type-label"
-                                        value={data.type}
-                                        onChange={e => setData('type', e.target.value)}
+                                        labelId="job-type-label"
+                                        value={data.job_type}
+                                        onChange={e => setData('job_type', e.target.value)}
                                         label="Tipe Pekerjaan"
                                     >
                                         <MenuItem value="full_time">Full Time</MenuItem>
@@ -180,7 +181,7 @@ const JobEdit = ({ job, companies = [], categories = [] }) => {
                                         <MenuItem value="internship">Magang</MenuItem>
                                         <MenuItem value="freelance">Freelance</MenuItem>
                                     </Select>
-                                    {errors.type && <FormHelperText>{errors.type}</FormHelperText>}
+                                    {errors.job_type && <FormHelperText>{errors.job_type}</FormHelperText>}
                                 </FormControl>
                             </Box>
 
@@ -233,10 +234,10 @@ const JobEdit = ({ job, companies = [], categories = [] }) => {
                                     label="Batas Waktu Pendaftaran"
                                     fullWidth
                                     type="date"
-                                    value={data.deadline}
-                                    onChange={e => setData('deadline', e.target.value)}
-                                    error={!!errors.deadline}
-                                    helperText={errors.deadline}
+                                    value={data.submission_deadline}
+                                    onChange={e => setData('submission_deadline', e.target.value)}
+                                    error={!!errors.submission_deadline}
+                                    helperText={errors.submission_deadline}
                                     InputLabelProps={{
                                         shrink: true,
                                     }}
