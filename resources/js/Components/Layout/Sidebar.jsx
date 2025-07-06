@@ -274,12 +274,12 @@ const Sidebar = ({ isOpen, onClose, collapsed, toggleCollapsed, mode = 'light' }
                 route: 'candidate.events.index',
                 color: primaryColor
             },
-            {
-                text: 'Portofolio',
-                icon: <FolderIcon />,
-                route: 'candidate.portfolio.index',
-                color: primaryColor
-            },
+            // {
+            //     text: 'Portofolio',
+            //     icon: <FolderIcon />,
+            //     route: 'candidate.portfolio.index',
+            //     color: primaryColor
+            // },
             {
                 text: 'Profil',
                 icon: <PersonIcon />,
